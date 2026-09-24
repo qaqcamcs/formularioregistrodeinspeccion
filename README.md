@@ -6,7 +6,7 @@ Archivos de este repositorio: `index.html`, `sw.js`, `manifest.webmanifest` y la
 1. Abre tu proyecto en script.google.com y reemplaza `Code.gs` por el archivo `apps-script/Code.gs`.
 2. Cambia `ACCESS_KEY` por una clave tuya.
 3. Implementar → Nueva implementación → Aplicación web. Ejecutar como: **Yo**. Quién tiene acceso: **Cualquier persona**.
-4. Copia la URL que termina en `/exec`. Si la abres en el navegador debe mostrar `{"ok":true,...}`.
+4. Copia la URL que termina en `/exec`. Si abres esa URL en el navegador verás el formulario de Apps Script; para probar solo la API agrega `?ping=1` al final: debe mostrar `{"ok":true,...}`. La app instalable se abre desde la URL de GitHub Pages, no desde esta.
 5. Al cambiar el código: Implementar → Administrar implementaciones → lápiz → Nueva versión.
 
 ## 2. Configurar la app
