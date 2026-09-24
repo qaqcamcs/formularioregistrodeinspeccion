@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#06172e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="QA/QC">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Registro de inspección QA/QC</title>
+<style>
+:root{--bg:#06172e;--card:#0c2547;--card2:#123462;--line:#1e4478;--txt:#e8f0fb;--mut:#8fa9cc;--pri:#3d8bfd;--ok:#2fbf71;--bad:#f0525f;--adv:#f2b632}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.4 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif;padding-bottom:96px}
+header{background:linear-gradient(135deg,#0a3a7a,#06172e 70%);padding:calc(22px + env(safe-area-inset-top)) 20px 24px;border-bottom:1px solid var(--line)}
+header h1{margin:0;font-size:1.6rem;letter-spacing:-.01em}
+header p{margin:4px 0 0;color:var(--mut)}
+main{max-width:980px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.card h2{margin:0 0 12px;font-size:1.05rem;color:#b9d2f5;font-weight:600}
+.grid{display:grid;gap:14px;grid-template-columns:1fr}
+@media(min-width:720px){.grid{grid-template-columns:1fr 1fr}.full{grid-column:1/-1}}
+label,.lbl{display:block;font-size:.9rem;color:var(--mut);margin-bottom:6px}
+.req::after{content:" *";color:var(--adv)}
+input,select,textarea{width:100%;min-height:48px;padding:10px 12px;font:inherit;color:var(--txt);background:#08203f;border:1px solid var(--line);border-radius:10px}
+textarea{min-height:100px;resize:vertical}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--pri);outline-offset:1px}
+.other{margin-top:8px;display:none}
+.field.invalid input,.field.invalid select,.field.invalid .seg{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad)}
+.field.invalid .msg{display:block}
+.msg{display:none;color:var(--bad);font-size:.82rem;margin-top:4px}
+.seg{display:flex;gap:8px;flex-wrap:wrap;border-radius:10px}
+.seg button,.chip{font:inherit;color:var(--txt);background:#08203f;border:1px solid var(--line);border-radius:10px;min-height:48px;padding:0 16px;cursor:pointer;flex:1 1 110px}
+.seg button.on{background:var(--pri);border-color:var(--pri);font-weight:600}
+.seg.res button.on[data-v="Aprobado"]{background:var(--ok);border-color:var(--ok);color:#03210f}
+.seg.res button.on[data-v="Rechazado"]{background:var(--bad);border-color:var(--bad)}
+.seg.res button.on[data-v="Avance aprobado"]{background:var(--adv);border-color:var(--adv);color:#2b1f00}
+.seg.res button{min-height:56px;font-size:1.05rem}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{flex:0 0 auto;min-height:40px;border-radius:999px;padding:0 14px;font-size:.92rem}
+.chip.on{background:var(--pri);border-color:var(--pri);font-weight:600}
+.add{display:flex;gap:8px;margin-top:10px}.add input{min-height:40px}
+.add button{flex:0 0 auto;min-height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--txt)}
+details{border:1px solid var(--line);border-radius:10px;margin-top:8px;background:#0a2244}
+summary{padding:12px;cursor:pointer;font-weight:600}
+details .chips{padding:0 12px 12px}
+#sel{margin:10px 0 0}
+.count{color:var(--mut);font-size:.85rem;margin-top:6px}
+.bar{position:fixed;left:0;right:0;bottom:0;background:rgba(6,23,46,.96);backdrop-filter:blur(6px);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom));z-index:5}
+.bar .in{max-width:980px;margin:0 auto;display:flex;gap:10px;align-items:center}
+.keep{display:flex;align-items:center;gap:8px;color:var(--mut);font-size:.85rem;flex:1}
+.keep input{width:20px;min-height:20px}
+.btn{min-height:52px;border-radius:12px;border:0;font:inherit;font-weight:700;padding:0 22px;cursor:pointer}
+.save{background:var(--pri);color:#fff;flex:1 1 200px}.save:disabled{opacity:.6}
+.clear{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
+#toast{position:fixed;left:50%;top:16px;transform:translate(-50%,-140%);transition:transform .25s;background:var(--ok);color:#03210f;padding:12px 18px;border-radius:12px;font-weight:600;z-index:9;max-width:92vw}
+#toast.show{transform:translate(-50%,0)}#toast.err{background:var(--bad);color:#fff}
+@media(prefers-reduced-motion:reduce){#toast{transition:none}}
+header{position:relative}
+.hrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.mini{min-height:34px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.08);color:var(--txt);padding:0 14px;font:inherit;font-size:.85rem;cursor:pointer}
+.net{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:.85rem}
+.net .dot{width:10px;height:10px;border-radius:50%;background:var(--ok)}
+.net.pen .dot{background:var(--adv)}.net.off .dot{background:var(--bad)}
+.pend{border-color:var(--adv)}
+.pend .head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.pend .head h2{margin:0}
+.pend .row{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--line);background:#0a2244;border-radius:10px;padding:10px 12px;margin-top:8px}
+.pend .row small{display:block;color:var(--mut);word-break:break-word}
+.pend .row.bad{border-color:var(--bad)}.pend .row.bad small{color:var(--bad)}
+.pend button{min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--txt);padding:0 14px;font:inherit;cursor:pointer;flex:0 0 auto}
+.pend button:disabled{opacity:.6}
+
+</style>
+</head>
+<body>
+<header><h1>Registro de inspección QA/QC</h1><p>Los datos se agregan al final de la hoja de revisiones.</p><div class="hrow"><div class="net" id="net"><span class="dot"></span><span id="netTxt">En línea</span></div><button type="button" class="mini" id="installBtn" hidden>Instalar app</button><button type="button" class="mini" id="keyBtn">Clave de acceso</button></div></header>
+<main>
+<section class="card pend" id="pend" hidden><div class="head"><h2 id="pendT"></h2><button type="button" id="syncNow">Sincronizar ahora</button></div><div id="pendL"></div></section>
+<section class="card" id="keyCard" hidden><h2>Clave de acceso</h2><div class="add"><input id="keyIn" type="password" autocomplete="off" placeholder="Escribe la clave"><button type="button" id="keySave">Guardar</button></div><div class="count">Se guarda solo en este dispositivo.</div></section>
+<form id="f" novalidate>
+  <section class="card"><h2>Datos generales</h2><div class="grid">
+    <div class="field"><label class="req" for="fecha">Fecha de inspección</label><input type="date" id="fecha"><span class="msg">Indica la fecha.</span></div>
+    <div class="field"><label class="req" for="inspector">Inspector</label><select id="inspector"></select><span class="msg">Elige el inspector.</span></div>
+    <div class="field full"><label class="req" for="proyecto">Proyecto (fase)</label><select id="proyecto" data-other></select><input class="other" id="proyecto_o" placeholder="Escribe el proyecto"><span class="msg">Elige o escribe el proyecto.</span></div>
+  </div></section>
+
+  <section class="card"><h2>Elemento revisado</h2><div class="grid">
+    <div class="field"><label class="req" for="marca">Marca del elemento</label><input id="marca" autocomplete="off"><span class="msg">Escribe la marca.</span></div>
+    <div class="field"><label class="req" for="cantidad">Cantidad revisada</label><input type="number" id="cantidad" min="1" step="1" inputmode="numeric" value="1"><span class="msg">Debe ser mayor a 0.</span></div>
+    <div class="field full"><label for="correlativos">Correlativos</label><input id="correlativos" autocomplete="off" placeholder="Ej: 1 y 2, 3-4-5"></div>
+  </div></section>
+
+  <section class="card"><h2>Proceso</h2><div class="grid">
+    <div class="field full"><span class="lbl req">Área</span><div class="seg" data-k="area"></div><span class="msg">Elige el área.</span></div>
+    <div class="field"><label for="etapa">Etapa</label><select id="etapa" data-other></select><input class="other" id="etapa_o" placeholder="Escribe la etapa"></div>
+    <div class="field"><label for="responsable">Responsable</label><input id="responsable" autocomplete="off" placeholder="Opcional"></div>
+    <div class="field full"><span class="lbl">Armador</span><div class="chips" id="armador"></div></div>
+    <div class="field full"><span class="lbl">Soldador</span><div class="chips" id="soldador"></div></div>
+  </div></section>
+
+  <section class="card"><h2>Resultado</h2><div class="grid">
+    <div class="field full"><span class="lbl req">Resultado</span><div class="seg res" data-k="resultado"></div><span class="msg">Elige el resultado.</span></div>
+    <div class="field"><span class="lbl">Reparado o terminado</span><div class="seg" data-k="reparado" data-toggle="1"></div></div>
+    <div class="field"><label for="areaNC">Área donde se detecta NC</label><select id="areaNC" data-other></select><input class="other" id="areaNC_o" placeholder="Escribe el área"></div>
+    <div class="field full"><span class="lbl">Defectos detectados</span>
+      <input id="dsearch" type="search" placeholder="Buscar defecto…">
+      <div class="chips" id="sel"></div><div class="count" id="dcount">Ningún defecto seleccionado</div>
+      <div id="dgroups"></div>
+      <div class="add"><input id="dother" placeholder="Otro defecto"><button type="button" id="dadd">Agregar</button></div>
+    </div>
+    <div class="field full"><label for="detalle">Detalle de defectos</label><textarea id="detalle"></textarea></div>
+  </div></section>
+</form>
+</main>
+<div class="bar"><div class="in">
+  <label class="keep"><input type="checkbox" id="keep" checked>Conservar proyecto, área y responsables al guardar</label>
+  <button class="btn clear" id="clear" type="button">Limpiar</button>
+  <button class="btn save" id="save" type="button">Guardar registro</button>
+</div></div>
+<div id="toast" role="status"></div>
+
+<script>
+// === CONFIGURACIÓN ===
+// Pega aquí la URL de la aplicación web de Apps Script (termina en /exec)
+const API_URL = 'PEGA_AQUI_LA_URL_DE_APPS_SCRIPT';
+
+// Listas del formulario (edítalas aquí y vuelve a subir el archivo a GitHub)
+const CFG = {
+  inspectores: ["Nicolás Gajardo", "Matías Cortéz", "Alejandro Suárez"],
+  proyectos: ["P397 - Strip Quillón (K4)", "P397 - Strip Quillón (K6)", "P419 - Perez Caldera Proyecto Stracon", "P419 - Perez Caldera Proyecto Stracon (S3)", "P419 - Perez Caldera Proyecto Stracon (S6)", "P420 - La Serena", "P420 - La Serena (Y1)", "P420 - La Serena (Y2)", "P350 - GEOBRUGG"],
+  areas: ["PREMAT", "Armado", "Soldadura"],
+  etapas: ["Arco Linc", "Corte Manual con Plasma", "Diper", "Flejes", "Geka", "Mesas de corte", "PHI", "Peddinghaus", "Prearmado", "Resane", "Sierras", "Sierra Daito", "Sierra Peddinghaus", "Taladro Peddinghaus", "Vernet"],
+  armadores: ["Andres Alaña", "Claudio Nilian", "Felipe Corro", "Jesus Sanchez", "Julio Rojo", "Sebastian Campos", "Marcos Ponce", "Manuel Vergara", "Zeman Armado"],
+  soldadores: ["Antonio Rojas", "Bastian Villar", "David de Abreu", "Hector Cabrera", "Henderson Valencia", "Jorge Fuentes", "Jose Aguirre", "Manuel Castro", "Marcos Leiva", "Miguel Velasco", "Mirko Hernandez", "Rodrigo Cerda", "Zeman Soldador", "Franco Matus", "Falta firma soldador"],
+  resultados: ["Aprobado", "Rechazado", "Avance aprobado"],
+  reparado: ["Si", "No"],
+  areasNC: ["Nave 1", "Nave 2", "Nave 3", "Nave 4"],
+  defectos: {
+    "Armado": ["Armada al revés", "Componente desplazado", "Componente invertido", "Correlativo", "Curvatura excesiva", "Destaje incorrecto", "Dimensiones incorrectas", "Falta ángulo", "Falta bisel", "Falta componente", "Falta destaje", "Falta lata", "Falta perforación", "Falta placa", "Gap fuera de tolerancia", "Largo total incorrecto", "Marca de golpe", "Perfil con corte irregular", "Perfil dañado", "Perfil desplazado", "Perfil viga abollada", "Perforación desplazada", "Pinchazo defectuoso", "Placa desplazada", "Placa equivocada", "Placa interfiere con perforación", "Placa invertida", "Placa mal inclinada", "Placa torcida", "Placa sin limpiar"],
+    "Perfiles y vigas": ["Altura de viga incorrecta", "Alas inclinadas", "Ala curva", "Componente revirado", "Desfase de perforaciones", "Destaje incorrecto", "Diámetro de perforaciones incorrecto", "Falta biselado", "Falta corte inclinado", "Falta slotting", "Falta perforación", "Fleje mal cortado", "Fleje invertido", "Longitud alma/ala dispareja", "Longitud incorrecta", "Mal marcado", "Muesca de corte con plasma", "Perforación incorrecta", "Perforación con dimensiones incorrectas", "Plegado desplazado", "Plegado incorrecto", "Catetos irregulares"],
+    "Soldadura": ["Soldadura irregular", "Soldadura incompleta", "Cráter", "Escoria", "Falta de fusión", "Falta de penetración", "Falta soldadura", "Faltan terminaciones", "Inclusión de alambre", "Perlillas", "Poro", "Poro vermicular", "Socavación", "Soldadura confinada al alma", "Tamaño de soldadura sobredimensionada", "Tamaño de soldadura reducida"],
+    "Otros": ["Marca detenida", "Perforaciones adicionales", "Ala cerrada", "Cantos vivos y rebaba", "Falta marca", "Grieta", "Curvatura camber", "Falta firma protocolo"]
+  }
+};
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const S = {area:'',resultado:'',reparado:'',armador:new Set(),soldador:new Set(),defectos:new Set()};
+const OTHER='__otro__';
+
+function fillSelect(id, list, ph){
+  const el=$('#'+id); el.innerHTML='<option value="">'+ph+'</option>'+list.map(x=>'<option>'+x+'</option>').join('')+
+    (el.hasAttribute('data-other')?'<option value="'+OTHER+'">Otro…</option>':'');
+  el.addEventListener('change',()=>{const o=$('#'+id+'_o'); if(o){o.style.display=el.value===OTHER?'block':'none'; if(el.value===OTHER)o.focus();}});
+}
+function val(id){const v=$('#'+id).value; return v===OTHER?$('#'+id+'_o').value.trim():v.trim();}
+
+function seg(k,list){
+  const box=$('.seg[data-k="'+k+'"]'); box.innerHTML=list.map(x=>'<button type="button" data-v="'+x+'">'+x+'</button>').join('');
+  box.addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return;
+    S[k]=(box.dataset.toggle&&S[k]===b.dataset.v)?'':b.dataset.v;
+    box.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.v===S[k]));
+    box.closest('.field').classList.remove('invalid');});
+}
+function chip(box,set,name,on){
+  const b=document.createElement('button'); b.type='button'; b.className='chip'+(on?' on':''); b.textContent=name; b.dataset.n=name;
+  b.onclick=()=>{set.has(name)?set.delete(name):set.add(name); sync(); }; box.appendChild(b); return b;
+}
+function multi(id,list){
+  const box=$('#'+id); list.forEach(n=>chip(box,S[id],n));
+  const row=document.createElement('div'); row.className='add';
+  row.innerHTML='<input placeholder="Otro…"><button type="button">Agregar</button>'; box.after(row);
+  row.querySelector('button').onclick=()=>{const i=row.querySelector('input'),n=i.value.trim(); if(!n)return;
+    if(!box.querySelector('[data-n="'+n.replace(/"/g,'')+'"]'))chip(box,S[id],n); S[id].add(n); i.value=''; sync();};
+}
+function sync(){
+  $$('#armador .chip,#soldador .chip,#dgroups .chip').forEach(c=>{
+    const set=c.closest('#armador')?S.armador:c.closest('#soldador')?S.soldador:S.defectos; c.classList.toggle('on',set.has(c.dataset.n));});
+  const sel=$('#sel'); sel.innerHTML=''; S.defectos.forEach(n=>{const b=chip(sel,S.defectos,n,true); b.textContent=n+' ✕';});
+  $('#dcount').textContent=S.defectos.size?S.defectos.size+' seleccionado(s)':'Ningún defecto seleccionado';
+}
+function defectos(){
+  const g=$('#dgroups');
+  Object.keys(CFG.defectos).forEach(k=>{const d=document.createElement('details'); d.innerHTML='<summary>'+k+'</summary><div class="chips"></div>';
+    CFG.defectos[k].forEach(n=>chip(d.querySelector('.chips'),S.defectos,n)); g.appendChild(d);});
+  $('#dsearch').oninput=e=>{const q=e.target.value.toLowerCase().trim();
+    g.querySelectorAll('details').forEach(d=>{let any=false;
+      d.querySelectorAll('.chip').forEach(c=>{const m=!q||c.dataset.n.toLowerCase().includes(q); c.style.display=m?'':'none'; any=any||m;});
+      d.style.display=any?'':'none'; d.open=!!q&&any;});};
+  $('#dadd').onclick=()=>{const i=$('#dother'),n=i.value.trim(); if(!n)return; S.defectos.add(n); i.value=''; sync();};
+}
+
+function today(){const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10);}
+function toast(m,err){const t=$('#toast'); t.textContent=m; t.className='show'+(err?' err':''); clearTimeout(t._t); t._t=setTimeout(()=>t.className='',err?6000:3500);}
+
+function payload(){return {fecha:$('#fecha').value,inspector:$('#inspector').value,proyecto:val('proyecto'),marca:$('#marca').value.trim(),
+  cantidad:$('#cantidad').value,correlativos:$('#correlativos').value.trim(),area:S.area,etapa:val('etapa'),armador:[...S.armador],
+  soldador:[...S.soldador],responsable:$('#responsable').value.trim(),resultado:S.resultado,reparado:S.reparado,areaNC:val('areaNC'),
+  defectos:[...S.defectos],detalle:$('#detalle').value.trim()};}
+
+function validate(p){
+  const bad=[]; const chk=(ok,el)=>{const f=(typeof el==='string'?$(el):el).closest('.field'); f.classList.toggle('invalid',!ok); if(!ok)bad.push(f);};
+  chk(!!p.fecha,'#fecha'); chk(!!p.inspector,'#inspector'); chk(!!p.proyecto,'#proyecto'); chk(!!p.marca,'#marca');
+  chk(Number(p.cantidad)>0,'#cantidad'); chk(!!p.area,'.seg[data-k="area"]'); chk(!!p.resultado,'.seg[data-k="resultado"]');
+  if(bad.length){bad[0].scrollIntoView({behavior:'smooth',block:'center'}); toast('Revisa los campos marcados',true);} return !bad.length;
+}
+
+function reset(keep){
+  ['marca','correlativos','detalle'].forEach(i=>$('#'+i).value=''); $('#cantidad').value=1;
+  S.resultado=S.reparado=''; S.defectos.clear(); $('#areaNC').value=''; $('#areaNC_o').style.display='none';
+  $$('.seg[data-k="resultado"] button,.seg[data-k="reparado"] button').forEach(b=>b.classList.remove('on'));
+  if(!keep){$('#fecha').value=today(); ['proyecto','etapa'].forEach(i=>{$('#'+i).value='';$('#'+i+'_o').style.display='none';});
+    $('#responsable').value=''; S.area=''; S.armador.clear(); S.soldador.clear(); $$('.seg[data-k="area"] button').forEach(b=>b.classList.remove('on'));}
+  sync(); $$('.invalid').forEach(x=>x.classList.remove('invalid')); window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ===== Modo offline: cola local + sincronización automática ===== */
+const QKEY='qaqc_cola_v1';
+let Q=[], persist=true, syncing=false, retryT=null, authFail=false;
+try{localStorage.setItem('qaqc_t','1');localStorage.removeItem('qaqc_t');
+  Q=JSON.parse(localStorage.getItem(QKEY)||'[]'); if(!Array.isArray(Q))Q=[];}catch(e){persist=false;Q=[];}
+function qSave(){if(!persist)return;
+  try{localStorage.setItem(QKEY,JSON.stringify(Q));}
+  catch(e){persist=false;toast('Este navegador no puede guardar sin conexión. No cierres la pestaña con pendientes.',true);}}
+function newUid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
+
+function renderPend(){
+  const n=Q.length,on=navigator.onLine,net=$('#net');
+  net.className='net'+(!on?' off':n?' pen':'');
+  $('#netTxt').textContent=!on?'Sin conexión'+(n?' · '+n+' pendiente(s)':''):syncing?'Sincronizando…':n?n+' pendiente(s) por sincronizar':'En línea · todo sincronizado';
+  if(authFail)$('#netTxt').textContent='Clave de acceso requerida';
+  const box=$('#pend'); box.hidden=!n; if(!n)return;
+  $('#pendT').textContent='Pendientes de sincronizar ('+n+')';
+  $('#syncNow').disabled=syncing;
+  const L=$('#pendL'); L.innerHTML='';
+  Q.forEach(it=>{
+    const r=document.createElement('div'); r.className='row'+(it.fatal?' bad':'');
+    const d=document.createElement('div'),t=document.createElement('strong'),s=document.createElement('small');
+    t.textContent=(it.p.marca||'—')+' · '+it.p.resultado;
+    s.textContent=it.p.fecha+' · '+it.p.proyecto+(it.err?' · '+it.err:'');
+    d.append(t,s);
+    const b=document.createElement('button'); b.type='button'; b.textContent='Descartar';
+    b.onclick=()=>{if(confirm('¿Descartar este registro? No se enviará a la hoja.')){Q=Q.filter(x=>x.uid!==it.uid);qSave();renderPend();}};
+    r.append(d,b); L.appendChild(r);
+  });
+}
+function later(it){clearTimeout(retryT);retryT=setTimeout(()=>syncNow(),Math.min(60000,5000*Math.max(1,it.tries||1)));}
+function getKey(){try{return localStorage.getItem('qaqc_key')||'';}catch(e){return '';}}
+function setKey(v){try{localStorage.setItem('qaqc_key',v);}catch(e){}}
+async function syncNow(manual){
+  if(syncing||(authFail&&!manual))return;
+  if(!/^https:\/\/script\.google\.com\//.test(API_URL)){if(manual)toast('Falta configurar API_URL en index.html',true);renderPend();return;}
+  if(!navigator.onLine){if(manual)toast('Sin conexión. Se enviará al volver internet.',true);renderPend();return;}
+  const it=Q.find(x=>!x.fatal); if(!it){renderPend();return;}
+  syncing=true; clearTimeout(retryT); renderPend();
+  const ctl=new AbortController(), guard=setTimeout(()=>ctl.abort(),40000);
+  try{
+    // text/plain evita la petición previa (preflight) que Apps Script no soporta
+    const res=await fetch(API_URL,{method:'POST',redirect:'follow',signal:ctl.signal,
+      headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({key:getKey(),uid:it.uid,p:it.p})});
+    let r; try{r=await res.json();}catch(_){throw new Error('Respuesta inválida: la implementación debe permitir acceso a "Cualquier persona"');}
+    clearTimeout(guard); syncing=false;
+    if(r&&r.ok){Q=Q.filter(x=>x.uid!==it.uid);qSave();toast(r.dup?'Registro ya estaba en la hoja':'Registro sincronizado en la fila '+r.row);renderPend();syncNow();}
+    else if(r&&r.auth){authFail=true;it.err='Clave de acceso incorrecta';qSave();renderPend();
+      $('#keyCard').hidden=false;$('#keyIn').value='';toast('Clave de acceso incorrecta o faltante',true);}
+    else if(r&&r.fatal){it.fatal=true;it.err=r.error||'Rechazado por el servidor';qSave();renderPend();toast('Un registro no se pudo enviar: '+it.err,true);syncNow();}
+    else throw new Error((r&&r.error)||'Error del servidor');
+  }catch(e){
+    clearTimeout(guard); syncing=false; it.tries=(it.tries||0)+1;
+    it.err=e.name==='AbortError'?'Sin respuesta, reintentando':e instanceof TypeError?'Sin conexión con el servidor':String(e.message||e).slice(0,120);
+    qSave(); renderPend(); later(it);
+  }
+}
+function initOffline(){
+  addEventListener('online',()=>{renderPend();syncNow();});
+  addEventListener('offline',renderPend);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncNow();});
+  setInterval(()=>{if(Q.some(x=>!x.fatal))syncNow();},30000);
+  addEventListener('beforeunload',e=>{if(!persist&&Q.length){e.preventDefault();e.returnValue='';}});
+  $('#syncNow').onclick=()=>syncNow(true);
+  $('#keyBtn').onclick=()=>{const c=$('#keyCard');c.hidden=!c.hidden;if(!c.hidden){$('#keyIn').value=getKey();$('#keyIn').focus();}};
+  $('#keySave').onclick=()=>{setKey($('#keyIn').value.trim());authFail=false;$('#keyCard').hidden=true;toast('Clave guardada');renderPend();syncNow(true);};
+
+  // Instalación como app
+  const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone, ib=$('#installBtn');
+  let deferred=null;
+  addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;if(!standalone)ib.hidden=false;});
+  addEventListener('appinstalled',()=>{ib.hidden=true;});
+  ib.onclick=async()=>{if(deferred){deferred.prompt();await deferred.userChoice;deferred=null;ib.hidden=true;}
+    else alert('En Safari: toca Compartir y luego "Añadir a pantalla de inicio".');};
+  if(!standalone&&/iphone|ipad|ipod/i.test(navigator.userAgent))ib.hidden=false;
+
+  if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+  if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+
+  renderPend(); syncNow();
+  if(!persist)toast('Este navegador no permite guardar sin conexión: los pendientes se perderán si cierras la pestaña.',true);
+}
+
+$('#save').onclick=()=>{
+  const p=payload(); if(!validate(p))return;
+  Q.push({uid:newUid(),p:p,t:Date.now(),tries:0,err:''}); qSave();
+  toast(navigator.onLine?'Registro guardado. Enviando a la hoja…':'Sin conexión: registro guardado en este dispositivo. Se enviará al volver internet.');
+  reset($('#keep').checked); renderPend(); syncNow();
+};
+$('#clear').onclick=()=>{if(confirm('¿Limpiar todo el formulario?'))reset(false);};
+
+fillSelect('inspector',CFG.inspectores,'Selecciona…'); fillSelect('proyecto',CFG.proyectos,'Selecciona…');
+fillSelect('etapa',CFG.etapas,'Sin etapa'); fillSelect('areaNC',CFG.areasNC,'Sin definir');
+seg('area',CFG.areas); seg('resultado',CFG.resultados); seg('reparado',CFG.reparado);
+multi('armador',CFG.armadores); multi('soldador',CFG.soldadores); defectos(); $('#fecha').value=today(); initOffline();
+</script>
+</body>
+</html>
