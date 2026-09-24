@@ -1,6 +1,6 @@
 // Service worker: guarda la app en el dispositivo para abrirla sin internet.
 // Si cambias index.html o los iconos, sube el número de versión para forzar la actualización.
-const CACHE = 'qaqc-v1';
+const CACHE = 'qaqc-v3';
 const SHELL = ['./', './index.html', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png'];
 
