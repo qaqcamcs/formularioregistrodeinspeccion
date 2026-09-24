@@ -75,13 +75,34 @@ header{position:relative}
 .pend button{min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--txt);padding:0 14px;font:inherit;cursor:pointer;flex:0 0 auto}
 .pend button:disabled{opacity:.6}
 
+
+.hrow .net{margin-top:0}
+.crow{display:flex;gap:6px;margin-top:6px}
+.crow input{min-height:40px}
+.crow button{flex:0 0 40px;min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--txt);cursor:pointer}
+#cfgCard{border-color:var(--pri)}
+#cfgSave{background:var(--pri);border-color:var(--pri);color:#fff;font-weight:700;flex:1}
+#cfgSave:disabled{opacity:.6}
 </style>
 </head>
 <body>
-<header><h1>Registro de inspección QA/QC</h1><p>Los datos se agregan al final de la hoja de revisiones.</p><div class="hrow"><div class="net" id="net"><span class="dot"></span><span id="netTxt">En línea</span></div><button type="button" class="mini" id="installBtn" hidden>Instalar app</button><button type="button" class="mini" id="keyBtn">Clave de acceso</button></div></header>
+<header><h1>Registro de inspección QA/QC</h1><p>Los datos se agregan al final de la hoja de revisiones.</p><div class="hrow"><div class="net" id="net"><span class="dot"></span><span id="netTxt">En línea</span></div><button type="button" class="mini" id="installBtn" hidden>Instalar app</button><button type="button" class="mini" id="keyBtn">Clave de acceso</button><button type="button" class="mini" id="cfgBtn">Listas</button></div></header>
 <main>
 <section class="card pend" id="pend" hidden><div class="head"><h2 id="pendT"></h2><button type="button" id="syncNow">Sincronizar ahora</button></div><div id="pendL"></div></section>
 <section class="card" id="keyCard" hidden><h2>Clave de acceso</h2><div class="add"><input id="keyIn" type="password" autocomplete="off" placeholder="Escribe la clave"><button type="button" id="keySave">Guardar</button></div><div class="count">Se guarda solo en este dispositivo.</div></section>
+<section class="card" id="cfgCard" hidden><h2>Editar listas</h2>
+  <div class="grid">
+    <div class="field"><label for="cfgList">Lista</label><select id="cfgList"></select></div>
+    <div class="field" id="cfgGroupBox" hidden><label for="cfgGroup">Grupo de defectos</label><select id="cfgGroup"></select>
+      <div class="add"><button type="button" id="gNew">Nuevo</button><button type="button" id="gRen">Renombrar</button><button type="button" id="gDel">Eliminar</button></div></div>
+  </div>
+  <div id="cfgItems"></div>
+  <div class="add"><input id="cfgNew" placeholder="Nuevo elemento" autocomplete="off"><button type="button" id="cfgAdd">Agregar</button></div>
+  <div class="count" id="cfgCount"></div>
+  <div class="add"><button type="button" id="cfgSort">Ordenar A–Z</button><button type="button" id="cfgReset">Restaurar originales</button></div>
+  <div class="field" style="margin-top:14px"><label for="adminKey">Clave de administrador</label><input type="password" id="adminKey" autocomplete="off" placeholder="Necesaria para guardar"></div>
+  <div class="add"><button type="button" id="cfgCancel">Cancelar</button><button type="button" id="cfgSave">Guardar cambios</button></div>
+</section>
 <form id="f" novalidate>
   <section class="card"><h2>Datos generales</h2><div class="grid">
     <div class="field"><label class="req" for="fecha">Fecha de inspección</label><input type="date" id="fecha"><span class="msg">Indica la fecha.</span></div>
@@ -127,10 +148,10 @@ header{position:relative}
 <script>
 // === CONFIGURACIÓN ===
 // Pega aquí la URL de la aplicación web de Apps Script (termina en /exec)
-const API_URL = https://script.google.com/macros/s/AKfycbzqkfgkll_gic79ABKMqiWSe5fc7U9_LUhM9qZHcR__9JCgIQyJ4ixns5x9zsHxSxwH5g/exec;
+const API_URL = 'PEGA_AQUI_LA_URL_DE_APPS_SCRIPT';
 
 // Listas del formulario (edítalas aquí y vuelve a subir el archivo a GitHub)
-const CFG = {
+const DEFAULT_CFG = {
   inspectores: ["Nicolás Gajardo", "Matías Cortéz", "Alejandro Suárez"],
   proyectos: ["P397 - Strip Quillón (K4)", "P397 - Strip Quillón (K6)", "P419 - Perez Caldera Proyecto Stracon", "P419 - Perez Caldera Proyecto Stracon (S3)", "P419 - Perez Caldera Proyecto Stracon (S6)", "P420 - La Serena", "P420 - La Serena (Y1)", "P420 - La Serena (Y2)", "P350 - GEOBRUGG"],
   areas: ["PREMAT", "Armado", "Soldadura"],
@@ -147,34 +168,48 @@ const CFG = {
     "Otros": ["Marca detenida", "Perforaciones adicionales", "Ala cerrada", "Cantos vivos y rebaba", "Falta marca", "Grieta", "Curvatura camber", "Falta firma protocolo"]
   }
 };
+let CFG = DEFAULT_CFG, cfgRev = '';
+const CKEY = 'qaqc_cfg_v1';
+try { const c = JSON.parse(localStorage.getItem(CKEY) || 'null'); if (c && c.cfg) { CFG = normCfg(c.cfg); cfgRev = String(c.rev || ''); } } catch (e) {}
+function cacheCfg(){ try { localStorage.setItem(CKEY, JSON.stringify({ cfg: CFG, rev: cfgRev })); } catch (e) {} }
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const S = {area:'',resultado:'',reparado:'',armador:new Set(),soldador:new Set(),defectos:new Set()};
 const OTHER='__otro__';
 
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function fillSelect(id, list, ph){
-  const el=$('#'+id); el.innerHTML='<option value="">'+ph+'</option>'+list.map(x=>'<option>'+x+'</option>').join('')+
+  const el=$('#'+id), prev=el.value;
+  el.innerHTML='<option value="">'+esc(ph)+'</option>'+list.map(x=>'<option>'+esc(x)+'</option>').join('')+
     (el.hasAttribute('data-other')?'<option value="'+OTHER+'">Otro…</option>':'');
-  el.addEventListener('change',()=>{const o=$('#'+id+'_o'); if(o){o.style.display=el.value===OTHER?'block':'none'; if(el.value===OTHER)o.focus();}});
+  if(prev&&[...el.options].some(o=>o.value===prev))el.value=prev;
+  el.onchange=()=>{const o=$('#'+id+'_o'); if(o){o.style.display=el.value===OTHER?'block':'none'; if(el.value===OTHER)o.focus();}};
 }
 function val(id){const v=$('#'+id).value; return v===OTHER?$('#'+id+'_o').value.trim():v.trim();}
 
 function seg(k,list){
-  const box=$('.seg[data-k="'+k+'"]'); box.innerHTML=list.map(x=>'<button type="button" data-v="'+x+'">'+x+'</button>').join('');
-  box.addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return;
+  const box=$('.seg[data-k="'+k+'"]'); if(S[k]&&!list.includes(S[k]))S[k]='';
+  box.innerHTML=list.map(x=>'<button type="button" data-v="'+esc(x)+'">'+esc(x)+'</button>').join('');
+  box.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.v===S[k]));
+  box.onclick=e=>{const b=e.target.closest('button'); if(!b)return;
     S[k]=(box.dataset.toggle&&S[k]===b.dataset.v)?'':b.dataset.v;
     box.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.v===S[k]));
-    box.closest('.field').classList.remove('invalid');});
+    box.closest('.field').classList.remove('invalid');};
 }
 function chip(box,set,name,on){
   const b=document.createElement('button'); b.type='button'; b.className='chip'+(on?' on':''); b.textContent=name; b.dataset.n=name;
   b.onclick=()=>{set.has(name)?set.delete(name):set.add(name); sync(); }; box.appendChild(b); return b;
 }
 function multi(id,list){
-  const box=$('#'+id); list.forEach(n=>chip(box,S[id],n));
-  const row=document.createElement('div'); row.className='add';
-  row.innerHTML='<input placeholder="Otro…"><button type="button">Agregar</button>'; box.after(row);
-  row.querySelector('button').onclick=()=>{const i=row.querySelector('input'),n=i.value.trim(); if(!n)return;
-    if(!box.querySelector('[data-n="'+n.replace(/"/g,'')+'"]'))chip(box,S[id],n); S[id].add(n); i.value=''; sync();};
+  const box=$('#'+id); box.innerHTML='';
+  list.forEach(n=>chip(box,S[id],n));
+  S[id].forEach(n=>{if(!list.includes(n))chip(box,S[id],n);});
+  let row=box.nextElementSibling;
+  if(!(row&&row.classList.contains('add'))){
+    row=document.createElement('div'); row.className='add';
+    row.innerHTML='<input placeholder="Otro…"><button type="button">Agregar</button>'; box.after(row);
+    row.querySelector('button').onclick=()=>{const i=row.querySelector('input'),n=i.value.trim(); if(!n)return;
+      if(!box.querySelector('[data-n="'+n.replace(/"/g,'')+'"]'))chip(box,S[id],n); S[id].add(n); i.value=''; sync();};
+  }
 }
 function sync(){
   $$('#armador .chip,#soldador .chip,#dgroups .chip').forEach(c=>{
@@ -183,8 +218,8 @@ function sync(){
   $('#dcount').textContent=S.defectos.size?S.defectos.size+' seleccionado(s)':'Ningún defecto seleccionado';
 }
 function defectos(){
-  const g=$('#dgroups');
-  Object.keys(CFG.defectos).forEach(k=>{const d=document.createElement('details'); d.innerHTML='<summary>'+k+'</summary><div class="chips"></div>';
+  const g=$('#dgroups'); g.innerHTML='';
+  Object.keys(CFG.defectos).forEach(k=>{const d=document.createElement('details'); d.innerHTML='<summary>'+esc(k)+'</summary><div class="chips"></div>';
     CFG.defectos[k].forEach(n=>chip(d.querySelector('.chips'),S.defectos,n)); g.appendChild(d);});
   $('#dsearch').oninput=e=>{const q=e.target.value.toLowerCase().trim();
     g.querySelectorAll('details').forEach(d=>{let any=false;
@@ -308,10 +343,93 @@ $('#save').onclick=()=>{
 };
 $('#clear').onclick=()=>{if(confirm('¿Limpiar todo el formulario?'))reset(false);};
 
-fillSelect('inspector',CFG.inspectores,'Selecciona…'); fillSelect('proyecto',CFG.proyectos,'Selecciona…');
-fillSelect('etapa',CFG.etapas,'Sin etapa'); fillSelect('areaNC',CFG.areasNC,'Sin definir');
-seg('area',CFG.areas); seg('resultado',CFG.resultados); seg('reparado',CFG.reparado);
-multi('armador',CFG.armadores); multi('soldador',CFG.soldadores); defectos(); $('#fecha').value=today(); initOffline();
+/* ===== Editor de listas (proyectos, inspectores, etc.) ===== */
+const EDIT=[['proyectos','Proyectos'],['inspectores','Inspectores'],['areas','Áreas'],['etapas','Etapas'],['armadores','Armadores'],['soldadores','Soldadores'],['areasNC','Áreas donde se detecta NC'],['defectos','Defectos (por grupo)']];
+let draft=null;
+function normCfg(c){const o={};
+  Object.keys(DEFAULT_CFG).forEach(k=>{
+    if(k==='defectos'){const d=c&&c.defectos;
+      o.defectos=(d&&typeof d==='object'&&!Array.isArray(d))?Object.fromEntries(Object.entries(d).map(([g,v])=>[g,Array.isArray(v)?v.map(String):[]])):DEFAULT_CFG.defectos;}
+    else{const v=c&&c[k];o[k]=Array.isArray(v)?v.map(String):DEFAULT_CFG[k];}});
+  return o;}
+function cleanArr(a){const seen=new Set(),o=[];(a||[]).forEach(x=>{const s=String(x).replace(/[<>]/g,'').replace(/\s+/g,' ').trim(),k=s.toLowerCase();if(s&&!seen.has(k)){seen.add(k);o.push(s);}});return o;}
+function cleanCfg(d){const c={};EDIT.forEach(([k])=>{if(k!=='defectos')c[k]=cleanArr(d[k]);});
+  c.defectos={};Object.keys(d.defectos).forEach(g=>{const n=g.replace(/[<>]/g,'').replace(/\s+/g,' ').trim();if(n)c.defectos[n]=cleanArr(d.defectos[g]);});return c;}
+function curList(){const k=$('#cfgList').value;return k==='defectos'?draft.defectos[$('#cfgGroup').value]:draft[k];}
+function renderCfg(){
+  const k=$('#cfgList').value,isD=k==='defectos'; $('#cfgGroupBox').hidden=!isD;
+  if(isD){const gs=$('#cfgGroup'),prev=gs.value;
+    gs.innerHTML=Object.keys(draft.defectos).map(g=>'<option>'+esc(g)+'</option>').join('');
+    if(prev&&draft.defectos[prev])gs.value=prev;}
+  const L=curList()||[],box=$('#cfgItems'); box.innerHTML='';
+  const mk=(t,fn,label)=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.title=label;b.setAttribute('aria-label',label);b.onclick=fn;return b;};
+  L.forEach((v,i)=>{
+    const r=document.createElement('div'); r.className='crow';
+    const inp=document.createElement('input'); inp.value=v; inp.oninput=()=>{L[i]=inp.value;};
+    r.append(inp,
+      mk('↑',()=>{if(i>0){[L[i-1],L[i]]=[L[i],L[i-1]];renderCfg();}},'Subir'),
+      mk('↓',()=>{if(i<L.length-1){[L[i+1],L[i]]=[L[i],L[i+1]];renderCfg();}},'Bajar'),
+      mk('✕',()=>{L.splice(i,1);renderCfg();},'Eliminar'));
+    box.appendChild(r);});
+  $('#cfgCount').textContent=L.length+' elemento(s)';
+}
+function openCfg(){
+  draft=JSON.parse(JSON.stringify(CFG));
+  $('#cfgList').innerHTML=EDIT.map(([k,t])=>'<option value="'+k+'">'+t+'</option>').join('');
+  $('#cfgCard').hidden=false; renderCfg(); $('#cfgCard').scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function saveCfg(reset){
+  const adminKey=$('#adminKey').value.trim();
+  if(!adminKey){toast('Escribe la clave de administrador',true);return;}
+  if(!navigator.onLine||!apiOK()){toast('Necesitas internet para guardar cambios en las listas',true);return;}
+  const c=cleanCfg(draft);
+  if(!reset&&['proyectos','inspectores','areas'].some(k=>!c[k].length)){toast('Proyectos, inspectores y áreas no pueden quedar vacíos',true);return;}
+  const b=$('#cfgSave'); b.disabled=true; b.textContent='Guardando…';
+  try{
+    const r=await api('saveConfig',{adminKey:adminKey,cfg:c,reset:!!reset});
+    if(r&&r.ok){CFG=normCfg(r.cfg);cfgRev=String(r.rev);cacheCfg();renderForm();$('#cfgCard').hidden=true;$('#adminKey').value='';toast(reset?'Listas restauradas':'Listas guardadas');}
+    else toast((r&&r.error)||'No se pudo guardar',true);
+  }catch(e){toast('No se guardó: '+((e&&e.message)||e),true);}
+  b.disabled=false; b.textContent='Guardar cambios';
+}
+function renderForm(){
+  fillSelect('inspector',CFG.inspectores,'Selecciona…'); fillSelect('proyecto',CFG.proyectos,'Selecciona…');
+  fillSelect('etapa',CFG.etapas,'Sin etapa'); fillSelect('areaNC',CFG.areasNC,'Sin definir');
+  seg('area',CFG.areas); seg('resultado',CFG.resultados); seg('reparado',CFG.reparado);
+  multi('armador',CFG.armadores); multi('soldador',CFG.soldadores); defectos(); sync();
+}
+function initCfgUI(){
+  $('#cfgBtn').onclick=()=>{if($('#cfgCard').hidden)openCfg();else $('#cfgCard').hidden=true;};
+  $('#cfgList').onchange=renderCfg; $('#cfgGroup').onchange=renderCfg;
+  const add=()=>{const L=curList(); if(!L){toast('Primero crea un grupo',true);return;}
+    const i=$('#cfgNew'),n=i.value.replace(/[<>]/g,'').trim(); if(!n)return;
+    if(L.some(x=>x.trim().toLowerCase()===n.toLowerCase())){toast('Ya existe en la lista',true);return;}
+    L.push(n); i.value=''; renderCfg(); i.focus();};
+  $('#cfgAdd').onclick=add; $('#cfgNew').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();add();}};
+  $('#cfgSort').onclick=()=>{const L=curList(); if(L){L.sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));renderCfg();}};
+  $('#gNew').onclick=()=>{const n=(prompt('Nombre del nuevo grupo:')||'').trim(); if(!n)return;
+    if(draft.defectos[n]){toast('Ese grupo ya existe',true);return;} draft.defectos[n]=[]; renderCfg(); $('#cfgGroup').value=n; renderCfg();};
+  $('#gRen').onclick=()=>{const g=$('#cfgGroup').value; if(!g)return; const n=(prompt('Nuevo nombre del grupo:',g)||'').trim(); if(!n||n===g)return;
+    if(draft.defectos[n]){toast('Ese grupo ya existe',true);return;}
+    const o={}; Object.keys(draft.defectos).forEach(k=>{o[k===g?n:k]=draft.defectos[k];}); draft.defectos=o; renderCfg(); $('#cfgGroup').value=n; renderCfg();};
+  $('#gDel').onclick=()=>{const g=$('#cfgGroup').value; if(g&&confirm('¿Eliminar el grupo "'+g+'" y sus defectos?')){delete draft.defectos[g];renderCfg();}};
+  $('#cfgCancel').onclick=()=>{$('#cfgCard').hidden=true;};
+  $('#cfgSave').onclick=()=>saveCfg(false);
+  $('#cfgReset').onclick=()=>{if(confirm('¿Restaurar TODAS las listas a los valores originales?'))saveCfg(true);};
+  addEventListener('online',refreshCfg);
+}
+const apiOK=()=>/^https:\/\/script\.google\.com\//.test(API_URL);
+async function api(action,data){
+  const res=await fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify(Object.assign({action:action,key:getKey()},data||{}))});
+  try{return await res.json();}catch(_){throw new Error('Respuesta inválida del servidor');}
+}
+async function refreshCfg(){
+  if(!apiOK()||!navigator.onLine)return;
+  try{const r=await api('getConfig');
+    if(r&&r.ok&&r.cfg&&String(r.rev)!==String(cfgRev)){CFG=normCfg(r.cfg);cfgRev=String(r.rev);cacheCfg();renderForm();}}catch(e){}
+}
+renderForm(); $('#fecha').value=today(); initCfgUI(); initOffline(); refreshCfg();
 </script>
 </body>
 </html>
