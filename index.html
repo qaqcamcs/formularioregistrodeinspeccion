@@ -147,10 +147,10 @@ header{position:relative}
 
 <script>
 // === CONFIGURACIÓN ===
-// Pega aquí la URL de la aplicación web de Apps Script (termina en /exec)
+// URL de la aplicación web de Apps Script (termina en /exec)
 const API_URL = 'https://script.google.com/macros/s/AKfycbzqkfgkll_gic79ABKMqiWSe5fc7U9_LUhM9qZHcR__9JCgIQyJ4ixns5x9zsHxSxwH5g/exec';
 
-// Listas del formulario (edítalas aquí y vuelve a subir el archivo a GitHub)
+// Listas iniciales del formulario. Las que se editan desde el botón "Listas" se guardan en Apps Script y tienen prioridad.
 const DEFAULT_CFG = {
   inspectores: ["Nicolás Gajardo", "Matías Cortéz", "Alejandro Suárez"],
   proyectos: ["P397 - Strip Quillón (K4)", "P397 - Strip Quillón (K6)", "P419 - Perez Caldera Proyecto Stracon", "P419 - Perez Caldera Proyecto Stracon (S3)", "P419 - Perez Caldera Proyecto Stracon (S6)", "P420 - La Serena", "P420 - La Serena (Y1)", "P420 - La Serena (Y2)", "P350 - GEOBRUGG"],
@@ -317,7 +317,7 @@ function initOffline(){
   addEventListener('beforeunload',e=>{if(!persist&&Q.length){e.preventDefault();e.returnValue='';}});
   $('#syncNow').onclick=()=>syncNow(true);
   $('#keyBtn').onclick=()=>{const c=$('#keyCard');c.hidden=!c.hidden;if(!c.hidden){$('#keyIn').value=getKey();$('#keyIn').focus();}};
-  $('#keySave').onclick=()=>{setKey($('#keyIn').value.trim());authFail=false;$('#keyCard').hidden=true;toast('Clave guardada');renderPend();syncNow(true);};
+  $('#keySave').onclick=()=>{setKey($('#keyIn').value.trim());authFail=false;$('#keyCard').hidden=true;toast('Clave guardada');renderPend();syncNow(true);refreshCfg();};
 
   // Instalación como app
   const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone, ib=$('#installBtn');
@@ -416,7 +416,9 @@ function initCfgUI(){
   $('#cfgCancel').onclick=()=>{$('#cfgCard').hidden=true;};
   $('#cfgSave').onclick=()=>saveCfg(false);
   $('#cfgReset').onclick=()=>{if(confirm('¿Restaurar TODAS las listas a los valores originales?'))saveCfg(true);};
+  // Actualiza las listas al recuperar internet y cada vez que se abre / vuelve a la app
   addEventListener('online',refreshCfg);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshCfg();});
 }
 const apiOK=()=>/^https:\/\/script\.google\.com\//.test(API_URL);
 async function api(action,data){
@@ -424,10 +426,16 @@ async function api(action,data){
     body:JSON.stringify(Object.assign({action:action,key:getKey()},data||{}))});
   try{return await res.json();}catch(_){throw new Error('Respuesta inválida del servidor');}
 }
+let cfgBusy=false;
 async function refreshCfg(){
-  if(!apiOK()||!navigator.onLine)return;
+  if(cfgBusy||!apiOK()||!navigator.onLine)return;
+  // No pisar las listas mientras se están editando
+  if(!$('#cfgCard').hidden)return;
+  cfgBusy=true;
   try{const r=await api('getConfig');
-    if(r&&r.ok&&r.cfg&&String(r.rev)!==String(cfgRev)){CFG=normCfg(r.cfg);cfgRev=String(r.rev);cacheCfg();renderForm();}}catch(e){}
+    if(r&&r.ok&&r.cfg&&String(r.rev)!==String(cfgRev)){CFG=normCfg(r.cfg);cfgRev=String(r.rev);cacheCfg();renderForm();toast('Listas actualizadas');}
+  }catch(e){}
+  cfgBusy=false;
 }
 renderForm(); $('#fecha').value=today(); initCfgUI(); initOffline(); refreshCfg();
 </script>
