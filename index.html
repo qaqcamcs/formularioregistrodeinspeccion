@@ -90,10 +90,26 @@ header{position:relative}
 .rule .mapv b{min-width:150px;font-size:.9rem}
 .rule .mapv label{display:inline-flex;align-items:center;gap:5px;font-size:.85rem;color:var(--txt)}
 .gov label{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:.9rem}
+.loginOverlay{position:fixed;inset:0;background:rgba(6,23,46,.97);z-index:20;display:flex;align-items:center;justify-content:center;padding:20px}
+.loginCard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;max-width:360px;width:100%}
+.loginCard h2{margin:0 0 4px;font-size:1.3rem}
+.loginCard p{color:var(--mut);margin:0 0 16px;font-size:.9rem}
+.loginErr{display:none;color:var(--bad);font-size:.88rem;margin:4px 0 10px}
+#inspectorBox{min-height:48px;padding:10px 12px;background:#08203f;border:1px solid var(--line);border-radius:10px;display:flex;align-items:center;color:var(--txt)}
 </style>
 </head>
 <body>
-<header><h1>Registro de inspección QA/QC</h1><p>Los datos se agregan al final de la hoja de revisiones.</p><div class="hrow"><div class="net" id="net"><span class="dot"></span><span id="netTxt">En línea</span></div><button type="button" class="mini" id="installBtn" hidden>Instalar app</button><button type="button" class="mini" id="keyBtn">Clave de acceso</button><button type="button" class="mini" id="cfgBtn">Opciones</button></div></header>
+<div class="loginOverlay" id="loginOverlay">
+  <div class="loginCard">
+    <h2>Iniciar sesión</h2>
+    <p>Ingresa con tu usuario y clave de inspector.</p>
+    <div class="field"><label for="loginUser">Usuario</label><input id="loginUser" autocomplete="username" autocapitalize="off"></div>
+    <div class="field"><label for="loginPass">Contraseña</label><input id="loginPass" type="password" autocomplete="current-password"></div>
+    <div class="loginErr" id="loginErr"></div>
+    <button type="button" class="btn save" id="loginBtn" style="width:100%">Ingresar</button>
+  </div>
+</div>
+<header><h1>Registro de inspección QA/QC</h1><p>Los datos se agregan al final de la hoja de revisiones.</p><div class="hrow"><div class="net" id="net"><span class="dot"></span><span id="netTxt">En línea</span></div><button type="button" class="mini" id="installBtn" hidden>Instalar app</button><button type="button" class="mini" id="keyBtn">Clave de acceso</button><button type="button" class="mini" id="cfgBtn">Opciones</button><div class="net" id="whoami" hidden><span class="dot" style="background:var(--pri)"></span><span id="whoamiTxt"></span></div><button type="button" class="mini" id="logoutBtn" hidden>Cerrar sesión</button></div></header>
 <main>
 <section class="card pend" id="pend" hidden><div class="head"><h2 id="pendT"></h2><button type="button" id="syncNow">Sincronizar ahora</button></div><div id="pendL"></div></section>
 <section class="card" id="keyCard" hidden><h2>Clave de acceso</h2><div class="add"><input id="keyIn" type="password" autocomplete="off" placeholder="Escribe la clave"><button type="button" id="keySave">Guardar</button></div><div class="count">Se guarda solo en este dispositivo.</div></section>
@@ -125,7 +141,7 @@ header{position:relative}
 <form id="f" novalidate>
   <section class="card"><h2>Datos generales</h2><div class="grid">
     <div class="field"><label class="req" for="fecha">Fecha de inspección</label><input type="date" id="fecha"><span class="msg">Indica la fecha.</span></div>
-    <div class="field"><label class="req" for="inspector">Inspector</label><select id="inspector"></select><span class="msg">Elige el inspector.</span></div>
+    <div class="field"><label class="req">Inspector</label><div id="inspectorBox">—</div><span class="msg">Debes iniciar sesión.</span></div>
     <div class="field full"><label class="req" for="proyecto">Proyecto (fase)</label><select id="proyecto" data-other></select><input class="other" id="proyecto_o" placeholder="Escribe el proyecto"><span class="msg">Elige o escribe el proyecto.</span></div>
   </div></section>
 
@@ -273,14 +289,14 @@ function defectos(){
 function today(){const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10);}
 function toast(m,err){const t=$('#toast'); t.textContent=m; t.className='show'+(err?' err':''); clearTimeout(t._t); t._t=setTimeout(()=>t.className='',err?6000:3500);}
 
-function payload(){return {fecha:$('#fecha').value,inspector:$('#inspector').value,proyecto:val('proyecto'),marca:$('#marca').value.trim(),
+function payload(){return {fecha:$('#fecha').value,inspector:(SESSION&&SESSION.nombre)||'',proyecto:val('proyecto'),marca:$('#marca').value.trim(),
   cantidad:$('#cantidad').value,correlativos:$('#correlativos').value.trim(),area:S.area,etapa:val('etapa'),armador:[...S.armador],
   soldador:[...S.soldador],responsable:$('#responsable').value.trim(),resultado:S.resultado,reparado:S.reparado,areaNC:val('areaNC'),
   defectos:[...S.defectos],detalle:$('#detalle').value.trim()};}
 
 function validate(p){
   const bad=[]; const chk=(ok,el)=>{const f=(typeof el==='string'?$(el):el).closest('.field'); f.classList.toggle('invalid',!ok); if(!ok)bad.push(f);};
-  chk(!!p.fecha,'#fecha'); chk(!!p.inspector,'#inspector'); chk(!!p.proyecto,'#proyecto'); chk(!!p.marca,'#marca');
+  chk(!!p.fecha,'#fecha'); chk(!!p.inspector,'#inspectorBox'); chk(!!p.proyecto,'#proyecto'); chk(!!p.marca,'#marca');
   chk(Number(p.cantidad)>0,'#cantidad'); chk(!!p.area,'.seg[data-k="area"]'); chk(!!p.resultado,'.seg[data-k="resultado"]');
   if(bad.length){bad[0].scrollIntoView({behavior:'smooth',block:'center'}); toast('Revisa los campos marcados',true);} return !bad.length;
 }
@@ -476,6 +492,14 @@ function getDisparadorValor(campo){
   if(campo==='areaNC') return val('areaNC');
   return S[campo] || '';
 }
+function clearGoverned(key){
+  if(key==='etapa'){ $('#etapa').value=''; const o=$('#etapa_o'); if(o){o.value=''; o.style.display='none';} }
+  else if(key==='areaNC'){ $('#areaNC').value=''; const o=$('#areaNC_o'); if(o){o.value=''; o.style.display='none';} }
+  else if(key==='armador'){ if(S.armador.size){S.armador.clear(); sync();} }
+  else if(key==='soldador'){ if(S.soldador.size){S.soldador.clear(); sync();} }
+  else if(key==='reparado'){ if(S.reparado){S.reparado=''; $$('.seg[data-k="reparado"] button').forEach(b=>b.classList.remove('on'));} }
+  else if(key==='defectos'){ if(S.defectos.size){S.defectos.clear(); sync();} }
+}
 function applyCond(){
   const gobernados = new Set();
   COND.forEach(r=>(r.objetivos||[]).forEach(o=>gobernados.add(o)));
@@ -487,11 +511,14 @@ function applyCond(){
   });
   GOVERNABLE.forEach(([k])=>{
     const el = document.getElementById('fld-'+k);
-    if(el) el.hidden = gobernados.has(k) && !visibles.has(k);
+    if(!el) return;
+    const oculto = gobernados.has(k) && !visibles.has(k);
+    el.hidden = oculto;
+    if(oculto) clearGoverned(k); // si se oculta, se borra su valor para que no se envíe con el registro
   });
 }
 function renderForm(){
-  fillSelect('inspector',CFG.inspectores,'Selecciona…'); fillSelect('proyecto',CFG.proyectos,'Selecciona…');
+  fillSelect('proyecto',CFG.proyectos,'Selecciona…');
   fillSelect('etapa',CFG.etapas,'Sin etapa'); fillSelect('areaNC',CFG.areasNC,'Sin definir');
   seg('area',CFG.areas); seg('resultado',CFG.resultados); seg('reparado',CFG.reparado);
   multi('armador',CFG.armadores); multi('soldador',CFG.soldadores); defectos(); sync(); applyCond();
@@ -553,7 +580,47 @@ async function refreshCfg(){
   }catch(e){}
   cfgBusy=false;
 }
-renderForm(); $('#fecha').value=today(); initCfgUI(); initOffline(); refreshCfg();
+/* ===== Inicio de sesión de inspectores ===== */
+const SESSION_KEY='qaqc_session';
+function getSession(){try{return JSON.parse(localStorage.getItem(SESSION_KEY)||'null');}catch(e){return null;}}
+function setSession(v){try{localStorage.setItem(SESSION_KEY,JSON.stringify(v));}catch(e){}}
+function clearSession(){try{localStorage.removeItem(SESSION_KEY);}catch(e){}}
+let SESSION=getSession();
+function applySession(){
+  const overlay=$('#loginOverlay'),box=$('#inspectorBox'),who=$('#whoami'),whoTxt=$('#whoamiTxt'),logout=$('#logoutBtn');
+  if(SESSION&&SESSION.nombre){
+    overlay.hidden=true; box.textContent=SESSION.nombre; box.closest('.field').classList.remove('invalid');
+    who.hidden=false; whoTxt.textContent='Inspector: '+SESSION.nombre; logout.hidden=false;
+  }else{
+    overlay.hidden=false; box.textContent='—'; who.hidden=true; logout.hidden=true;
+    $('#loginUser').value=''; $('#loginPass').value=''; $('#loginErr').style.display='none'; $('#loginUser').focus();
+  }
+}
+async function doLogin(){
+  const u=$('#loginUser').value.trim(), p=$('#loginPass').value, err=$('#loginErr');
+  err.style.display='none';
+  if(!u||!p){err.textContent='Escribe tu usuario y tu clave.'; err.style.display='block'; return;}
+  if(!apiOK()){err.textContent='Falta configurar API_URL en index.html.'; err.style.display='block'; return;}
+  if(!navigator.onLine){err.textContent='Necesitas internet para iniciar sesión.'; err.style.display='block'; return;}
+  const b=$('#loginBtn'); b.disabled=true; b.textContent='Ingresando…';
+  try{
+    const res=await fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({action:'login',user:u,pass:p})});
+    const r=await res.json();
+    if(r&&r.ok){SESSION={user:u,nombre:r.nombre}; setSession(SESSION); applySession(); toast('Sesión iniciada: '+r.nombre); refreshCfg();}
+    else{err.textContent=(r&&r.error)||'Usuario o clave incorrecta'; err.style.display='block';}
+  }catch(e){err.textContent='No se pudo conectar. Intenta de nuevo.'; err.style.display='block';}
+  b.disabled=false; b.textContent='Ingresar';
+}
+function initLogin(){
+  $('#loginBtn').onclick=doLogin;
+  $('#loginPass').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();doLogin();}};
+  $('#loginUser').onkeydown=e=>{if(e.key==='Enter')$('#loginPass').focus();};
+  $('#logoutBtn').onclick=()=>{if(confirm('¿Cerrar sesión?')){SESSION=null;clearSession();applySession();}};
+  applySession();
+}
+
+renderForm(); $('#fecha').value=today(); initCfgUI(); initLogin(); initOffline(); refreshCfg();
 </script>
 </body>
 </html>
