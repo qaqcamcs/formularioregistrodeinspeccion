@@ -111,6 +111,10 @@ header{position:relative}
   </div>
 </div>
 <header><h1>Registro de inspección QA/QC</h1><p>Los datos se agregan al final de la hoja de revisiones.</p><div class="hrow"><div class="net" id="net"><span class="dot"></span><span id="netTxt">En línea</span></div><button type="button" class="mini" id="installBtn" hidden>Instalar app</button><button type="button" class="mini" id="keyBtn">Clave de acceso</button><button type="button" class="mini" id="cfgBtn">Opciones</button><div class="net" id="whoami" hidden><span class="dot" style="background:var(--pri)"></span><span id="whoamiTxt"></span></div><button type="button" class="mini" id="logoutBtn" hidden>Cerrar sesión</button></div></header>
+<div class="add" id="formTabs" style="max-width:980px;margin:10px auto 0;padding:0 16px">
+  <button type="button" class="mini on" id="tabFormInsp">Registro de inspección</button>
+  <button type="button" class="mini" id="tabFormVigas">Vigas Tarea 0</button>
+</div>
 <main>
 <section class="card pend" id="pend" hidden><div class="head"><h2 id="pendT"></h2><button type="button" id="syncNow">Sincronizar ahora</button></div><div id="pendL"></div></section>
 <section class="card" id="keyCard" hidden><h2>Clave de acceso</h2><div class="add"><input id="keyIn" type="password" autocomplete="off" placeholder="Escribe la clave"><button type="button" id="keySave">Guardar</button></div><div class="count">Se guarda solo en este dispositivo.</div></section>
@@ -171,6 +175,46 @@ header{position:relative}
       <div class="add"><input id="dother" placeholder="Otro defecto"><button type="button" id="dadd">Agregar</button></div>
     </div>
     <div class="field full"><label for="detalle">Detalle de defectos</label><textarea id="detalle"></textarea></div>
+  </div></section>
+</form>
+
+<form id="fVigas" novalidate hidden>
+  <section class="card"><h2>Datos generales</h2><div class="grid">
+    <div class="field"><label class="req" for="v_fecha">Fecha de inspección</label><input type="date" id="v_fecha"><span class="msg">Indica la fecha.</span></div>
+    <div class="field full"><label class="req" for="v_proyecto">Proyecto (fase)</label><select id="v_proyecto" data-other></select><input class="other" id="v_proyecto_o" placeholder="Escribe el proyecto"><span class="msg">Elige o escribe el proyecto.</span></div>
+    <div class="field"><label class="req" for="v_marca">Marca</label><input id="v_marca" autocomplete="off"><span class="msg">Escribe la marca.</span></div>
+    <div class="field"><label for="v_correlativo">Correlativo</label><input id="v_correlativo" autocomplete="off"></div>
+  </div></section>
+
+  <section class="card"><h2>Extremo 1</h2><div class="grid">
+    <div class="field"><label for="e1_altura">Altura h1-h2-h3</label><input type="number" step="0.01" id="e1_altura"></div>
+    <div class="field"><label for="e1_ancho">Ancho ala bf-tf</label><input type="number" step="0.01" id="e1_ancho"></div>
+    <div class="field"><label for="e1_cruzada">Cruzada c1-c2</label><input type="number" step="0.01" id="e1_cruzada"></div>
+  </div></section>
+
+  <section class="card"><h2>Extremo 2</h2><div class="grid">
+    <div class="field"><label for="e2_altura">Altura h1-h2-h3</label><input type="number" step="0.01" id="e2_altura"></div>
+    <div class="field"><label for="e2_ancho">Ancho ala bf-tf</label><input type="number" step="0.01" id="e2_ancho"></div>
+    <div class="field"><label for="e2_cruzada">Cruzada c1-c2</label><input type="number" step="0.01" id="e2_cruzada"></div>
+  </div></section>
+
+  <section class="card"><h2>Medidas generales</h2><div class="grid">
+    <div class="field"><label for="v_largo">Largo total de la viga (mm)</label><input type="number" step="0.01" id="v_largo"></div>
+    <div class="field"><label for="v_espAla">Espesor ala bf-tf</label><input type="number" step="0.01" id="v_espAla"></div>
+    <div class="field"><label for="v_espAlma">Espesor alma</label><input type="number" step="0.01" id="v_espAlma"></div>
+    <div class="field"><label for="v_sweep">Curvatura a Sweep</label><input type="number" step="0.01" id="v_sweep"></div>
+    <div class="field"><label for="v_camber">Curvatura Camber</label><input type="number" step="0.01" id="v_camber"></div>
+  </div></section>
+
+  <section class="card"><h2>Resultado</h2><div class="grid">
+    <div class="field full"><span class="lbl req">Resultado</span><div class="seg res" data-k="v_resultado"></div><span class="msg">Elige el resultado.</span></div>
+    <div class="field" id="fld-v-reparado"><span class="lbl">Reparado o terminado</span><div class="seg" data-k="v_reparado" data-toggle="1"></div></div>
+    <div class="field full" id="fld-v-defectos"><span class="lbl">Defectos detectados</span>
+      <input id="v_dsearch" type="search" placeholder="Buscar defecto…">
+      <div class="chips" id="v_sel"></div><div class="count" id="v_dcount">Ningún defecto seleccionado</div>
+      <div id="v_dgroups"></div>
+      <div class="add"><input id="v_dother" placeholder="Otro defecto"><button type="button" id="v_dadd">Agregar</button></div>
+    </div>
   </div></section>
 </form>
 </main>
@@ -252,11 +296,11 @@ function seg(k,list){
   box.onclick=e=>{const b=e.target.closest('button'); if(!b)return;
     S[k]=(box.dataset.toggle&&S[k]===b.dataset.v)?'':b.dataset.v;
     box.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.v===S[k]));
-    box.closest('.field').classList.remove('invalid'); applyCond();};
+    box.closest('.field').classList.remove('invalid'); applyCond(); applyCondVigas();};
 }
-function chip(box,set,name,on){
+function chip(box,set,name,on,onChange){
   const b=document.createElement('button'); b.type='button'; b.className='chip'+(on?' on':''); b.textContent=name; b.dataset.n=name;
-  b.onclick=()=>{set.has(name)?set.delete(name):set.add(name); sync(); }; box.appendChild(b); return b;
+  b.onclick=()=>{set.has(name)?set.delete(name):set.add(name); (onChange||sync)(); }; box.appendChild(b); return b;
 }
 function multi(id,list){
   const box=$('#'+id); box.innerHTML='';
@@ -290,25 +334,82 @@ function defectos(){
 function today(){const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10);}
 function toast(m,err){const t=$('#toast'); t.textContent=m; t.className='show'+(err?' err':''); clearTimeout(t._t); t._t=setTimeout(()=>t.className='',err?6000:3500);}
 
-function payload(){return {fecha:$('#fecha').value,inspector:(SESSION&&SESSION.nombre)||'',proyecto:val('proyecto'),marca:$('#marca').value.trim(),
+function payloadInsp(){return {fecha:$('#fecha').value,inspector:(SESSION&&SESSION.nombre)||'',proyecto:val('proyecto'),marca:$('#marca').value.trim(),
   cantidad:$('#cantidad').value,correlativos:$('#correlativos').value.trim(),area:S.area,etapa:val('etapa'),armador:[...S.armador],
   soldador:[...S.soldador],responsable:$('#responsable').value.trim(),resultado:S.resultado,reparado:S.reparado,areaNC:val('areaNC'),
   defectos:[...S.defectos],detalle:$('#detalle').value.trim()};}
 
-function validate(p){
+function validateInsp(p){
   const bad=[]; const chk=(ok,el)=>{const f=(typeof el==='string'?$(el):el).closest('.field'); f.classList.toggle('invalid',!ok); if(!ok)bad.push(f);};
   chk(!!p.fecha,'#fecha'); chk(!!p.inspector,'#inspectorBox'); chk(!!p.proyecto,'#proyecto'); chk(!!p.marca,'#marca');
   chk(Number(p.cantidad)>0,'#cantidad'); chk(!!p.area,'.seg[data-k="area"]'); chk(!!p.resultado,'.seg[data-k="resultado"]');
   if(bad.length){bad[0].scrollIntoView({behavior:'smooth',block:'center'}); toast('Revisa los campos marcados',true);} return !bad.length;
 }
 
-function reset(keep){
+function resetInsp(keep){
   ['marca','correlativos','detalle'].forEach(i=>$('#'+i).value=''); $('#cantidad').value=1;
   S.resultado=S.reparado=''; S.defectos.clear(); $('#areaNC').value=''; $('#areaNC_o').style.display='none';
   $$('.seg[data-k="resultado"] button,.seg[data-k="reparado"] button').forEach(b=>b.classList.remove('on'));
   if(!keep){$('#fecha').value=today(); ['proyecto','etapa'].forEach(i=>{$('#'+i).value='';$('#'+i+'_o').style.display='none';});
     $('#responsable').value=''; S.area=''; S.armador.clear(); S.soldador.clear(); $$('.seg[data-k="area"] button').forEach(b=>b.classList.remove('on'));}
   sync(); $$('.invalid').forEach(x=>x.classList.remove('invalid')); window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ===== Vigas Tarea 0 (segundo formulario, misma app) ===== */
+S.v_resultado=''; S.v_reparado=''; S.v_defectos=new Set();
+function defectosVigas(){
+  const g=$('#v_dgroups'); g.innerHTML='';
+  Object.keys(CFG.defectos).forEach(k=>{const d=document.createElement('details'); d.innerHTML='<summary>'+esc(k)+'</summary><div class="chips"></div>';
+    CFG.defectos[k].forEach(n=>chip(d.querySelector('.chips'),S.v_defectos,n,false,syncVigas)); g.appendChild(d);});
+  $('#v_dsearch').oninput=e=>{const q=e.target.value.toLowerCase().trim();
+    g.querySelectorAll('details').forEach(d=>{let any=false;
+      d.querySelectorAll('.chip').forEach(c=>{const m=!q||c.dataset.n.toLowerCase().includes(q); c.style.display=m?'':'none'; any=any||m;});
+      d.style.display=any?'':'none'; d.open=!!q&&any;});};
+  $('#v_dadd').onclick=()=>{const i=$('#v_dother'),n=i.value.trim(); if(!n)return; S.v_defectos.add(n); i.value=''; syncVigas();};
+}
+function syncVigas(){
+  $$('#v_dgroups .chip').forEach(c=>c.classList.toggle('on',S.v_defectos.has(c.dataset.n)));
+  const sel=$('#v_sel'); sel.innerHTML=''; S.v_defectos.forEach(n=>{const b=chip(sel,S.v_defectos,n,true,syncVigas); b.textContent=n+' ✕';});
+  $('#v_dcount').textContent=S.v_defectos.size?S.v_defectos.size+' seleccionado(s)':'Ningún defecto seleccionado';
+}
+function applyCondVigas(){
+  const mostrar = S.v_resultado ? (S.v_resultado!=='Aprobado') : true; // igual que en inspección: sin elegir, se muestran
+  $('#fld-v-reparado').hidden = !mostrar; $('#fld-v-defectos').hidden = !mostrar;
+  if(!mostrar){
+    if(S.v_reparado){S.v_reparado=''; $$('.seg[data-k="v_reparado"] button').forEach(b=>b.classList.remove('on'));}
+    if(S.v_defectos.size){S.v_defectos.clear(); syncVigas();}
+  }
+}
+function payloadVigas(){return {fecha:$('#v_fecha').value,inspector:(SESSION&&SESSION.nombre)||'',proyecto:val('v_proyecto'),
+  marca:$('#v_marca').value.trim(),correlativo:$('#v_correlativo').value.trim(),
+  e1_altura:$('#e1_altura').value,e1_ancho:$('#e1_ancho').value,e1_cruzada:$('#e1_cruzada').value,
+  e2_altura:$('#e2_altura').value,e2_ancho:$('#e2_ancho').value,e2_cruzada:$('#e2_cruzada').value,
+  largo:$('#v_largo').value,espesorAla:$('#v_espAla').value,espesorAlma:$('#v_espAlma').value,
+  sweep:$('#v_sweep').value,camber:$('#v_camber').value,
+  resultado:S.v_resultado,reparado:S.v_reparado,defectos:[...S.v_defectos]};}
+function validateVigas(p){
+  const bad=[]; const chk=(ok,el)=>{const f=(typeof el==='string'?$(el):el).closest('.field'); f.classList.toggle('invalid',!ok); if(!ok)bad.push(f);};
+  chk(!!p.fecha,'#v_fecha'); chk(!!p.inspector,'#inspectorBox'); chk(!!p.proyecto,'#v_proyecto'); chk(!!p.marca,'#v_marca');
+  chk(!!p.resultado,'.seg[data-k="v_resultado"]');
+  if(bad.length){bad[0].scrollIntoView({behavior:'smooth',block:'center'}); toast('Revisa los campos marcados',true);} return !bad.length;
+}
+function resetVigas(keep){
+  ['v_correlativo','e1_altura','e1_ancho','e1_cruzada','e2_altura','e2_ancho','e2_cruzada','v_largo','v_espAla','v_espAlma','v_sweep','v_camber'].forEach(i=>$('#'+i).value='');
+  S.v_resultado=''; S.v_reparado=''; S.v_defectos.clear();
+  $$('.seg[data-k="v_resultado"] button,.seg[data-k="v_reparado"] button').forEach(b=>b.classList.remove('on'));
+  if(!keep){$('#v_fecha').value=today(); $('#v_proyecto').value=''; $('#v_proyecto_o').style.display='none'; $('#v_marca').value='';}
+  syncVigas(); applyCondVigas(); $$('#fVigas .invalid').forEach(x=>x.classList.remove('invalid')); window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* Despachadores: según qué formulario esté activo */
+let ACTIVE_FORM='insp';
+function payload(){ return ACTIVE_FORM==='vigas' ? payloadVigas() : payloadInsp(); }
+function validate(p){ return ACTIVE_FORM==='vigas' ? validateVigas(p) : validateInsp(p); }
+function reset(keep){ return ACTIVE_FORM==='vigas' ? resetVigas(keep) : resetInsp(keep); }
+function switchForm(name){
+  ACTIVE_FORM=name;
+  $('#f').hidden = name!=='insp'; $('#fVigas').hidden = name!=='vigas';
+  $('#tabFormInsp').classList.toggle('on',name==='insp'); $('#tabFormVigas').classList.toggle('on',name==='vigas');
 }
 
 /* ===== Modo offline: cola local + sincronización automática ===== */
@@ -333,7 +434,7 @@ function renderPend(){
   Q.forEach(it=>{
     const r=document.createElement('div'); r.className='row'+(it.fatal?' bad':'');
     const d=document.createElement('div'),t=document.createElement('strong'),s=document.createElement('small');
-    t.textContent=(it.p.marca||'—')+' · '+it.p.resultado;
+    t.textContent=(it.p.marca||'—')+' · '+it.p.resultado+(it.action==='saveVigas'?' · Vigas':'');
     s.textContent=it.p.fecha+' · '+it.p.proyecto+(it.err?' · '+it.err:'');
     d.append(t,s);
     const b=document.createElement('button'); b.type='button'; b.textContent='Descartar';
@@ -354,7 +455,7 @@ async function syncNow(manual){
   try{
     // text/plain evita la petición previa (preflight) que Apps Script no soporta
     const res=await fetch(API_URL,{method:'POST',redirect:'follow',signal:ctl.signal,
-      headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({key:getKey(),uid:it.uid,p:it.p})});
+      headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({key:getKey(),uid:it.uid,action:it.action,p:it.p})});
     let r; try{r=await res.json();}catch(_){throw new Error('Respuesta inválida: la implementación debe permitir acceso a "Cualquier persona"');}
     clearTimeout(guard); syncing=false;
     if(r&&r.ok){Q=Q.filter(x=>x.uid!==it.uid);qSave();toast(r.dup?'Registro ya estaba en la hoja':'Registro sincronizado en la fila '+r.row);renderPend();syncNow();}
@@ -396,7 +497,7 @@ function initOffline(){
 
 $('#save').onclick=()=>{
   const p=payload(); if(!validate(p))return;
-  Q.push({uid:newUid(),p:p,t:Date.now(),tries:0,err:''}); qSave();
+  Q.push({uid:newUid(),p:p,action:(ACTIVE_FORM==='vigas'?'saveVigas':'saveInspeccion'),t:Date.now(),tries:0,err:''}); qSave();
   toast(navigator.onLine?'Registro guardado. Enviando a la hoja…':'Sin conexión: registro guardado en este dispositivo. Se enviará al volver internet.');
   reset($('#keep').checked); renderPend(); syncNow();
 };
@@ -523,6 +624,8 @@ function renderForm(){
   fillSelect('etapa',CFG.etapas,'Sin etapa'); fillSelect('areaNC',CFG.areasNC,'Sin definir');
   seg('area',CFG.areas); seg('resultado',CFG.resultados); seg('reparado',CFG.reparado);
   multi('armador',CFG.armadores); multi('soldador',CFG.soldadores); defectos(); sync(); applyCond();
+  fillSelect('v_proyecto',CFG.proyectos,'Selecciona…'); seg('v_resultado',CFG.resultados); seg('v_reparado',CFG.reparado);
+  defectosVigas(); syncVigas(); applyCondVigas();
 }
 function initCfgUI(){
   $('#cfgBtn').onclick=()=>{if($('#cfgCard').hidden)openCfg();else $('#cfgCard').hidden=true;};
@@ -621,7 +724,8 @@ function initLogin(){
   applySession();
 }
 
-renderForm(); $('#fecha').value=today(); initCfgUI(); initLogin(); initOffline(); refreshCfg();
+$('#tabFormInsp').onclick=()=>switchForm('insp'); $('#tabFormVigas').onclick=()=>switchForm('vigas');
+renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); switchForm('insp'); initCfgUI(); initLogin(); initOffline(); refreshCfg();
 </script>
 </body>
 </html>
