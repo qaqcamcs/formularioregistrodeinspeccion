@@ -86,9 +86,9 @@ header{position:relative}
 .mini.on{background:var(--pri);border-color:var(--pri);font-weight:700}
 .rule{border:1px solid var(--line);background:#0a2244;border-radius:12px;padding:14px;margin-bottom:12px}
 .rule .lbl2{font-size:.9rem;color:#b9d2f5;font-weight:600;margin:10px 0 6px}
-.rule .mapv{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;border-top:1px dashed var(--line);padding-top:8px;margin-top:8px}
-.rule .mapv b{min-width:150px;font-size:.9rem}
-.rule .mapv label{display:inline-flex;align-items:center;gap:5px;font-size:.85rem;color:var(--txt)}
+.rule .mapv{border-top:1px dashed var(--line);padding-top:10px;margin-top:10px}
+.rule .mapv b{display:block;font-size:.92rem;margin-bottom:8px;color:#e8f0fb}
+.rule .mapv .chips{margin-bottom:6px}
 .gov label{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:.9rem}
 .loginOverlay{position:fixed;inset:0;background:rgba(6,23,46,.97);z-index:20;display:flex;align-items:center;justify-content:center;padding:20px}
 .loginOverlay[hidden]{display:none}
@@ -135,7 +135,7 @@ header{position:relative}
   <div class="add"><button type="button" id="cfgSort">Ordenar A–Z</button></div>
   </div>
   <div id="tabCond" hidden>
-    <div class="count">Cada regla observa un campo; según el valor elegido, muestra u oculta otros campos del formulario.</div>
+    <div class="count">Cada regla mira un campo (por ejemplo, Resultado). Para cada valor posible de ese campo, tocas qué otros campos del formulario deben verse. Lo que no toques queda oculto.</div>
     <div id="condList"></div>
     <div class="add"><button type="button" id="condAddRule">+ Nueva regla</button></div>
   </div>
@@ -159,7 +159,7 @@ header{position:relative}
   <section class="card"><h2>Proceso</h2><div class="grid">
     <div class="field full"><span class="lbl req">Área</span><div class="seg" data-k="area"></div><span class="msg">Elige el área.</span></div>
     <div class="field" id="fld-etapa"><label for="etapa">Etapa</label><select id="etapa" data-other></select><input class="other" id="etapa_o" placeholder="Escribe la etapa"></div>
-    <div class="field"><label for="responsable">Responsable</label><input id="responsable" autocomplete="off" placeholder="Opcional"></div>
+    <div class="field" hidden><label for="responsable">Responsable</label><input id="responsable" autocomplete="off" placeholder="Opcional"></div>
     <div class="field full" id="fld-armador"><span class="lbl">Armador</span><div class="chips" id="armador"></div></div>
     <div class="field full" id="fld-soldador"><span class="lbl">Soldador</span><div class="chips" id="soldador"></div></div>
   </div></section>
@@ -251,9 +251,9 @@ const DEFAULT_CFG = {
 // Condicionales: reglas "cuando <campo> valga X, mostrar estos otros campos".
 // Por defecto: Área -> Etapa/Armador/Soldador ; Resultado -> Reparado/Área NC/Defectos.
 const DEFAULT_COND = [
-  { campo:'area', objetivos:['etapa','armador','soldador'], vacio:'ocultar',
+  { campo:'area', vacio:'ocultar',
     mapa:{ 'PREMAT':['etapa'], 'Armado':['armador'], 'Soldadura':['soldador'] } },
-  { campo:'resultado', objetivos:['reparado','areaNC','defectos'], vacio:'mostrar',
+  { campo:'resultado', vacio:'mostrar',
     mapa:{ 'Aprobado':[], 'Rechazado':['reparado','areaNC','defectos'], 'Avance aprobado':['reparado','areaNC','defectos'] } }
 ];
 // Campos que una regla puede mostrar/ocultar (deben existir como div#fld-<clave> en el HTML)
@@ -263,12 +263,31 @@ const GOVERNABLE = [['etapa','Etapa'],['armador','Armador'],['soldador','Soldado
 const DISPAR = [['area','Área',()=>CFG.areas],['resultado','Resultado',()=>CFG.resultados],
   ['reparado','Reparado o terminado',()=>CFG.reparado],['areaNC','Área donde se detecta NC',()=>CFG.areasNC]];
 function dispar(campo){ return DISPAR.find(d=>d[0]===campo) || DISPAR[0]; }
+// Campos que gobierna una regla: se deducen de los campos marcados en su tabla (ya no hace falta elegirlos aparte)
+function ruleObjetivos(r){ const s=new Set(); Object.values(r.mapa||{}).forEach(arr=>(arr||[]).forEach(k=>s.add(k))); return [...s]; }
 function normCond(c){
   if(!Array.isArray(c)) return JSON.parse(JSON.stringify(DEFAULT_COND));
   return c.map(r=>({campo: DISPAR.some(d=>d[0]===(r&&r.campo)) ? r.campo : 'area',
-    objetivos: Array.isArray(r&&r.objetivos) ? r.objetivos.filter(k=>GOVERNABLE.some(g=>g[0]===k)) : [],
     vacio: (r&&r.vacio==='mostrar') ? 'mostrar' : 'ocultar',
     mapa: (r&&r.mapa&&typeof r.mapa==='object') ? r.mapa : {}}));
+}
+// Resguardo: las reglas de fábrica (Área, Resultado) se completan VALOR POR VALOR con el
+// comportamiento original. Así, si a un valor le faltara su configuración (por ejemplo,
+// si "Aprobado" quedó sin su regla porque nunca se tocó esa casilla), se repone solo con lo
+// de fábrica, sin perder lo que sí se haya personalizado para los demás valores.
+function effectiveCond(){
+  const porCampo={};
+  COND.forEach(r=>{ if(DISPAR.some(d=>d[0]===r.campo)) porCampo[r.campo]=r; });
+  const out=[];
+  DEFAULT_COND.forEach(def=>{
+    const actual=porCampo[def.campo];
+    out.push({ campo:def.campo,
+      vacio: actual ? actual.vacio : def.vacio,
+      mapa: Object.assign({}, def.mapa, actual ? actual.mapa : {}) });
+    delete porCampo[def.campo];
+  });
+  Object.keys(porCampo).forEach(c=>out.push(porCampo[c]));
+  return out;
 }
 
 let CFG = DEFAULT_CFG, COND = DEFAULT_COND, cfgRev = '';
@@ -517,10 +536,11 @@ function cleanCfg(d){const c={};EDIT.forEach(([k])=>{if(k!=='defectos')c[k]=clea
   c.defectos={};Object.keys(d.defectos).forEach(g=>{const n=g.replace(/[<>]/g,'').replace(/\s+/g,' ').trim();if(n)c.defectos[n]=cleanArr(d.defectos[g]);});return c;}
 function cleanCond(arr){
   return (arr||[]).map(r=>{
-    const objetivos=(r.objetivos||[]).filter(k=>GOVERNABLE.some(g=>g[0]===k));
-    const mapa={}; Object.keys(r.mapa||{}).forEach(v=>{const a=(r.mapa[v]||[]).filter(k=>objetivos.includes(k)); if(a.length)mapa[v]=a;});
-    return {campo:DISPAR.some(d=>d[0]===r.campo)?r.campo:'area', objetivos:objetivos, vacio:r.vacio==='mostrar'?'mostrar':'ocultar', mapa:mapa};
-  }).filter(r=>r.objetivos.length);
+    // Importante: se conserva la clave aunque el arreglo quede vacío (p.ej. "Aprobado" -> ocultar todo).
+    // Una lista vacía es una configuración válida ("no mostrar nada"), no lo mismo que "sin configurar".
+    const mapa={}; Object.keys(r.mapa||{}).forEach(v=>{mapa[v]=(r.mapa[v]||[]).filter(k=>GOVERNABLE.some(g=>g[0]===k));});
+    return {campo:DISPAR.some(d=>d[0]===r.campo)?r.campo:'area', vacio:r.vacio==='mostrar'?'mostrar':'ocultar', mapa:mapa};
+  }).filter(r=>Object.keys(r.mapa).length);
 }
 function curList(){const k=$('#cfgList').value;return k==='defectos'?draft.defectos[$('#cfgGroup').value]:draft[k];}
 function renderCfg(){
@@ -548,29 +568,34 @@ function switchTab(name){
 }
 function openCfg(){
   draft=JSON.parse(JSON.stringify(CFG));
-  condDraft=JSON.parse(JSON.stringify(COND));
+  condDraft=JSON.parse(JSON.stringify(effectiveCond()));
   $('#cfgList').innerHTML=EDIT.map(([k,t])=>'<option value="'+k+'">'+t+'</option>').join('');
   $('#cfgCard').hidden=false; switchTab('listas'); $('#cfgCard').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function condRuleHtml(r,ri){
-  const vals=dispar(r.campo)[2]();
-  const objHtml=GOVERNABLE.map(([k,l])=>'<label><input type="checkbox" data-act="obj" data-ri="'+ri+'" data-k="'+k+'" '+(r.objetivos.includes(k)?'checked':'')+'> '+esc(l)+'</label>').join('');
-  const mapaHtml=vals.length?vals.map(v=>{
+  const [,campoLabel,getVals]=dispar(r.campo);
+  const vals=getVals();
+  const filaValor = v=>{
     const sel=r.mapa[v]||[];
-    const chks=r.objetivos.length?r.objetivos.map(k=>{
-      const lbl=(GOVERNABLE.find(g=>g[0]===k)||[k,k])[1];
-      return '<label><input type="checkbox" data-act="map" data-ri="'+ri+'" data-val="'+esc(v)+'" data-k="'+k+'" '+(sel.includes(k)?'checked':'')+'> '+esc(lbl)+'</label>';
-    }).join(''):'<span class="count">Elige campos a controlar arriba</span>';
-    return '<div class="mapv"><b>Si '+esc(dispar(r.campo)[1])+' = "'+esc(v)+'":</b><div>'+chks+'</div></div>';
-  }).join(''):'<div class="count">Esa lista no tiene valores todavía.</div>';
-  return '<div class="rule" data-ri="'+ri+'"><div class="grid">'+
-    '<div class="field"><label>Cuando cambie</label><select data-act="campo" data-ri="'+ri+'">'+
-      DISPAR.map(([k,l])=>'<option value="'+k+'" '+(r.campo===k?'selected':'')+'>'+esc(l)+'</option>').join('')+'</select></div>'+
-    '<div class="field"><label>Si todavía no hay valor elegido</label><select data-act="vacio" data-ri="'+ri+'">'+
-      '<option value="ocultar" '+(r.vacio==='ocultar'?'selected':'')+'>Ocultar los campos</option>'+
-      '<option value="mostrar" '+(r.vacio==='mostrar'?'selected':'')+'>Mostrar los campos</option></select></div></div>'+
-    '<div class="lbl2">Campos que controla esta regla</div><div class="gov">'+objHtml+'</div>'+
-    '<div class="lbl2">Qué mostrar según el valor elegido</div>'+mapaHtml+
+    const chips=GOVERNABLE.map(([k,l])=>
+      '<button type="button" class="chip'+(sel.includes(k)?' on':'')+'" data-act="map" data-ri="'+ri+'" data-val="'+esc(v)+'" data-k="'+k+'">'+esc(l)+'</button>').join('');
+    const resumen = sel.length ? sel.map(k=>(GOVERNABLE.find(g=>g[0]===k)||[k,k])[1]).join(', ') : 'nada más';
+    return '<div class="mapv"><b>Si '+esc(campoLabel)+' = "'+esc(v)+'"</b>'+
+      '<div class="chips">'+chips+'</div>'+
+      '<div class="count">Se muestra: '+esc(resumen)+'</div></div>';
+  };
+  const filas = vals.length ? vals.map(filaValor).join('') : '<div class="count">Esa lista todavía no tiene valores.</div>';
+  return '<div class="rule" data-ri="'+ri+'">'+
+    '<div class="lbl2" style="margin-top:0;font-size:1rem;color:#e8f0fb">Regla '+(ri+1)+' — según '+esc(campoLabel)+'</div>'+
+    '<div class="grid">'+
+      '<div class="field"><label>Campo que decide</label><select data-act="campo" data-ri="'+ri+'">'+
+        DISPAR.map(([k,l])=>'<option value="'+k+'" '+(r.campo===k?'selected':'')+'>'+esc(l)+'</option>').join('')+'</select></div>'+
+      '<div class="field"><label>Antes de elegir un valor</label><select data-act="vacio" data-ri="'+ri+'">'+
+        '<option value="ocultar" '+(r.vacio==='ocultar'?'selected':'')+'>Ocultar los campos marcados abajo</option>'+
+        '<option value="mostrar" '+(r.vacio==='mostrar'?'selected':'')+'>Mostrar los campos marcados abajo</option></select></div>'+
+    '</div>'+
+    '<div class="lbl2">Toca los campos que deben verse para cada valor de "'+esc(campoLabel)+'":</div>'+
+    filas+
     '<div class="add"><button type="button" data-act="del" data-ri="'+ri+'">Eliminar esta regla</button></div></div>';
 }
 function renderCondTab(){
@@ -603,12 +628,14 @@ function clearGoverned(key){
   else if(key==='defectos'){ if(S.defectos.size){S.defectos.clear(); sync();} }
 }
 function applyCond(){
+  const rules = effectiveCond();
   const gobernados = new Set();
-  COND.forEach(r=>(r.objetivos||[]).forEach(o=>gobernados.add(o)));
+  rules.forEach(r=>ruleObjetivos(r).forEach(o=>gobernados.add(o)));
   const visibles = new Set();
-  COND.forEach(r=>{
+  rules.forEach(r=>{
     const v = getDisparadorValor(r.campo);
-    const mostrar = (v && r.mapa && r.mapa[v]) ? r.mapa[v] : (r.vacio==='mostrar' ? (r.objetivos||[]) : []);
+    const objetivos = ruleObjetivos(r);
+    const mostrar = (v && r.mapa && r.mapa[v]) ? r.mapa[v] : (r.vacio==='mostrar' ? objetivos : []);
     mostrar.forEach(o=>visibles.add(o));
   });
   GOVERNABLE.forEach(([k])=>{
@@ -630,22 +657,20 @@ function renderForm(){
 function initCfgUI(){
   $('#cfgBtn').onclick=()=>{if($('#cfgCard').hidden)openCfg();else $('#cfgCard').hidden=true;};
   $('#tabBtnListas').onclick=()=>switchTab('listas'); $('#tabBtnCond').onclick=()=>switchTab('cond');
-  $('#condAddRule').onclick=()=>{condDraft.push({campo:'area',objetivos:[],vacio:'ocultar',mapa:{}}); renderCondTab();};
+  $('#condAddRule').onclick=()=>{condDraft.push({campo:'area',vacio:'ocultar',mapa:{}}); renderCondTab();};
   $('#condList').addEventListener('change',e=>{
     const t=e.target; if(!t.dataset.ri)return; const ri=+t.dataset.ri, r=condDraft[ri]; if(!r)return;
     if(t.dataset.act==='campo'){r.campo=t.value; r.mapa={}; renderCondTab();}
     else if(t.dataset.act==='vacio'){r.vacio=t.value;}
-    else if(t.dataset.act==='obj'){
-      const k=t.dataset.k, set=new Set(r.objetivos); t.checked?set.add(k):set.delete(k); r.objetivos=[...set];
-      Object.keys(r.mapa).forEach(v=>{r.mapa[v]=(r.mapa[v]||[]).filter(x=>set.has(x));}); renderCondTab();
-    } else if(t.dataset.act==='map'){
-      const v=t.dataset.val,k=t.dataset.k,m=r.mapa[v]=r.mapa[v]||[],set=new Set(m);
-      t.checked?set.add(k):set.delete(k); r.mapa[v]=[...set];
-    }
   });
   $('#condList').addEventListener('click',e=>{
-    const b=e.target.closest('[data-act="del"]'); if(!b)return; const ri=+b.dataset.ri;
-    if(confirm('¿Eliminar esta regla?')){condDraft.splice(ri,1); renderCondTab();}
+    const del=e.target.closest('[data-act="del"]');
+    if(del){const ri=+del.dataset.ri; if(confirm('¿Eliminar esta regla?')){condDraft.splice(ri,1); renderCondTab();} return;}
+    const chip=e.target.closest('[data-act="map"]'); if(!chip)return;
+    const ri=+chip.dataset.ri, r=condDraft[ri]; if(!r)return;
+    const v=chip.dataset.val,k=chip.dataset.k,m=r.mapa[v]=r.mapa[v]||[],set=new Set(m);
+    set.has(k)?set.delete(k):set.add(k); r.mapa[v]=[...set];
+    renderCondTab(); // se vuelve a dibujar para actualizar el chip y el resumen "Se muestra: ..."
   });
   $('#cfgList').onchange=renderCfg; $('#cfgGroup').onchange=renderCfg;
   const add=()=>{const L=curList(); if(!L){toast('Primero crea un grupo',true);return;}
