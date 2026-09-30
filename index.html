@@ -222,23 +222,23 @@ header{position:relative}
   </div></section>
 
   <section class="card"><h2>Extremo 1</h2><div class="grid">
-    <div class="field"><label for="e1_altura">Altura h1-h2-h3</label><input type="number" step="0.01" id="e1_altura"></div>
-    <div class="field"><label for="e1_ancho">Ancho ala bf-tf</label><input type="number" step="0.01" id="e1_ancho"></div>
-    <div class="field"><label for="e1_cruzada">Cruzada c1-c2</label><input type="number" step="0.01" id="e1_cruzada"></div>
+    <div class="field"><label for="e1_altura">Altura h1-h2-h3</label><input type="text" inputmode="decimal" id="e1_altura"></div>
+    <div class="field"><label for="e1_ancho">Ancho ala bf-tf</label><input type="text" inputmode="decimal" id="e1_ancho"></div>
+    <div class="field"><label for="e1_cruzada">Cruzada c1-c2</label><input type="text" inputmode="decimal" id="e1_cruzada"></div>
   </div></section>
 
   <section class="card"><h2>Extremo 2</h2><div class="grid">
-    <div class="field"><label for="e2_altura">Altura h1-h2-h3</label><input type="number" step="0.01" id="e2_altura"></div>
-    <div class="field"><label for="e2_ancho">Ancho ala bf-tf</label><input type="number" step="0.01" id="e2_ancho"></div>
-    <div class="field"><label for="e2_cruzada">Cruzada c1-c2</label><input type="number" step="0.01" id="e2_cruzada"></div>
+    <div class="field"><label for="e2_altura">Altura h1-h2-h3</label><input type="text" inputmode="decimal" id="e2_altura"></div>
+    <div class="field"><label for="e2_ancho">Ancho ala bf-tf</label><input type="text" inputmode="decimal" id="e2_ancho"></div>
+    <div class="field"><label for="e2_cruzada">Cruzada c1-c2</label><input type="text" inputmode="decimal" id="e2_cruzada"></div>
   </div></section>
 
   <section class="card"><h2>Medidas generales</h2><div class="grid">
-    <div class="field"><label for="v_largo">Largo total de la viga (mm)</label><input type="number" step="0.01" id="v_largo"></div>
-    <div class="field"><label for="v_espAla">Espesor ala bf-tf</label><input type="number" step="0.01" id="v_espAla"></div>
-    <div class="field"><label for="v_espAlma">Espesor alma</label><input type="number" step="0.01" id="v_espAlma"></div>
-    <div class="field"><label for="v_sweep">Curvatura a Sweep</label><input type="number" step="0.01" id="v_sweep"></div>
-    <div class="field"><label for="v_camber">Curvatura Camber</label><input type="number" step="0.01" id="v_camber"></div>
+    <div class="field"><label for="v_largo">Largo total de la viga (mm)</label><input type="text" inputmode="decimal" id="v_largo"></div>
+    <div class="field"><label for="v_espAla">Espesor ala bf-tf</label><input type="text" inputmode="decimal" id="v_espAla"></div>
+    <div class="field"><label for="v_espAlma">Espesor alma</label><input type="text" inputmode="decimal" id="v_espAlma"></div>
+    <div class="field"><label for="v_sweep">Curvatura a Sweep</label><input type="text" inputmode="decimal" id="v_sweep"></div>
+    <div class="field"><label for="v_camber">Curvatura Camber</label><input type="text" inputmode="decimal" id="v_camber"></div>
   </div></section>
 
   <section class="card"><h2>Resultado</h2><div class="grid">
@@ -276,6 +276,7 @@ const DEFAULT_CFG = {
   resultados: ["Aprobado", "Rechazado", "Avance aprobado"],
   reparado: ["Si", "No"],
   areasNC: ["Nave 1", "Nave 2", "Nave 3", "Nave 4"],
+  marcasDetenidas: [],
   defectos: {
     "Armado": ["Armada al revés", "Componente desplazado", "Componente invertido", "Correlativo", "Curvatura excesiva", "Destaje incorrecto", "Dimensiones incorrectas", "Falta ángulo", "Falta bisel", "Falta componente", "Falta destaje", "Falta lata", "Falta perforación", "Falta placa", "Gap fuera de tolerancia", "Largo total incorrecto", "Marca de golpe", "Perfil con corte irregular", "Perfil dañado", "Perfil desplazado", "Perfil viga abollada", "Perforación desplazada", "Pinchazo defectuoso", "Placa desplazada", "Placa equivocada", "Placa interfiere con perforación", "Placa invertida", "Placa mal inclinada", "Placa torcida", "Placa sin limpiar"],
     "Perfiles y vigas": ["Altura de viga incorrecta", "Alas inclinadas", "Ala curva", "Componente revirado", "Desfase de perforaciones", "Destaje incorrecto", "Diámetro de perforaciones incorrecto", "Falta biselado", "Falta corte inclinado", "Falta slotting", "Falta perforación", "Fleje mal cortado", "Fleje invertido", "Longitud alma/ala dispareja", "Longitud incorrecta", "Mal marcado", "Muesca de corte con plasma", "Perforación incorrecta", "Perforación con dimensiones incorrectas", "Plegado desplazado", "Plegado incorrecto", "Catetos irregulares"],
