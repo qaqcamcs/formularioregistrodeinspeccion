@@ -1,11 +1,19 @@
 // Service worker: guarda la app en el dispositivo para abrirla sin internet.
 // Si cambias index.html o los iconos, sube el número de versión para forzar la actualización.
-const CACHE = 'qaqc-v12';
+const CACHE = 'qaqc-v14';
 const SHELL = ['./', './index.html', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png', './icons/amcs-logo.png'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // Importante: NO se usa cache.addAll() porque si UN SOLO archivo de la lista
+  // no existe (404), addAll() cancela toda la instalación y la app queda
+  // pegada en la versión anterior para siempre. Con esto, cada archivo se
+  // guarda por separado y si alguno falla, no arrastra a los demás.
+  e.waitUntil(
+    caches.open(CACHE).then(c => Promise.all(
+      SHELL.map(url => c.add(url).catch(err => console.warn('No se pudo precachear', url, err)))
+    )).then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', e => {
