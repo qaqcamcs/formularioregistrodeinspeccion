@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#06172e">
+<meta name="theme-color" content="#071530">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -11,17 +11,21 @@
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Registro de inspección QA/QC</title>
+<title>Registro de inspección QA/QC — AMCS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#06172e;--card:#0c2547;--card2:#123462;--line:#1e4478;--txt:#e8f0fb;--mut:#8fa9cc;--pri:#3d8bfd;--ok:#2fbf71;--bad:#f0525f;--adv:#f2b632}
+:root{--bg:#071530;--card:#0d2547;--card2:#12305c;--line:#233a5e;--txt:#f2f5fa;--mut:#93a4bd;--pri:#ff6a1a;--pri-ink:#2b0f00;--ok:#34c77b;--bad:#ef4444;--adv:#f5a623}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.4 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif;padding-bottom:96px}
-header{background:linear-gradient(135deg,#0a3a7a,#06172e 70%);padding:calc(22px + env(safe-area-inset-top)) 20px 24px;border-bottom:1px solid var(--line)}
-header h1{margin:0;font-size:1.6rem;letter-spacing:-.01em}
+body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.4 'Inter',system-ui,-apple-system,Roboto,sans-serif;padding-bottom:96px}
+h1,h2,h3,.disp{font-family:'Oswald',sans-serif}
+header{background:linear-gradient(135deg,#0d2c5e,#071530 70%);padding:calc(22px + env(safe-area-inset-top)) 20px 24px;border-bottom:1px solid var(--line)}
+header .logo{height:38px;display:block;margin-bottom:8px}
 header p{margin:4px 0 0;color:var(--mut)}
 main{max-width:980px;margin:0 auto;padding:16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
-.card h2{margin:0 0 12px;font-size:1.05rem;color:#b9d2f5;font-weight:600}
+.card h2{margin:0 0 12px;font-size:1.05rem;color:#dce8fa;font-weight:600;display:flex;align-items:center;gap:10px}
+.card h2::before{content:"";width:3px;height:18px;background:var(--pri);border-radius:2px;flex:none}
 .grid{display:grid;gap:14px;grid-template-columns:1fr}
 @media(min-width:720px){.grid{grid-template-columns:1fr 1fr}.full{grid-column:1/-1}}
 label,.lbl{display:block;font-size:.9rem;color:var(--mut);margin-bottom:6px}
@@ -35,14 +39,14 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .msg{display:none;color:var(--bad);font-size:.82rem;margin-top:4px}
 .seg{display:flex;gap:8px;flex-wrap:wrap;border-radius:10px}
 .seg button,.chip{font:inherit;color:var(--txt);background:#08203f;border:1px solid var(--line);border-radius:10px;min-height:48px;padding:0 16px;cursor:pointer;flex:1 1 110px}
-.seg button.on{background:var(--pri);border-color:var(--pri);font-weight:600}
+.seg button.on{background:var(--pri);border-color:var(--pri);font-weight:600;color:var(--pri-ink)}
 .seg.res button.on[data-v="Aprobado"]{background:var(--ok);border-color:var(--ok);color:#03210f}
-.seg.res button.on[data-v="Rechazado"]{background:var(--bad);border-color:var(--bad)}
+.seg.res button.on[data-v="Rechazado"]{background:var(--bad);border-color:var(--bad);color:#2b0505}
 .seg.res button.on[data-v="Avance aprobado"]{background:var(--adv);border-color:var(--adv);color:#2b1f00}
 .seg.res button{min-height:56px;font-size:1.05rem}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{flex:0 0 auto;min-height:40px;border-radius:999px;padding:0 14px;font-size:.92rem}
-.chip.on{background:var(--pri);border-color:var(--pri);font-weight:600}
+.chip.on{background:rgba(255,106,26,.16);border-color:var(--pri);color:#ffb27a;font-weight:600}
 .add{display:flex;gap:8px;margin-top:10px}.add input{min-height:40px}
 .add button{flex:0 0 auto;min-height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--txt)}
 details{border:1px solid var(--line);border-radius:10px;margin-top:8px;background:#0a2244}
@@ -50,12 +54,12 @@ summary{padding:12px;cursor:pointer;font-weight:600}
 details .chips{padding:0 12px 12px}
 #sel{margin:10px 0 0}
 .count{color:var(--mut);font-size:.85rem;margin-top:6px}
-.bar{position:fixed;left:0;right:0;bottom:0;background:rgba(6,23,46,.96);backdrop-filter:blur(6px);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom));z-index:5}
+.bar{position:fixed;left:0;right:0;bottom:0;background:rgba(7,21,48,.96);backdrop-filter:blur(6px);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom));z-index:5}
 .bar .in{max-width:980px;margin:0 auto;display:flex;gap:10px;align-items:center}
 .keep{display:flex;align-items:center;gap:8px;color:var(--mut);font-size:.85rem;flex:1}
 .keep input{width:20px;min-height:20px}
-.btn{min-height:52px;border-radius:12px;border:0;font:inherit;font-weight:700;padding:0 22px;cursor:pointer}
-.save{background:var(--pri);color:#fff;flex:1 1 200px}.save:disabled{opacity:.6}
+.btn{min-height:52px;border-radius:12px;border:0;font:inherit;font-weight:700;padding:0 22px;cursor:pointer;font-family:'Oswald';letter-spacing:.02em}
+.save{background:var(--pri);color:var(--pri-ink);flex:1 1 200px}.save:disabled{opacity:.6}
 .clear{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
 #toast{position:fixed;left:50%;top:16px;transform:translate(-50%,-140%);transition:transform .25s;background:var(--ok);color:#03210f;padding:12px 18px;border-radius:12px;font-weight:600;z-index:9;max-width:92vw}
 #toast.show{transform:translate(-50%,0)}#toast.err{background:var(--bad);color:#fff}
@@ -80,17 +84,28 @@ header{position:relative}
 .crow{display:flex;gap:6px;margin-top:6px}
 .crow input{min-height:40px}
 .crow button{flex:0 0 40px;min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--txt);cursor:pointer}
-#cfgCard{border-color:var(--pri)}
-#cfgSave{background:var(--pri);border-color:var(--pri);color:#fff;font-weight:700;flex:1}
+/* ---- Panel lateral de Opciones (retráctil) ---- */
+#cfgOverlay{position:fixed;inset:0;background:rgba(4,11,24,.55);z-index:14;opacity:0;transition:opacity .3s;pointer-events:none}
+#cfgOverlay[hidden]{display:block!important;opacity:0;pointer-events:none}
+#cfgOverlay:not([hidden]){opacity:1;pointer-events:auto}
+#cfgCard{position:fixed;top:0;right:0;bottom:0;margin:0;width:min(430px,92vw);max-width:92vw;border-radius:0;border:0;border-left:1px solid var(--line);z-index:15;display:flex!important;flex-direction:column;transform:translateX(105%);transition:transform .32s ease;padding:calc(16px + env(safe-area-inset-top)) 18px calc(16px + env(safe-area-inset-bottom));overflow-y:auto}
+#cfgCard[hidden]{display:flex!important;transform:translateX(105%);pointer-events:none}
+#cfgCard:not([hidden]){transform:translateX(0);pointer-events:auto}
+#cfgCard>*{flex:none}
+.cfgHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.cfgHead h2{margin:0}
+#cfgClose{min-height:34px;width:34px;padding:0;border-radius:999px;border:1px solid var(--line);background:var(--card2);color:var(--txt);font-size:1.1rem;cursor:pointer;flex:none}
+@media(prefers-reduced-motion:reduce){#cfgCard,#cfgOverlay{transition:none}}
+#cfgSave{background:var(--pri);border-color:var(--pri);color:var(--pri-ink);font-weight:700;flex:1}
 #cfgSave:disabled{opacity:.6}
-.mini.on{background:var(--pri);border-color:var(--pri);font-weight:700}
+.mini.on{background:var(--pri);border-color:var(--pri);font-weight:700;color:var(--pri-ink)}
 .rule{border:1px solid var(--line);background:#0a2244;border-radius:12px;padding:14px;margin-bottom:12px}
 .rule .lbl2{font-size:.9rem;color:#b9d2f5;font-weight:600;margin:10px 0 6px}
 .rule .mapv{border-top:1px dashed var(--line);padding-top:10px;margin-top:10px}
-.rule .mapv b{display:block;font-size:.92rem;margin-bottom:8px;color:#e8f0fb}
+.rule .mapv b{display:block;font-size:.92rem;margin-bottom:8px;color:#e8f0fb;font-weight:600}
 .rule .mapv .chips{margin-bottom:6px}
 .gov label{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:.9rem}
-.loginOverlay{position:fixed;inset:0;background:rgba(6,23,46,.97);z-index:20;display:flex;align-items:center;justify-content:center;padding:20px}
+.loginOverlay{position:fixed;inset:0;background:rgba(7,21,48,.97);z-index:20;display:flex;align-items:center;justify-content:center;padding:20px}
 .loginOverlay[hidden]{display:none}
 .loginCard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;max-width:360px;width:100%}
 .loginCard h2{margin:0 0 4px;font-size:1.3rem}
@@ -110,7 +125,8 @@ header{position:relative}
     <button type="button" class="btn save" id="loginBtn" style="width:100%">Ingresar</button>
   </div>
 </div>
-<header><h1>Registro de inspección QA/QC</h1><p>Los datos se agregan al final de la hoja de revisiones.</p><div class="hrow"><div class="net" id="net"><span class="dot"></span><span id="netTxt">En línea</span></div><button type="button" class="mini" id="installBtn" hidden>Instalar app</button><button type="button" class="mini" id="keyBtn">Clave de acceso</button><button type="button" class="mini" id="cfgBtn">Opciones</button><div class="net" id="whoami" hidden><span class="dot" style="background:var(--pri)"></span><span id="whoamiTxt"></span></div><button type="button" class="mini" id="logoutBtn" hidden>Cerrar sesión</button></div></header>
+<header><img class="logo" src="icons/amcs-logo.png" alt="AMCS Soluciones en Acero"><h1 style="position:absolute;left:-9999px">Registro de inspección QA/QC</h1><p>Los datos se agregan al final de la hoja de revisiones.</p><div class="hrow"><div class="net" id="net"><span class="dot"></span><span id="netTxt">En línea</span></div><button type="button" class="mini" id="installBtn" hidden>Instalar app</button><button type="button" class="mini" id="keyBtn">Clave de acceso</button><button type="button" class="mini" id="cfgBtn">Opciones</button><div class="net" id="whoami" hidden><span class="dot" style="background:var(--pri)"></span><span id="whoamiTxt"></span></div><button type="button" class="mini" id="logoutBtn" hidden>Cerrar sesión</button></div></header>
+<div id="cfgOverlay" hidden></div>
 <div class="add" id="formTabs" style="max-width:980px;margin:10px auto 0;padding:0 16px">
   <button type="button" class="mini on" id="tabFormInsp">Registro de inspección</button>
   <button type="button" class="mini" id="tabFormVigas">Vigas Tarea 0</button>
@@ -118,7 +134,8 @@ header{position:relative}
 <main>
 <section class="card pend" id="pend" hidden><div class="head"><h2 id="pendT"></h2><button type="button" id="syncNow">Sincronizar ahora</button></div><div id="pendL"></div></section>
 <section class="card" id="keyCard" hidden><h2>Clave de acceso</h2><div class="add"><input id="keyIn" type="password" autocomplete="off" placeholder="Escribe la clave"><button type="button" id="keySave">Guardar</button></div><div class="count">Se guarda solo en este dispositivo.</div></section>
-<section class="card" id="cfgCard" hidden><h2>Opciones</h2>
+<aside class="card" id="cfgCard" hidden>
+  <div class="cfgHead"><h2>Opciones</h2><button type="button" id="cfgClose" aria-label="Cerrar">✕</button></div>
   <div class="add" id="cfgTabs">
     <button type="button" class="mini on" id="tabBtnListas">Listas</button>
     <button type="button" class="mini" id="tabBtnCond">Condicionales</button>
@@ -142,7 +159,7 @@ header{position:relative}
   <div class="add"><button type="button" id="cfgReset">Restaurar todo a valores originales</button></div>
   <div class="field" style="margin-top:14px"><label for="adminKey">Clave de administrador</label><input type="password" id="adminKey" autocomplete="off" placeholder="Necesaria para guardar"></div>
   <div class="add"><button type="button" id="cfgCancel">Cancelar</button><button type="button" id="cfgSave">Guardar cambios</button></div>
-</section>
+</aside>
 <form id="f" novalidate>
   <section class="card"><h2>Datos generales</h2><div class="grid">
     <div class="field"><label class="req" for="fecha">Fecha de inspección</label><input type="date" id="fecha"><span class="msg">Indica la fecha.</span></div>
@@ -570,7 +587,7 @@ function openCfg(){
   draft=JSON.parse(JSON.stringify(CFG));
   condDraft=JSON.parse(JSON.stringify(effectiveCond()));
   $('#cfgList').innerHTML=EDIT.map(([k,t])=>'<option value="'+k+'">'+t+'</option>').join('');
-  $('#cfgCard').hidden=false; switchTab('listas'); $('#cfgCard').scrollIntoView({behavior:'smooth',block:'start'});
+  setCfgOpen(true); switchTab('listas');
 }
 function condRuleHtml(r,ri){
   const [,campoLabel,getVals]=dispar(r.campo);
@@ -610,7 +627,7 @@ async function saveCfg(reset){
   const b=$('#cfgSave'); b.disabled=true; b.textContent='Guardando…';
   try{
     const r=await api('saveConfig',{adminKey:adminKey,cfg:c,cond:cd,reset:!!reset});
-    if(r&&r.ok){CFG=normCfg(r.cfg);COND=normCond(r.cond);cfgRev=String(r.rev);cacheCfg();renderForm();$('#cfgCard').hidden=true;$('#adminKey').value='';toast(reset?'Opciones restauradas':'Opciones guardadas');}
+    if(r&&r.ok){CFG=normCfg(r.cfg);COND=normCond(r.cond);cfgRev=String(r.rev);cacheCfg();renderForm();setCfgOpen(false);$('#adminKey').value='';toast(reset?'Opciones restauradas':'Opciones guardadas');}
     else toast((r&&r.error)||'No se pudo guardar',true);
   }catch(e){toast('No se guardó: '+((e&&e.message)||e),true);}
   b.disabled=false; b.textContent='Guardar cambios';
@@ -654,8 +671,11 @@ function renderForm(){
   fillSelect('v_proyecto',CFG.proyectos,'Selecciona…'); seg('v_resultado',CFG.resultados); seg('v_reparado',CFG.reparado);
   defectosVigas(); syncVigas(); applyCondVigas();
 }
+function setCfgOpen(v){$('#cfgCard').hidden=!v;$('#cfgOverlay').hidden=!v;}
 function initCfgUI(){
-  $('#cfgBtn').onclick=()=>{if($('#cfgCard').hidden)openCfg();else $('#cfgCard').hidden=true;};
+  $('#cfgBtn').onclick=()=>{$('#cfgCard').hidden?openCfg():setCfgOpen(false);};
+  $('#cfgClose').onclick=()=>setCfgOpen(false);
+  $('#cfgOverlay').onclick=()=>setCfgOpen(false);
   $('#tabBtnListas').onclick=()=>switchTab('listas'); $('#tabBtnCond').onclick=()=>switchTab('cond');
   $('#condAddRule').onclick=()=>{condDraft.push({campo:'area',vacio:'ocultar',mapa:{}}); renderCondTab();};
   $('#condList').addEventListener('change',e=>{
@@ -685,7 +705,7 @@ function initCfgUI(){
     if(draft.defectos[n]){toast('Ese grupo ya existe',true);return;}
     const o={}; Object.keys(draft.defectos).forEach(k=>{o[k===g?n:k]=draft.defectos[k];}); draft.defectos=o; renderCfg(); $('#cfgGroup').value=n; renderCfg();};
   $('#gDel').onclick=()=>{const g=$('#cfgGroup').value; if(g&&confirm('¿Eliminar el grupo "'+g+'" y sus defectos?')){delete draft.defectos[g];renderCfg();}};
-  $('#cfgCancel').onclick=()=>{$('#cfgCard').hidden=true;};
+  $('#cfgCancel').onclick=()=>setCfgOpen(false);
   $('#cfgSave').onclick=()=>saveCfg(false);
   $('#cfgReset').onclick=()=>{if(confirm('¿Restaurar TODAS las listas a los valores originales?'))saveCfg(true);};
   // Actualiza las listas al recuperar internet y cada vez que se abre / vuelve a la app
