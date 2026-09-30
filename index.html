@@ -84,7 +84,16 @@ header{position:relative}
 .crow{display:flex;gap:6px;margin-top:6px}
 .crow input{min-height:40px}
 .crow button{flex:0 0 40px;min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--txt);cursor:pointer}
-/* ---- Panel lateral de Opciones (retráctil) ---- */
+.menuBtn{position:absolute;top:calc(18px + env(safe-area-inset-top));right:18px;min-height:40px;width:40px;padding:0;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.08);color:var(--txt);font-size:1.15rem;cursor:pointer;z-index:2}
+#menuOverlay{position:fixed;inset:0;background:rgba(4,11,24,.55);z-index:16;opacity:0;transition:opacity .3s;pointer-events:none}
+#menuOverlay[hidden]{display:block!important;opacity:0;pointer-events:none}
+#menuOverlay:not([hidden]){opacity:1;pointer-events:auto}
+#menuCard{position:fixed;top:0;right:0;bottom:0;margin:0;width:min(320px,86vw);max-width:86vw;border-radius:0;border:0;border-left:1px solid var(--line);z-index:17;display:flex!important;flex-direction:column;transform:translateX(105%);transition:transform .32s ease;padding:calc(16px + env(safe-area-inset-top)) 18px calc(16px + env(safe-area-inset-bottom));overflow-y:auto}
+#menuCard[hidden]{display:flex!important;transform:translateX(105%);pointer-events:none}
+#menuCard:not([hidden]){transform:translateX(0);pointer-events:auto}
+@media(prefers-reduced-motion:reduce){#menuCard,#menuOverlay{transition:none}}
+.menuItem{display:block;width:100%;text-align:left;min-height:50px;padding:0 16px;margin-bottom:10px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--txt);font:inherit;font-weight:600;cursor:pointer}
+#logoutBtn.menuItem{border-color:var(--bad);color:#ffb3b3}
 #cfgOverlay{position:fixed;inset:0;background:rgba(4,11,24,.55);z-index:14;opacity:0;transition:opacity .3s;pointer-events:none}
 #cfgOverlay[hidden]{display:block!important;opacity:0;pointer-events:none}
 #cfgOverlay:not([hidden]){opacity:1;pointer-events:auto}
@@ -125,8 +134,17 @@ header{position:relative}
     <button type="button" class="btn save" id="loginBtn" style="width:100%">Ingresar</button>
   </div>
 </div>
-<header><img class="logo" src="icons/amcs-logo.png" alt="AMCS Soluciones en Acero"><h1 style="position:absolute;left:-9999px">Registro de inspección QA/QC</h1><p>Los datos se agregan al final de la hoja de revisiones.</p><div class="hrow"><div class="net" id="net"><span class="dot"></span><span id="netTxt">En línea</span></div><button type="button" class="mini" id="installBtn" hidden>Instalar app</button><button type="button" class="mini" id="keyBtn">Clave de acceso</button><button type="button" class="mini" id="cfgBtn">Opciones</button><div class="net" id="whoami" hidden><span class="dot" style="background:var(--pri)"></span><span id="whoamiTxt"></span></div><button type="button" class="mini" id="logoutBtn" hidden>Cerrar sesión</button></div></header>
+<header><button type="button" id="menuBtn" class="menuBtn" aria-label="Abrir menú">☰</button><img class="logo" src="icons/amcs-logo.png" alt="AMCS Soluciones en Acero"><h1 style="position:absolute;left:-9999px">Registro de inspección QA/QC</h1><p>Los datos se agregan al final de la hoja de revisiones.</p><div class="hrow"><div class="net" id="net"><span class="dot"></span><span id="netTxt">En línea</span></div></div></header>
 <div id="cfgOverlay" hidden></div>
+<div id="menuOverlay" hidden></div>
+<aside class="card" id="menuCard" hidden>
+  <div class="cfgHead"><h2>Menú</h2><button type="button" id="menuClose" aria-label="Cerrar">✕</button></div>
+  <div class="net" id="whoami" hidden style="margin-bottom:14px"><span class="dot" style="background:var(--pri)"></span><span id="whoamiTxt"></span></div>
+  <button type="button" class="menuItem" id="installBtn" hidden>Instalar app</button>
+  <button type="button" class="menuItem" id="keyBtn">Clave de acceso</button>
+  <button type="button" class="menuItem" id="cfgBtn">Opciones</button>
+  <button type="button" class="menuItem" id="logoutBtn" hidden>Cerrar sesión</button>
+</aside>
 <div class="add" id="formTabs" style="max-width:980px;margin:10px auto 0;padding:0 16px">
   <button type="button" class="mini on" id="tabFormInsp">Registro de inspección</button>
   <button type="button" class="mini" id="tabFormVigas">Vigas Tarea 0</button>
@@ -512,7 +530,7 @@ function initOffline(){
   setInterval(()=>{if(Q.some(x=>!x.fatal))syncNow();},30000);
   addEventListener('beforeunload',e=>{if(!persist&&Q.length){e.preventDefault();e.returnValue='';}});
   $('#syncNow').onclick=()=>syncNow(true);
-  $('#keyBtn').onclick=()=>{const c=$('#keyCard');c.hidden=!c.hidden;if(!c.hidden){$('#keyIn').value=getKey();$('#keyIn').focus();}};
+  $('#keyBtn').onclick=()=>{window.closeMenu&&window.closeMenu(); const c=$('#keyCard');c.hidden=!c.hidden;if(!c.hidden){$('#keyIn').value=getKey();$('#keyIn').focus();}};
   $('#keySave').onclick=()=>{setKey($('#keyIn').value.trim());authFail=false;$('#keyCard').hidden=true;toast('Clave guardada');renderPend();syncNow(true);refreshCfg();};
 
   // Instalación como app
@@ -520,7 +538,7 @@ function initOffline(){
   let deferred=null;
   addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;if(!standalone)ib.hidden=false;});
   addEventListener('appinstalled',()=>{ib.hidden=true;});
-  ib.onclick=async()=>{if(deferred){deferred.prompt();await deferred.userChoice;deferred=null;ib.hidden=true;}
+  ib.onclick=async()=>{window.closeMenu&&window.closeMenu(); if(deferred){deferred.prompt();await deferred.userChoice;deferred=null;ib.hidden=true;}
     else alert('En Safari: toca Compartir y luego "Añadir a pantalla de inicio".');};
   if(!standalone&&/iphone|ipad|ipod/i.test(navigator.userAgent))ib.hidden=false;
 
@@ -673,7 +691,7 @@ function renderForm(){
 }
 function setCfgOpen(v){$('#cfgCard').hidden=!v;$('#cfgOverlay').hidden=!v;}
 function initCfgUI(){
-  $('#cfgBtn').onclick=()=>{$('#cfgCard').hidden?openCfg():setCfgOpen(false);};
+  $('#cfgBtn').onclick=()=>{window.closeMenu&&window.closeMenu(); $('#cfgCard').hidden?openCfg():setCfgOpen(false);};
   $('#cfgClose').onclick=()=>setCfgOpen(false);
   $('#cfgOverlay').onclick=()=>setCfgOpen(false);
   $('#tabBtnListas').onclick=()=>switchTab('listas'); $('#tabBtnCond').onclick=()=>switchTab('cond');
@@ -765,12 +783,19 @@ function initLogin(){
   $('#loginBtn').onclick=doLogin;
   $('#loginPass').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();doLogin();}};
   $('#loginUser').onkeydown=e=>{if(e.key==='Enter')$('#loginPass').focus();};
-  $('#logoutBtn').onclick=()=>{if(confirm('¿Cerrar sesión?')){SESSION=null;clearSession();applySession();}};
+  $('#logoutBtn').onclick=()=>{window.closeMenu&&window.closeMenu(); if(confirm('¿Cerrar sesión?')){SESSION=null;clearSession();applySession();}};
   applySession();
 }
 
 $('#tabFormInsp').onclick=()=>switchForm('insp'); $('#tabFormVigas').onclick=()=>switchForm('vigas');
-renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); switchForm('insp'); initCfgUI(); initLogin(); initOffline(); refreshCfg();
+function initMenu(){
+  const setMenuOpen=v=>{$('#menuCard').hidden=!v;$('#menuOverlay').hidden=!v;};
+  $('#menuBtn').onclick=()=>{$('#menuCard').hidden?setMenuOpen(true):setMenuOpen(false);};
+  $('#menuClose').onclick=()=>setMenuOpen(false);
+  $('#menuOverlay').onclick=()=>setMenuOpen(false);
+  window.closeMenu=()=>setMenuOpen(false);
+}
+renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); switchForm('insp'); initCfgUI(); initLogin(); initOffline(); initMenu(); refreshCfg();
 </script>
 </body>
 </html>
