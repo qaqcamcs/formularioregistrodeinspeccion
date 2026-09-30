@@ -1,8 +1,8 @@
 // Service worker: guarda la app en el dispositivo para abrirla sin internet.
 // Si cambias index.html o los iconos, sube el número de versión para forzar la actualización.
-const CACHE = 'qaqc-v10';
+const CACHE = 'qaqc-v11';
 const SHELL = ['./', './index.html', './manifest.webmanifest',
-  './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png'];
+  './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png', './icons/amcs-logo.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
