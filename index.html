@@ -105,6 +105,15 @@ header{position:relative}
 .cfgHead h2{margin:0}
 #cfgClose{min-height:34px;width:34px;padding:0;border-radius:999px;border:1px solid var(--line);background:var(--card2);color:var(--txt);font-size:1.1rem;cursor:pointer;flex:none}
 @media(prefers-reduced-motion:reduce){#cfgCard,#cfgOverlay{transition:none}}
+/* ---- Modal centrado: liberar marca (Seguimiento) ---- */
+#releaseOverlay{position:fixed;inset:0;background:rgba(4,11,24,.6);z-index:18;opacity:0;transition:opacity .25s;pointer-events:none}
+#releaseOverlay[hidden]{display:block!important;opacity:0;pointer-events:none}
+#releaseOverlay:not([hidden]){opacity:1;pointer-events:auto}
+#releaseModal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.94);width:min(400px,92vw);max-height:86vh;overflow-y:auto;z-index:19;margin:0;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s}
+#releaseModal[hidden]{display:block!important;opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.94)}
+#releaseModal:not([hidden]){opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+@media(prefers-reduced-motion:reduce){#releaseModal,#releaseOverlay{transition:none}}
+#releaseSeg button.on{background:var(--pri);border-color:var(--pri);color:var(--pri-ink);font-weight:700}
 #cfgSave{background:var(--pri);border-color:var(--pri);color:var(--pri-ink);font-weight:700;flex:1}
 #cfgSave:disabled{opacity:.6}
 .mini.on{background:var(--pri);border-color:var(--pri);font-weight:700;color:var(--pri-ink)}
@@ -179,6 +188,15 @@ header{position:relative}
   <div class="field" style="margin-top:14px"><label for="adminKey">Clave de administrador</label><input type="password" id="adminKey" autocomplete="off" placeholder="Necesaria para guardar"></div>
   <div class="add"><button type="button" id="cfgCancel">Cancelar</button><button type="button" id="cfgSave">Guardar cambios</button></div>
 </aside>
+<div id="releaseOverlay" hidden></div>
+<div class="card" id="releaseModal" hidden>
+  <div class="cfgHead"><h2>Liberar marca</h2><button type="button" id="releaseClose" aria-label="Cerrar">✕</button></div>
+  <div class="count" id="releaseWho" style="margin-bottom:14px"></div>
+  <label class="lbl">¿Quién libera esta marca?</label>
+  <div class="seg" id="releaseSeg" style="margin-bottom:12px"></div>
+  <div class="field" id="releaseOtroWrap" hidden><label for="releaseOtro">Nombre</label><input id="releaseOtro" autocomplete="off" placeholder="Escribe el nombre"></div>
+  <div class="add" style="margin-top:8px"><button type="button" id="releaseCancel">Cancelar</button><button type="button" id="releaseConfirm" disabled>Marcar reparado</button></div>
+</div>
 <form id="f" novalidate>
   <section class="card"><h2>Datos generales</h2><div class="grid">
     <div class="field"><label class="req" for="fecha">Fecha de inspección</label><input type="date" id="fecha"><span class="msg">Indica la fecha.</span></div>
@@ -227,7 +245,7 @@ header{position:relative}
     <h2>Rechazados / Avance aprobado sin reparar</h2>
     <input id="segSearch" type="search" placeholder="Buscar por marca o proyecto…" style="margin-bottom:10px">
     <div class="count" id="segCount"></div>
-    <div id="segList" class="pend"></div>
+    <div id="segList"></div>
   </section>
 </section>
 
@@ -779,18 +797,29 @@ function renderStopChips(){
     ? stopDraft.map((m,i)=>'<button type="button" class="chip on" data-i="'+i+'" title="Tocar para quitar">'+esc(m)+' ✕</button>').join('')
     : '<span class="count">No hay marcas detenidas.</span>';
 }
+function segRowHtml(it){
+  const bad = norm_(it.resultado)==='rechazado';
+  return '<div class="row'+(bad?' bad':'')+'">'+
+    '<div><b>'+esc(it.marca)+'</b> · '+esc(it.resultado)+'<br>'+
+    '<small>'+esc(it.proyecto)+' — '+esc(it.fecha)+' — Cant: '+esc(it.cantidad)+(it.correlativos?' — Corr: '+esc(it.correlativos):'')+' — '+esc(it.area)+'</small>'+
+    (it.detalle?'<br><small>'+esc(it.detalle)+'</small>':'')+
+    '</div><button type="button" data-row="'+it.row+'" data-marca="'+esc(it.marca)+'">Marcar reparado</button></div>';
+}
+function segBlock(title,arr,barColor){
+  if(!arr.length) return '';
+  return '<div style="display:flex;align-items:center;gap:8px;margin:16px 0 8px;font-weight:700;color:#dce8fa">'+
+    '<span style="width:3px;height:14px;background:'+barColor+';border-radius:2px;flex:none"></span>'+title+' ('+arr.length+')</div>'+
+    '<div class="pend">'+arr.map(segRowHtml).join('')+'</div>';
+}
 function renderSegList(){
   const q = norm_((($('#segSearch')||{}).value)||'');
-  const list = segItems.filter(it=>!q || norm_(it.marca).includes(q) || norm_(it.proyecto).includes(q));
-  $('#segCount').textContent = list.length + (list.length===1?' marca pendiente':' marcas pendientes');
-  $('#segList').innerHTML = list.length ? list.map(it=>{
-    const bad = norm_(it.resultado)==='rechazado';
-    return '<div class="row'+(bad?' bad':'')+'">'+
-      '<div><b>'+esc(it.marca)+'</b> · '+esc(it.resultado)+'<br>'+
-      '<small>'+esc(it.proyecto)+' — '+esc(it.fecha)+' — Cant: '+esc(it.cantidad)+(it.correlativos?' — Corr: '+esc(it.correlativos):'')+' — '+esc(it.area)+'</small>'+
-      (it.detalle?'<br><small>'+esc(it.detalle)+'</small>':'')+
-      '</div><button type="button" data-row="'+it.row+'">Marcar reparado</button></div>';
-  }).join('') : '<div class="count">No hay marcas rechazadas o en avance aprobado pendientes de reparar.</div>';
+  const filtered = segItems.filter(it=>!q || norm_(it.marca).includes(q) || norm_(it.proyecto).includes(q));
+  const rech = filtered.filter(it=>norm_(it.resultado)==='rechazado');
+  const avance = filtered.filter(it=>norm_(it.resultado)!=='rechazado');
+  $('#segCount').textContent = filtered.length + (filtered.length===1?' marca pendiente':' marcas pendientes');
+  $('#segList').innerHTML = filtered.length
+    ? segBlock('Rechazados',rech,'var(--bad)') + segBlock('Avance aprobado',avance,'var(--adv)')
+    : '<div class="count">No hay marcas rechazadas o en avance aprobado pendientes de reparar.</div>';
 }
 function norm_(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();}
 async function loadSeguimiento(){
@@ -804,6 +833,17 @@ async function loadSeguimiento(){
     else{$('#segCount').textContent='No se pudo cargar: '+(r&&r.error||'error desconocido');}
   }catch(e){$('#segCount').textContent='No se pudo cargar (sin conexión o error de red).';}
 }
+let releaseRow=null, releaseName='';
+function openReleaseModal(row,marca){
+  releaseRow=row; releaseName='';
+  $('#releaseWho').textContent='Marca: '+marca;
+  const insp=(CFG.inspectores||[]);
+  $('#releaseSeg').innerHTML = insp.map(n=>'<button type="button" data-n="'+esc(n)+'">'+esc(n)+'</button>').join('')+'<button type="button" data-n="">Otro…</button>';
+  $('#releaseOtroWrap').hidden=true; $('#releaseOtro').value='';
+  $('#releaseConfirm').disabled=true; $('#releaseConfirm').textContent='Marcar reparado';
+  $('#releaseOverlay').hidden=false; $('#releaseModal').hidden=false;
+}
+function closeReleaseModal(){$('#releaseOverlay').hidden=true;$('#releaseModal').hidden=true;releaseRow=null;}
 function initSeguimiento(){
   $('#segStopAdd').onclick=()=>{
     const v=$('#segStopNew').value.trim(); if(!v)return;
@@ -826,19 +866,31 @@ function initSeguimiento(){
     $('#segStopSave').disabled=false;
   };
   $('#segSearch').oninput=renderSegList;
-  $('#segList').addEventListener('click',async e=>{
+  $('#segList').addEventListener('click',e=>{
     const b=e.target.closest('[data-row]'); if(!b)return;
-    const row=+b.dataset.row;
-    const nombre=prompt('¿Quién libera esta marca? (se guarda en Registro de cambios)', (SESSION&&SESSION.nombre)||'');
-    if(!nombre||!nombre.trim())return;
-    if(!navigator.onLine){toast('Necesitas conexión a internet para liberar una marca',true);return;}
-    b.disabled=true;b.textContent='Guardando…';
-    try{
-      const r=await api('releaseRepair',{row:row,liberadoPor:nombre.trim()});
-      if(r&&r.ok){segItems=segItems.filter(it=>it.row!==row);renderSegList();toast('Marca liberada y guardada en Registro de cambios');}
-      else{toast(r&&r.error||'No se pudo liberar',true);b.disabled=false;b.textContent='Marcar reparado';}
-    }catch(e){toast('Sin conexión: no se pudo liberar',true);b.disabled=false;b.textContent='Marcar reparado';}
+    openReleaseModal(+b.dataset.row, b.dataset.marca);
   });
+  $('#releaseSeg').addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b)return;
+    $('#releaseSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+    if(b.dataset.n===''){$('#releaseOtroWrap').hidden=false;releaseName='';$('#releaseOtro').focus();$('#releaseConfirm').disabled=true;}
+    else{$('#releaseOtroWrap').hidden=true;releaseName=b.dataset.n;$('#releaseConfirm').disabled=false;}
+  });
+  $('#releaseOtro').oninput=()=>{releaseName=$('#releaseOtro').value.trim();$('#releaseConfirm').disabled=!releaseName;};
+  $('#releaseClose').onclick=closeReleaseModal;
+  $('#releaseCancel').onclick=closeReleaseModal;
+  $('#releaseOverlay').onclick=closeReleaseModal;
+  $('#releaseConfirm').onclick=async()=>{
+    if(!releaseName||!releaseRow)return;
+    if(!navigator.onLine){toast('Necesitas conexión a internet para liberar una marca',true);return;}
+    const row=releaseRow;
+    $('#releaseConfirm').disabled=true; $('#releaseConfirm').textContent='Guardando…';
+    try{
+      const r=await api('releaseRepair',{row:row,liberadoPor:releaseName});
+      if(r&&r.ok){segItems=segItems.filter(it=>it.row!==row);renderSegList();toast('Marca liberada y guardada en Registro de cambios');closeReleaseModal();}
+      else{toast(r&&r.error||'No se pudo liberar',true);$('#releaseConfirm').disabled=false;$('#releaseConfirm').textContent='Marcar reparado';}
+    }catch(e){toast('Sin conexión: no se pudo liberar',true);$('#releaseConfirm').disabled=false;$('#releaseConfirm').textContent='Marcar reparado';}
+  };
 }
 
 const SESSION_KEY='qaqc_session';
