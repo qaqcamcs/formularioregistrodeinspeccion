@@ -148,6 +148,7 @@ header{position:relative}
 <div class="add" id="formTabs" style="max-width:980px;margin:10px auto 0;padding:0 16px">
   <button type="button" class="mini on" id="tabFormInsp">Registro de inspección</button>
   <button type="button" class="mini" id="tabFormVigas">Vigas Tarea 0</button>
+  <button type="button" class="mini" id="tabFormSeg">Seguimiento</button>
 </div>
 <main>
 <section class="card pend" id="pend" hidden><div class="head"><h2 id="pendT"></h2><button type="button" id="syncNow">Sincronizar ahora</button></div><div id="pendL"></div></section>
@@ -212,6 +213,23 @@ header{position:relative}
     <div class="field full"><label for="detalle">Detalle de defectos</label><textarea id="detalle"></textarea></div>
   </div></section>
 </form>
+
+<section id="segScreen" hidden>
+  <section class="card">
+    <h2>Marcas detenidas</h2>
+    <div class="count">Una marca en esta lista no se puede registrar en el formulario hasta que la quites de aquí.</div>
+    <div class="chips" id="segStopChips" style="margin-top:10px"></div>
+    <div class="add"><input id="segStopNew" placeholder="Código de marca" autocomplete="off"><button type="button" id="segStopAdd">Agregar</button></div>
+    <div class="field" style="margin-top:14px"><label for="segAdminKey">Clave de administrador</label><input type="password" id="segAdminKey" autocomplete="off" placeholder="Necesaria para guardar"></div>
+    <div class="add"><button type="button" id="segStopSave">Guardar cambios</button></div>
+  </section>
+  <section class="card">
+    <h2>Rechazados / Avance aprobado sin reparar</h2>
+    <input id="segSearch" type="search" placeholder="Buscar por marca o proyecto…" style="margin-bottom:10px">
+    <div class="count" id="segCount"></div>
+    <div id="segList" class="pend"></div>
+  </section>
+</section>
 
 <form id="fVigas" novalidate hidden>
   <section class="card"><h2>Datos generales</h2><div class="grid">
@@ -396,7 +414,11 @@ function payloadInsp(){return {fecha:$('#fecha').value,inspector:(SESSION&&SESSI
 
 function validateInsp(p){
   const bad=[]; const chk=(ok,el)=>{const f=(typeof el==='string'?$(el):el).closest('.field'); f.classList.toggle('invalid',!ok); if(!ok)bad.push(f);};
-  chk(!!p.fecha,'#fecha'); chk(!!p.inspector,'#inspectorBox'); chk(!!p.proyecto,'#proyecto'); chk(!!p.marca,'#marca');
+  chk(!!p.fecha,'#fecha'); chk(!!p.inspector,'#inspectorBox'); chk(!!p.proyecto,'#proyecto');
+  const marcaField=$('#marca').closest('.field'), marcaMsg=marcaField.querySelector('.msg');
+  const marcaBlocked = !!p.marca && (CFG.marcasDetenidas||[]).some(m=>norm_(m)===norm_(p.marca));
+  marcaMsg.textContent = marcaBlocked ? 'Esta marca está detenida: libérala en "Seguimiento" antes de registrarla.' : 'Escribe la marca.';
+  chk(!!p.marca && !marcaBlocked,'#marca');
   chk(Number(p.cantidad)>0,'#cantidad'); chk(!!p.area,'.seg[data-k="area"]'); chk(!!p.resultado,'.seg[data-k="resultado"]');
   if(bad.length){bad[0].scrollIntoView({behavior:'smooth',block:'center'}); toast('Revisa los campos marcados',true);} return !bad.length;
 }
@@ -463,8 +485,10 @@ function validate(p){ return ACTIVE_FORM==='vigas' ? validateVigas(p) : validate
 function reset(keep){ return ACTIVE_FORM==='vigas' ? resetVigas(keep) : resetInsp(keep); }
 function switchForm(name){
   ACTIVE_FORM=name;
-  $('#f').hidden = name!=='insp'; $('#fVigas').hidden = name!=='vigas';
-  $('#tabFormInsp').classList.toggle('on',name==='insp'); $('#tabFormVigas').classList.toggle('on',name==='vigas');
+  $('#f').hidden = name!=='insp'; $('#fVigas').hidden = name!=='vigas'; $('#segScreen').hidden = name!=='seg';
+  $('#tabFormInsp').classList.toggle('on',name==='insp'); $('#tabFormVigas').classList.toggle('on',name==='vigas'); $('#tabFormSeg').classList.toggle('on',name==='seg');
+  $('.bar').style.display = name==='seg' ? 'none' : '';
+  if(name==='seg') loadSeguimiento();
 }
 
 /* ===== Modo offline: cola local + sincronización automática ===== */
@@ -748,7 +772,75 @@ async function refreshCfg(){
   }catch(e){}
   cfgBusy=false;
 }
-/* ===== Inicio de sesión de inspectores ===== */
+/* ===== Seguimiento: marcas detenidas + liberar Rechazado/Avance aprobado ===== */
+let stopDraft=[], segItems=[], segLoaded=false;
+function renderStopChips(){
+  $('#segStopChips').innerHTML = stopDraft.length
+    ? stopDraft.map((m,i)=>'<button type="button" class="chip on" data-i="'+i+'" title="Tocar para quitar">'+esc(m)+' ✕</button>').join('')
+    : '<span class="count">No hay marcas detenidas.</span>';
+}
+function renderSegList(){
+  const q = norm_((($('#segSearch')||{}).value)||'');
+  const list = segItems.filter(it=>!q || norm_(it.marca).includes(q) || norm_(it.proyecto).includes(q));
+  $('#segCount').textContent = list.length + (list.length===1?' marca pendiente':' marcas pendientes');
+  $('#segList').innerHTML = list.length ? list.map(it=>{
+    const bad = norm_(it.resultado)==='rechazado';
+    return '<div class="row'+(bad?' bad':'')+'">'+
+      '<div><b>'+esc(it.marca)+'</b> · '+esc(it.resultado)+'<br>'+
+      '<small>'+esc(it.proyecto)+' — '+esc(it.fecha)+' — Cant: '+esc(it.cantidad)+(it.correlativos?' — Corr: '+esc(it.correlativos):'')+' — '+esc(it.area)+'</small>'+
+      (it.detalle?'<br><small>'+esc(it.detalle)+'</small>':'')+
+      '</div><button type="button" data-row="'+it.row+'">Marcar reparado</button></div>';
+  }).join('') : '<div class="count">No hay marcas rechazadas o en avance aprobado pendientes de reparar.</div>';
+}
+function norm_(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();}
+async function loadSeguimiento(){
+  stopDraft = (CFG.marcasDetenidas||[]).slice(); renderStopChips();
+  if(segLoaded) return; // ya se cargó una vez en esta sesión; se puede refrescar con el buscador vacío + reabrir pestaña
+  $('#segCount').textContent='Cargando…'; $('#segList').innerHTML='';
+  if(!navigator.onLine){$('#segCount').textContent='Sin conexión: conéctate para ver los pendientes.';return;}
+  try{
+    const r = await api('getPending');
+    if(r&&r.ok){segItems=r.items||[];segLoaded=true;renderSegList();}
+    else{$('#segCount').textContent='No se pudo cargar: '+(r&&r.error||'error desconocido');}
+  }catch(e){$('#segCount').textContent='No se pudo cargar (sin conexión o error de red).';}
+}
+function initSeguimiento(){
+  $('#segStopAdd').onclick=()=>{
+    const v=$('#segStopNew').value.trim(); if(!v)return;
+    if(!stopDraft.some(x=>norm_(x)===norm_(v))) stopDraft.push(v);
+    $('#segStopNew').value=''; renderStopChips();
+  };
+  $('#segStopChips').addEventListener('click',e=>{
+    const b=e.target.closest('[data-i]'); if(!b)return;
+    stopDraft.splice(+b.dataset.i,1); renderStopChips();
+  });
+  $('#segStopSave').onclick=async()=>{
+    const adminKey=$('#segAdminKey').value;
+    if(!adminKey){toast('Escribe la clave de administrador',true);return;}
+    $('#segStopSave').disabled=true;
+    try{
+      const r=await api('saveConfig',{adminKey:adminKey,cfg:{marcasDetenidas:stopDraft}});
+      if(r&&r.ok){CFG=normCfg(r.cfg);cfgRev=String(r.rev);cacheCfg();$('#segAdminKey').value='';toast('Marcas detenidas guardadas');}
+      else toast(r&&r.error||'No se pudo guardar',true);
+    }catch(e){toast('Sin conexión: no se pudo guardar',true);}
+    $('#segStopSave').disabled=false;
+  };
+  $('#segSearch').oninput=renderSegList;
+  $('#segList').addEventListener('click',async e=>{
+    const b=e.target.closest('[data-row]'); if(!b)return;
+    const row=+b.dataset.row;
+    const nombre=prompt('¿Quién libera esta marca? (se guarda en Registro de cambios)', (SESSION&&SESSION.nombre)||'');
+    if(!nombre||!nombre.trim())return;
+    if(!navigator.onLine){toast('Necesitas conexión a internet para liberar una marca',true);return;}
+    b.disabled=true;b.textContent='Guardando…';
+    try{
+      const r=await api('releaseRepair',{row:row,liberadoPor:nombre.trim()});
+      if(r&&r.ok){segItems=segItems.filter(it=>it.row!==row);renderSegList();toast('Marca liberada y guardada en Registro de cambios');}
+      else{toast(r&&r.error||'No se pudo liberar',true);b.disabled=false;b.textContent='Marcar reparado';}
+    }catch(e){toast('Sin conexión: no se pudo liberar',true);b.disabled=false;b.textContent='Marcar reparado';}
+  });
+}
+
 const SESSION_KEY='qaqc_session';
 function getSession(){try{return JSON.parse(localStorage.getItem(SESSION_KEY)||'null');}catch(e){return null;}}
 function setSession(v){try{localStorage.setItem(SESSION_KEY,JSON.stringify(v));}catch(e){}}
@@ -788,7 +880,7 @@ function initLogin(){
   applySession();
 }
 
-$('#tabFormInsp').onclick=()=>switchForm('insp'); $('#tabFormVigas').onclick=()=>switchForm('vigas');
+$('#tabFormInsp').onclick=()=>switchForm('insp'); $('#tabFormVigas').onclick=()=>switchForm('vigas'); $('#tabFormSeg').onclick=()=>switchForm('seg');
 function initMenu(){
   const setMenuOpen=v=>{$('#menuCard').hidden=!v;$('#menuOverlay').hidden=!v;};
   $('#menuBtn').onclick=()=>{$('#menuCard').hidden?setMenuOpen(true):setMenuOpen(false);};
@@ -796,7 +888,7 @@ function initMenu(){
   $('#menuOverlay').onclick=()=>setMenuOpen(false);
   window.closeMenu=()=>setMenuOpen(false);
 }
-renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); switchForm('insp'); initCfgUI(); initLogin(); initOffline(); initMenu(); refreshCfg();
+renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); switchForm('insp'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg();
 </script>
 </body>
 </html>
