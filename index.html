@@ -128,6 +128,19 @@ header{position:relative}
 .projRow small{color:var(--mut);display:block;margin-top:5px}
 .cardHead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
 .cardHead h2{margin:0}
+/* ---- Gráficos de torta (dona), sin librerías ---- */
+.chartsRow{display:flex;gap:28px;flex-wrap:wrap;justify-content:center;margin-top:16px}
+.donutCard{text-align:center;max-width:220px}
+.donutCard .cap{font-size:.82rem;color:var(--mut);margin-bottom:10px;font-weight:600}
+.donutBox{position:relative;width:138px;height:138px;margin:0 auto}
+.donut{width:100%;height:100%;border-radius:50%}
+.donutHole{position:absolute;inset:20px;background:var(--card);border-radius:50%}
+.donutCenter{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column}
+.donutCenter .n{font-family:'Oswald';font-weight:700;font-size:1.5rem;line-height:1}
+.donutCenter .l{font-size:.62rem;color:var(--mut);margin-top:2px}
+.legend2{display:flex;flex-direction:column;gap:5px;font-size:.82rem;margin-top:12px;text-align:left}
+.legend2 .dot2{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:7px;flex:none}
+.legend2 div{display:flex;align-items:center}
 /* ---- Esqueleto de carga ---- */
 .skeleton{background:linear-gradient(90deg,#0a2244 25%,#123462 37%,#0a2244 63%);background-size:400% 100%;animation:skPulse 1.4s ease infinite;border-radius:10px;border:1px solid var(--line)}
 @keyframes skPulse{0%{background-position:100% 0}100%{background-position:0 0}}
@@ -230,6 +243,7 @@ header{position:relative}
     <div class="cardHead"><h2>Resumen</h2><button type="button" class="mini" id="homeRefresh">🔄 Actualizar</button></div>
     <div class="count" id="homeRango"></div>
     <div class="kpiGrid" id="homeKpis"></div>
+    <div id="homeCharts"></div>
   </section>
   <section class="card">
     <h2>Proyectos activos (últimos 7 días)</h2>
@@ -411,6 +425,16 @@ function effectiveCond(){
 
 let CFG = DEFAULT_CFG, COND = DEFAULT_COND, cfgRev = '';
 const CKEY = 'qaqc_cfg_v1';
+const HKEY = 'qaqc_home_v1';
+function cacheHome(data){ try{ localStorage.setItem(HKEY, JSON.stringify({data:data, savedAt:Date.now()})); }catch(e){} }
+function loadCachedHome(){ try{ const o=JSON.parse(localStorage.getItem(HKEY)); return (o&&o.data)?o:null; }catch(e){ return null; } }
+function timeAgo(ms){
+  const s=Math.round((Date.now()-ms)/1000);
+  if(s<60)return 'hace un momento';
+  const m=Math.round(s/60); if(m<60)return 'hace '+m+' min';
+  const h=Math.round(m/60); if(h<24)return 'hace '+h+(h===1?' hora':' horas');
+  const d=Math.round(h/24); return 'hace '+d+(d===1?' día':' días');
+}
 try { const c = JSON.parse(localStorage.getItem(CKEY) || 'null'); if (c && c.cfg) { CFG = normCfg(c.cfg); COND = normCond(c.cond); cfgRev = String(c.rev || ''); } } catch (e) {}
 function cacheCfg(){ try { localStorage.setItem(CKEY, JSON.stringify({ cfg: CFG, cond: COND, rev: cfgRev })); } catch (e) {} }
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
@@ -840,11 +864,40 @@ async function refreshCfg(){
   cfgBusy=false;
 }
 /* ===== Portada (Inicio): KPIs + proyectos activos + proyectos en general ===== */
-let homeLoaded=false, homeData=null, homeGenExpanded=false;
+let homeLoaded=false, homeData=null, homeGenExpanded=false, homeSavedAt=0;
 const GEN_LIMIT=5;
 function pctColor(p){ return p>=80?'var(--ok)':p>=50?'var(--adv)':'var(--bad)'; }
 function skeletonKpis(){return Array(4).fill('<div class="kpiCard skeleton skeletonKpi"></div>').join('');}
 function skeletonRows(n){return Array(n).fill('<div class="skeleton skeletonRow"></div>').join('');}
+function conicGradient(segments){
+  const total=segments.reduce((a,s)=>a+(s.value||0),0);
+  if(!total) return 'var(--line)';
+  let acc=0, parts=[];
+  segments.forEach(s=>{ if(!s.value) return; const start=acc/total*360; acc+=s.value; parts.push(s.color+' '+start.toFixed(2)+'deg '+(acc/total*360).toFixed(2)+'deg'); });
+  return 'conic-gradient('+parts.join(',')+')';
+}
+function donutHtml(cap,segments,centerNum,centerLabel){
+  const legend=segments.map(s=>'<div><span class="dot2" style="background:'+s.color+'"></span>'+esc(s.label)+' — '+s.value+'</div>').join('');
+  return '<div class="donutCard"><div class="cap">'+esc(cap)+'</div><div class="donutBox"><div class="donut" style="background:'+conicGradient(segments)+'"></div><div class="donutHole"></div>'+
+    '<div class="donutCenter"><div class="n">'+centerNum+'</div><div class="l">'+esc(centerLabel)+'</div></div></div>'+
+    '<div class="legend2">'+legend+'</div></div>';
+}
+function projectDonutSegments(activos){
+  const top=activos.slice(0,6), rest=activos.slice(6);
+  const segs=top.map((p,i)=>({label:p.proyecto,value:p.total,color:'hsl('+((i*63)%360)+',60%,55%)'}));
+  const restTotal=rest.reduce((a,p)=>a+p.total,0);
+  if(restTotal) segs.push({label:'Otros ('+rest.length+')',value:restTotal,color:'#5a6b8a'});
+  return segs;
+}
+function renderHomeCharts(d){
+  const r=d.resumenSemana;
+  if(!r.total){ $('#homeCharts').innerHTML='<div class="count" style="margin-top:14px">Todavía no hay datos esta semana para graficar.</div>'; return; }
+  const resSegs=[{label:'Aprobado',value:r.aprobados,color:'var(--ok)'},{label:'Rechazado',value:r.rechazados,color:'var(--bad)'},{label:'Avance aprobado',value:r.avanceAprobado,color:'var(--adv)'}];
+  let html='<div class="chartsRow">'+donutHtml('Resultado de la semana',resSegs,r.total,'registros');
+  if(d.proyectosActivos.length) html+=donutHtml('Participación por proyecto',projectDonutSegments(d.proyectosActivos),d.proyectosActivos.length,'proyectos');
+  html+='</div>';
+  $('#homeCharts').innerHTML=html;
+}
 function projRowHtml(p){
   const c=pctColor(p.pctAprobacion);
   return '<div class="projRow" data-proyecto="'+esc(p.proyecto)+'"><div class="top"><b>'+esc(p.proyecto)+'</b><span class="pct" style="background:'+c+'22;color:'+c+';border:1px solid '+c+'">'+p.pctAprobacion+'% aprob.</span></div>'+
@@ -852,13 +905,14 @@ function projRowHtml(p){
 }
 function renderHome(){
   const d=homeData; if(!d)return;
-  $('#homeRango').textContent = 'Del '+d.rango.desde+' al '+d.rango.hasta;
+  $('#homeRango').textContent = 'Del '+d.rango.desde+' al '+d.rango.hasta+' · Actualizado '+timeAgo(homeSavedAt);
   const r=d.resumenSemana;
   $('#homeKpis').innerHTML =
     '<div class="kpiCard"><div class="num">'+r.total+'</div><div class="lbl3">Registros (7 días)</div></div>'+
     '<div class="kpiCard"><div class="num" style="color:'+pctColor(r.pctAprobacion)+'">'+r.pctAprobacion+'%</div><div class="lbl3">% de aprobación</div></div>'+
     '<div class="kpiCard"><div class="num" style="color:var(--bad)">'+r.rechazados+'</div><div class="lbl3">Rechazados</div></div>'+
     '<div class="kpiCard"><div class="num" style="color:var(--adv)">'+r.avanceAprobado+'</div><div class="lbl3">Avance aprobado</div></div>';
+  renderHomeCharts(d);
   $('#homeActCount').textContent = d.proyectosActivos.length + (d.proyectosActivos.length===1?' proyecto con movimiento esta semana':' proyectos con movimiento esta semana');
   $('#homeActivos').innerHTML = d.proyectosActivos.length ? d.proyectosActivos.map(projRowHtml).join('') : '<div class="count">Ningún proyecto tiene registros en los últimos 7 días.</div>';
   $('#homeGenCount').textContent = d.proyectosGeneral.length + (d.proyectosGeneral.length===1?' proyecto en la hoja':' proyectos en la hoja');
@@ -871,16 +925,23 @@ function renderHome(){
 }
 async function loadHome(force){
   if(homeLoaded && !force){ renderHome(); return; }
-  $('#homeRango').textContent='';
-  $('#homeKpis').innerHTML=skeletonKpis();
-  $('#homeActivos').innerHTML=skeletonRows(2); $('#homeActCount').textContent='';
-  $('#homeGeneral').innerHTML=skeletonRows(3); $('#homeGenCount').textContent='';
-  if(!navigator.onLine){$('#homeRango').textContent='Sin conexión: conéctate para ver el resumen.';return;}
+  if(!homeData){
+    const cached=loadCachedHome();
+    if(cached){ homeData=cached.data; homeSavedAt=cached.savedAt; renderHome(); }
+    else { $('#homeRango').textContent=''; $('#homeKpis').innerHTML=skeletonKpis();
+      $('#homeActivos').innerHTML=skeletonRows(2); $('#homeActCount').textContent='';
+      $('#homeGeneral').innerHTML=skeletonRows(3); $('#homeGenCount').textContent=''; }
+  }
+  if(!navigator.onLine){
+    if(!homeData) $('#homeRango').textContent='Sin conexión: conéctate para ver el resumen.';
+    else $('#homeRango').textContent='Del '+homeData.rango.desde+' al '+homeData.rango.hasta+' · Sin conexión, mostrando datos '+timeAgo(homeSavedAt);
+    return;
+  }
   try{
     const r=await api('getDashboard');
-    if(r&&r.ok){homeLoaded=true;homeData=r;renderHome();}
-    else{$('#homeRango').textContent='No se pudo cargar: '+(r&&r.error||'error desconocido');}
-  }catch(e){$('#homeRango').textContent='No se pudo cargar (sin conexión o error de red).';}
+    if(r&&r.ok){homeLoaded=true;homeData=r;homeSavedAt=Date.now();cacheHome(r);renderHome();}
+    else if(!homeData){$('#homeRango').textContent='No se pudo cargar: '+(r&&r.error||'error desconocido');}
+  }catch(e){ if(!homeData) $('#homeRango').textContent='No se pudo cargar (sin conexión o error de red).'; }
 }
 function goToProjectSeguimiento(proyecto){
   $('#segSearch').value=proyecto;
