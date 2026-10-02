@@ -120,11 +120,26 @@ header{position:relative}
 .kpiCard{background:#0a2244;border:1px solid var(--line);border-radius:12px;padding:14px 10px;text-align:center}
 .kpiCard .num{font-family:'Oswald';font-size:1.9rem;font-weight:700;line-height:1.05}
 .kpiCard .lbl3{font-size:.78rem;color:var(--mut);margin-top:4px}
-.projRow{border:1px solid var(--line);background:#0a2244;border-radius:10px;padding:10px 12px;margin-top:8px}
+.projRow{border:1px solid var(--line);background:#0a2244;border-radius:10px;padding:10px 12px;margin-top:8px;cursor:pointer}
+.projRow:active{background:var(--card2)}
 .projRow .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .projRow b{font-size:.95rem}
 .projRow .pct{font-weight:700;border-radius:999px;padding:2px 10px;font-size:.8rem;flex:none}
 .projRow small{color:var(--mut);display:block;margin-top:5px}
+.cardHead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.cardHead h2{margin:0}
+/* ---- Esqueleto de carga ---- */
+.skeleton{background:linear-gradient(90deg,#0a2244 25%,#123462 37%,#0a2244 63%);background-size:400% 100%;animation:skPulse 1.4s ease infinite;border-radius:10px;border:1px solid var(--line)}
+@keyframes skPulse{0%{background-position:100% 0}100%{background-position:0 0}}
+.skeletonKpi{height:74px}
+.skeletonRow{height:56px;margin-top:8px}
+@media(prefers-reduced-motion:reduce){.skeleton{animation:none}}
+/* ---- Confirmación grande al guardar ---- */
+#bigCheck{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:25;pointer-events:none;opacity:0;transition:opacity .15s}
+#bigCheck.show{opacity:1}
+#bigCheck .circle{width:116px;height:116px;border-radius:50%;background:var(--ok);color:#03210f;font-size:3rem;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 40px rgba(0,0,0,.45);transform:scale(.7);transition:transform .25s cubic-bezier(.34,1.56,.64,1)}
+#bigCheck.show .circle{transform:scale(1)}
+@media(prefers-reduced-motion:reduce){#bigCheck,#bigCheck .circle{transition:none}}
 #cfgSave{background:var(--pri);border-color:var(--pri);color:var(--pri-ink);font-weight:700;flex:1}
 #cfgSave:disabled{opacity:.6}
 .mini.on{background:var(--pri);border-color:var(--pri);font-weight:700;color:var(--pri-ink)}
@@ -209,10 +224,11 @@ header{position:relative}
   <div class="field" id="releaseOtroWrap" hidden><label for="releaseOtro">Nombre</label><input id="releaseOtro" autocomplete="off" placeholder="Escribe el nombre"></div>
   <div class="add" style="margin-top:8px"><button type="button" id="releaseCancel">Cancelar</button><button type="button" id="releaseConfirm" disabled>Marcar reparado</button></div>
 </div>
+<div id="bigCheck"><div class="circle">✓</div></div>
 <section id="homeScreen">
   <section class="card">
-    <h2>Resumen</h2>
-    <div class="count" id="homeRango">Cargando…</div>
+    <div class="cardHead"><h2>Resumen</h2><button type="button" class="mini" id="homeRefresh">🔄 Actualizar</button></div>
+    <div class="count" id="homeRango"></div>
     <div class="kpiGrid" id="homeKpis"></div>
   </section>
   <section class="card">
@@ -224,6 +240,7 @@ header{position:relative}
     <h2>Todos los proyectos</h2>
     <div class="count" id="homeGenCount"></div>
     <div id="homeGeneral"></div>
+    <div class="add" id="homeGenMoreWrap" hidden><button type="button" id="homeGenMore"></button></div>
   </section>
 </section>
 
@@ -272,7 +289,7 @@ header{position:relative}
     <div class="add"><button type="button" id="segStopSave">Guardar cambios</button></div>
   </section>
   <section class="card">
-    <h2>Rechazados / Avance aprobado sin reparar</h2>
+    <div class="cardHead"><h2>Rechazados / Avance aprobado sin reparar</h2><button type="button" class="mini" id="segRefresh">🔄 Actualizar</button></div>
     <input id="segSearch" type="search" placeholder="Buscar por marca o proyecto…" style="margin-bottom:10px">
     <div class="count" id="segCount"></div>
     <div id="segList"></div>
@@ -626,8 +643,9 @@ function initOffline(){
 $('#save').onclick=()=>{
   const p=payload(); if(!validate(p))return;
   Q.push({uid:newUid(),p:p,action:(ACTIVE_FORM==='vigas'?'saveVigas':'saveInspeccion'),t:Date.now(),tries:0,err:''}); qSave();
+  showBigCheck();
   toast(navigator.onLine?'Registro guardado. Enviando a la hoja…':'Sin conexión: registro guardado en este dispositivo. Se enviará al volver internet.');
-  reset($('#keep').checked); renderPend(); syncNow();
+  reset($('#keep').checked); renderPend(); syncNow(); homeLoaded=false; segLoaded=false;
 };
 $('#clear').onclick=()=>{if(confirm('¿Limpiar todo el formulario?'))reset(false);};
 
@@ -822,14 +840,18 @@ async function refreshCfg(){
   cfgBusy=false;
 }
 /* ===== Portada (Inicio): KPIs + proyectos activos + proyectos en general ===== */
-let homeLoaded=false;
+let homeLoaded=false, homeData=null, homeGenExpanded=false;
+const GEN_LIMIT=5;
 function pctColor(p){ return p>=80?'var(--ok)':p>=50?'var(--adv)':'var(--bad)'; }
+function skeletonKpis(){return Array(4).fill('<div class="kpiCard skeleton skeletonKpi"></div>').join('');}
+function skeletonRows(n){return Array(n).fill('<div class="skeleton skeletonRow"></div>').join('');}
 function projRowHtml(p){
   const c=pctColor(p.pctAprobacion);
-  return '<div class="projRow"><div class="top"><b>'+esc(p.proyecto)+'</b><span class="pct" style="background:'+c+'22;color:'+c+';border:1px solid '+c+'">'+p.pctAprobacion+'% aprob.</span></div>'+
+  return '<div class="projRow" data-proyecto="'+esc(p.proyecto)+'"><div class="top"><b>'+esc(p.proyecto)+'</b><span class="pct" style="background:'+c+'22;color:'+c+';border:1px solid '+c+'">'+p.pctAprobacion+'% aprob.</span></div>'+
     '<small>'+p.total+' registro'+(p.total===1?'':'s')+' — Aprobados: '+p.aprobados+' · Rechazados: '+p.rechazados+' · Avance aprobado: '+p.avanceAprobado+'</small></div>';
 }
-function renderHome(d){
+function renderHome(){
+  const d=homeData; if(!d)return;
   $('#homeRango').textContent = 'Del '+d.rango.desde+' al '+d.rango.hasta;
   const r=d.resumenSemana;
   $('#homeKpis').innerHTML =
@@ -840,18 +862,37 @@ function renderHome(d){
   $('#homeActCount').textContent = d.proyectosActivos.length + (d.proyectosActivos.length===1?' proyecto con movimiento esta semana':' proyectos con movimiento esta semana');
   $('#homeActivos').innerHTML = d.proyectosActivos.length ? d.proyectosActivos.map(projRowHtml).join('') : '<div class="count">Ningún proyecto tiene registros en los últimos 7 días.</div>';
   $('#homeGenCount').textContent = d.proyectosGeneral.length + (d.proyectosGeneral.length===1?' proyecto en la hoja':' proyectos en la hoja');
-  $('#homeGeneral').innerHTML = d.proyectosGeneral.length ? d.proyectosGeneral.map(projRowHtml).join('') : '<div class="count">Todavía no hay registros guardados.</div>';
+  const shown = homeGenExpanded ? d.proyectosGeneral : d.proyectosGeneral.slice(0,GEN_LIMIT);
+  $('#homeGeneral').innerHTML = shown.length ? shown.map(projRowHtml).join('') : '<div class="count">Todavía no hay registros guardados.</div>';
+  if(d.proyectosGeneral.length>GEN_LIMIT){
+    $('#homeGenMoreWrap').hidden=false;
+    $('#homeGenMore').textContent = homeGenExpanded ? 'Ver menos' : 'Ver todos ('+d.proyectosGeneral.length+')';
+  } else { $('#homeGenMoreWrap').hidden=true; }
 }
-async function loadHome(){
-  if(homeLoaded) return;
-  $('#homeRango').textContent='Cargando…';
+async function loadHome(force){
+  if(homeLoaded && !force){ renderHome(); return; }
+  $('#homeRango').textContent='';
+  $('#homeKpis').innerHTML=skeletonKpis();
+  $('#homeActivos').innerHTML=skeletonRows(2); $('#homeActCount').textContent='';
+  $('#homeGeneral').innerHTML=skeletonRows(3); $('#homeGenCount').textContent='';
   if(!navigator.onLine){$('#homeRango').textContent='Sin conexión: conéctate para ver el resumen.';return;}
   try{
     const r=await api('getDashboard');
-    if(r&&r.ok){homeLoaded=true;renderHome(r);}
+    if(r&&r.ok){homeLoaded=true;homeData=r;renderHome();}
     else{$('#homeRango').textContent='No se pudo cargar: '+(r&&r.error||'error desconocido');}
   }catch(e){$('#homeRango').textContent='No se pudo cargar (sin conexión o error de red).';}
 }
+function goToProjectSeguimiento(proyecto){
+  $('#segSearch').value=proyecto;
+  switchForm('seg');
+}
+function initHome(){
+  $('#homeRefresh').onclick=()=>loadHome(true);
+  $('#homeGenMore').onclick=()=>{homeGenExpanded=!homeGenExpanded;renderHome();};
+  $('#homeActivos').addEventListener('click',e=>{const r=e.target.closest('[data-proyecto]');if(r)goToProjectSeguimiento(r.dataset.proyecto);});
+  $('#homeGeneral').addEventListener('click',e=>{const r=e.target.closest('[data-proyecto]');if(r)goToProjectSeguimiento(r.dataset.proyecto);});
+}
+function showBigCheck(){const el=$('#bigCheck');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),650);}
 
 /* ===== Seguimiento: marcas detenidas + liberar Rechazado/Avance aprobado ===== */
 let stopDraft=[], segItems=[], segLoaded=false;
@@ -885,16 +926,16 @@ function renderSegList(){
     : '<div class="count">No hay marcas rechazadas o en avance aprobado pendientes de reparar.</div>';
 }
 function norm_(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();}
-async function loadSeguimiento(){
+async function loadSeguimiento(force){
   stopDraft = (CFG.marcasDetenidas||[]).slice(); renderStopChips();
-  if(segLoaded) return; // ya se cargó una vez en esta sesión; se puede refrescar con el buscador vacío + reabrir pestaña
-  $('#segCount').textContent='Cargando…'; $('#segList').innerHTML='';
-  if(!navigator.onLine){$('#segCount').textContent='Sin conexión: conéctate para ver los pendientes.';return;}
+  if(segLoaded && !force){ renderSegList(); return; }
+  $('#segCount').textContent=''; $('#segList').innerHTML=skeletonRows(4);
+  if(!navigator.onLine){$('#segCount').textContent='Sin conexión: conéctate para ver los pendientes.';$('#segList').innerHTML='';return;}
   try{
     const r = await api('getPending');
     if(r&&r.ok){segItems=r.items||[];segLoaded=true;renderSegList();}
-    else{$('#segCount').textContent='No se pudo cargar: '+(r&&r.error||'error desconocido');}
-  }catch(e){$('#segCount').textContent='No se pudo cargar (sin conexión o error de red).';}
+    else{$('#segCount').textContent='No se pudo cargar: '+(r&&r.error||'error desconocido');$('#segList').innerHTML='';}
+  }catch(e){$('#segCount').textContent='No se pudo cargar (sin conexión o error de red).';$('#segList').innerHTML='';}
 }
 let releaseRow=null, releaseName='';
 function openReleaseModal(row,marca){
@@ -929,6 +970,7 @@ function initSeguimiento(){
     $('#segStopSave').disabled=false;
   };
   $('#segSearch').oninput=renderSegList;
+  $('#segRefresh').onclick=()=>loadSeguimiento(true);
   $('#segList').addEventListener('click',e=>{
     const b=e.target.closest('[data-row]'); if(!b)return;
     openReleaseModal(+b.dataset.row, b.dataset.marca);
@@ -1003,7 +1045,7 @@ function initMenu(){
   $('#menuOverlay').onclick=()=>setMenuOpen(false);
   window.closeMenu=()=>setMenuOpen(false);
 }
-renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg();
+renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); initHome(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg();
 </script>
 </body>
 </html>
