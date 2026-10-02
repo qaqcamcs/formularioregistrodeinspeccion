@@ -114,6 +114,17 @@ header{position:relative}
 #releaseModal:not([hidden]){opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
 @media(prefers-reduced-motion:reduce){#releaseModal,#releaseOverlay{transition:none}}
 #releaseSeg button.on{background:var(--pri);border-color:var(--pri);color:var(--pri-ink);font-weight:700}
+/* ---- Portada: KPIs y proyectos ---- */
+.kpiGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+@media(min-width:600px){.kpiGrid{grid-template-columns:repeat(4,1fr)}}
+.kpiCard{background:#0a2244;border:1px solid var(--line);border-radius:12px;padding:14px 10px;text-align:center}
+.kpiCard .num{font-family:'Oswald';font-size:1.9rem;font-weight:700;line-height:1.05}
+.kpiCard .lbl3{font-size:.78rem;color:var(--mut);margin-top:4px}
+.projRow{border:1px solid var(--line);background:#0a2244;border-radius:10px;padding:10px 12px;margin-top:8px}
+.projRow .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.projRow b{font-size:.95rem}
+.projRow .pct{font-weight:700;border-radius:999px;padding:2px 10px;font-size:.8rem;flex:none}
+.projRow small{color:var(--mut);display:block;margin-top:5px}
 #cfgSave{background:var(--pri);border-color:var(--pri);color:var(--pri-ink);font-weight:700;flex:1}
 #cfgSave:disabled{opacity:.6}
 .mini.on{background:var(--pri);border-color:var(--pri);font-weight:700;color:var(--pri-ink)}
@@ -155,7 +166,8 @@ header{position:relative}
   <button type="button" class="menuItem" id="logoutBtn" hidden>Cerrar sesión</button>
 </aside>
 <div class="add" id="formTabs" style="max-width:980px;margin:10px auto 0;padding:0 16px">
-  <button type="button" class="mini on" id="tabFormInsp">Registro de inspección</button>
+  <button type="button" class="mini on" id="tabFormHome">Inicio</button>
+  <button type="button" class="mini" id="tabFormInsp">Registro de inspección</button>
   <button type="button" class="mini" id="tabFormVigas">Vigas Tarea 0</button>
   <button type="button" class="mini" id="tabFormSeg">Seguimiento</button>
 </div>
@@ -197,6 +209,24 @@ header{position:relative}
   <div class="field" id="releaseOtroWrap" hidden><label for="releaseOtro">Nombre</label><input id="releaseOtro" autocomplete="off" placeholder="Escribe el nombre"></div>
   <div class="add" style="margin-top:8px"><button type="button" id="releaseCancel">Cancelar</button><button type="button" id="releaseConfirm" disabled>Marcar reparado</button></div>
 </div>
+<section id="homeScreen">
+  <section class="card">
+    <h2>Resumen</h2>
+    <div class="count" id="homeRango">Cargando…</div>
+    <div class="kpiGrid" id="homeKpis"></div>
+  </section>
+  <section class="card">
+    <h2>Proyectos activos (últimos 7 días)</h2>
+    <div class="count" id="homeActCount"></div>
+    <div id="homeActivos"></div>
+  </section>
+  <section class="card">
+    <h2>Todos los proyectos</h2>
+    <div class="count" id="homeGenCount"></div>
+    <div id="homeGeneral"></div>
+  </section>
+</section>
+
 <form id="f" novalidate>
   <section class="card"><h2>Datos generales</h2><div class="grid">
     <div class="field"><label class="req" for="fecha">Fecha de inspección</label><input type="date" id="fecha"><span class="msg">Indica la fecha.</span></div>
@@ -503,10 +533,11 @@ function validate(p){ return ACTIVE_FORM==='vigas' ? validateVigas(p) : validate
 function reset(keep){ return ACTIVE_FORM==='vigas' ? resetVigas(keep) : resetInsp(keep); }
 function switchForm(name){
   ACTIVE_FORM=name;
-  $('#f').hidden = name!=='insp'; $('#fVigas').hidden = name!=='vigas'; $('#segScreen').hidden = name!=='seg';
-  $('#tabFormInsp').classList.toggle('on',name==='insp'); $('#tabFormVigas').classList.toggle('on',name==='vigas'); $('#tabFormSeg').classList.toggle('on',name==='seg');
-  $('.bar').style.display = name==='seg' ? 'none' : '';
+  $('#homeScreen').hidden = name!=='home'; $('#f').hidden = name!=='insp'; $('#fVigas').hidden = name!=='vigas'; $('#segScreen').hidden = name!=='seg';
+  $('#tabFormHome').classList.toggle('on',name==='home'); $('#tabFormInsp').classList.toggle('on',name==='insp'); $('#tabFormVigas').classList.toggle('on',name==='vigas'); $('#tabFormSeg').classList.toggle('on',name==='seg');
+  $('.bar').style.display = (name==='seg'||name==='home') ? 'none' : '';
   if(name==='seg') loadSeguimiento();
+  if(name==='home') loadHome();
 }
 
 /* ===== Modo offline: cola local + sincronización automática ===== */
@@ -790,6 +821,38 @@ async function refreshCfg(){
   }catch(e){}
   cfgBusy=false;
 }
+/* ===== Portada (Inicio): KPIs + proyectos activos + proyectos en general ===== */
+let homeLoaded=false;
+function pctColor(p){ return p>=80?'var(--ok)':p>=50?'var(--adv)':'var(--bad)'; }
+function projRowHtml(p){
+  const c=pctColor(p.pctAprobacion);
+  return '<div class="projRow"><div class="top"><b>'+esc(p.proyecto)+'</b><span class="pct" style="background:'+c+'22;color:'+c+';border:1px solid '+c+'">'+p.pctAprobacion+'% aprob.</span></div>'+
+    '<small>'+p.total+' registro'+(p.total===1?'':'s')+' — Aprobados: '+p.aprobados+' · Rechazados: '+p.rechazados+' · Avance aprobado: '+p.avanceAprobado+'</small></div>';
+}
+function renderHome(d){
+  $('#homeRango').textContent = 'Del '+d.rango.desde+' al '+d.rango.hasta;
+  const r=d.resumenSemana;
+  $('#homeKpis').innerHTML =
+    '<div class="kpiCard"><div class="num">'+r.total+'</div><div class="lbl3">Registros (7 días)</div></div>'+
+    '<div class="kpiCard"><div class="num" style="color:'+pctColor(r.pctAprobacion)+'">'+r.pctAprobacion+'%</div><div class="lbl3">% de aprobación</div></div>'+
+    '<div class="kpiCard"><div class="num" style="color:var(--bad)">'+r.rechazados+'</div><div class="lbl3">Rechazados</div></div>'+
+    '<div class="kpiCard"><div class="num" style="color:var(--adv)">'+r.avanceAprobado+'</div><div class="lbl3">Avance aprobado</div></div>';
+  $('#homeActCount').textContent = d.proyectosActivos.length + (d.proyectosActivos.length===1?' proyecto con movimiento esta semana':' proyectos con movimiento esta semana');
+  $('#homeActivos').innerHTML = d.proyectosActivos.length ? d.proyectosActivos.map(projRowHtml).join('') : '<div class="count">Ningún proyecto tiene registros en los últimos 7 días.</div>';
+  $('#homeGenCount').textContent = d.proyectosGeneral.length + (d.proyectosGeneral.length===1?' proyecto en la hoja':' proyectos en la hoja');
+  $('#homeGeneral').innerHTML = d.proyectosGeneral.length ? d.proyectosGeneral.map(projRowHtml).join('') : '<div class="count">Todavía no hay registros guardados.</div>';
+}
+async function loadHome(){
+  if(homeLoaded) return;
+  $('#homeRango').textContent='Cargando…';
+  if(!navigator.onLine){$('#homeRango').textContent='Sin conexión: conéctate para ver el resumen.';return;}
+  try{
+    const r=await api('getDashboard');
+    if(r&&r.ok){homeLoaded=true;renderHome(r);}
+    else{$('#homeRango').textContent='No se pudo cargar: '+(r&&r.error||'error desconocido');}
+  }catch(e){$('#homeRango').textContent='No se pudo cargar (sin conexión o error de red).';}
+}
+
 /* ===== Seguimiento: marcas detenidas + liberar Rechazado/Avance aprobado ===== */
 let stopDraft=[], segItems=[], segLoaded=false;
 function renderStopChips(){
@@ -932,7 +995,7 @@ function initLogin(){
   applySession();
 }
 
-$('#tabFormInsp').onclick=()=>switchForm('insp'); $('#tabFormVigas').onclick=()=>switchForm('vigas'); $('#tabFormSeg').onclick=()=>switchForm('seg');
+$('#tabFormHome').onclick=()=>switchForm('home'); $('#tabFormInsp').onclick=()=>switchForm('insp'); $('#tabFormVigas').onclick=()=>switchForm('vigas'); $('#tabFormSeg').onclick=()=>switchForm('seg');
 function initMenu(){
   const setMenuOpen=v=>{$('#menuCard').hidden=!v;$('#menuOverlay').hidden=!v;};
   $('#menuBtn').onclick=()=>{$('#menuCard').hidden?setMenuOpen(true):setMenuOpen(false);};
@@ -940,7 +1003,7 @@ function initMenu(){
   $('#menuOverlay').onclick=()=>setMenuOpen(false);
   window.closeMenu=()=>setMenuOpen(false);
 }
-renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); switchForm('insp'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg();
+renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg();
 </script>
 </body>
 </html>
