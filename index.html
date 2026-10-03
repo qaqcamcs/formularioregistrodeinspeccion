@@ -113,6 +113,13 @@ header{position:relative}
 #releaseModal[hidden]{display:block!important;opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.94)}
 #releaseModal:not([hidden]){opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
 @media(prefers-reduced-motion:reduce){#releaseModal,#releaseOverlay{transition:none}}
+#rechOverlay{position:fixed;inset:0;background:rgba(4,11,24,.6);z-index:18;opacity:0;transition:opacity .25s;pointer-events:none}
+#rechOverlay[hidden]{display:block!important;opacity:0;pointer-events:none}
+#rechOverlay:not([hidden]){opacity:1;pointer-events:auto}
+#rechModal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.94);width:min(560px,92vw);max-height:84vh;overflow-y:auto;z-index:19;margin:0;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s}
+#rechModal[hidden]{display:block!important;opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.94)}
+#rechModal:not([hidden]){opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+@media(prefers-reduced-motion:reduce){#rechModal,#rechOverlay{transition:none}}
 #releaseSeg button.on{background:var(--pri);border-color:var(--pri);color:var(--pri-ink);font-weight:700}
 /* ---- Portada: KPIs y proyectos ---- */
 .kpiGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
@@ -236,6 +243,13 @@ header{position:relative}
   <div class="seg" id="releaseSeg" style="margin-bottom:12px"></div>
   <div class="field" id="releaseOtroWrap" hidden><label for="releaseOtro">Nombre</label><input id="releaseOtro" autocomplete="off" placeholder="Escribe el nombre"></div>
   <div class="add" style="margin-top:8px"><button type="button" id="releaseCancel">Cancelar</button><button type="button" id="releaseConfirm" disabled>Marcar reparado</button></div>
+</div>
+<div id="rechOverlay" hidden></div>
+<div class="card" id="rechModal" hidden>
+  <div class="cfgHead"><h2>Rechazados · histórico completo</h2><button type="button" id="rechClose" aria-label="Cerrar">✕</button></div>
+  <input id="rechSearch" type="search" placeholder="Buscar por marca o proyecto…" style="margin-bottom:10px">
+  <div class="count" id="rechCount"></div>
+  <div id="rechList"></div>
 </div>
 <div id="bigCheck"><div class="circle">✓</div></div>
 <section id="homeScreen">
@@ -669,7 +683,7 @@ $('#save').onclick=()=>{
   Q.push({uid:newUid(),p:p,action:(ACTIVE_FORM==='vigas'?'saveVigas':'saveInspeccion'),t:Date.now(),tries:0,err:''}); qSave();
   showBigCheck();
   toast(navigator.onLine?'Registro guardado. Enviando a la hoja…':'Sin conexión: registro guardado en este dispositivo. Se enviará al volver internet.');
-  reset($('#keep').checked); renderPend(); syncNow(); homeLoaded=false; segLoaded=false;
+  reset($('#keep').checked); renderPend(); syncNow(); homeLoaded=false; segLoaded=false; rechItems=null;
 };
 $('#clear').onclick=()=>{if(confirm('¿Limpiar todo el formulario?'))reset(false);};
 
@@ -910,7 +924,7 @@ function renderHome(){
   $('#homeKpis').innerHTML =
     '<div class="kpiCard"><div class="num">'+r.total+'</div><div class="lbl3">Registros (7 días)</div></div>'+
     '<div class="kpiCard"><div class="num" style="color:'+pctColor(r.pctAprobacion)+'">'+r.pctAprobacion+'%</div><div class="lbl3">% de aprobación</div></div>'+
-    '<div class="kpiCard"><div class="num" style="color:var(--bad)">'+r.rechazados+'</div><div class="lbl3">Rechazados</div></div>'+
+    '<div class="kpiCard" id="kpiRechazados" style="cursor:pointer"><div class="num" style="color:var(--bad)">'+r.rechazados+'</div><div class="lbl3">Rechazados ↗</div></div>'+
     '<div class="kpiCard"><div class="num" style="color:var(--adv)">'+r.avanceAprobado+'</div><div class="lbl3">Avance aprobado</div></div>';
   renderHomeCharts(d);
   $('#homeActCount').textContent = d.proyectosActivos.length + (d.proyectosActivos.length===1?' proyecto con movimiento esta semana':' proyectos con movimiento esta semana');
@@ -954,6 +968,41 @@ function initHome(){
   $('#homeGeneral').addEventListener('click',e=>{const r=e.target.closest('[data-proyecto]');if(r)goToProjectSeguimiento(r.dataset.proyecto);});
 }
 function showBigCheck(){const el=$('#bigCheck');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),650);}
+
+/* ===== Modal: histórico completo de rechazados (desde la tarjeta KPI de Inicio) ===== */
+let rechItems=null;
+function rechRowHtml(it){
+  const reparado = norm_(it.reparado)==='si';
+  return '<div class="row'+(reparado?'':' bad')+'"><div><b>'+esc(it.marca)+'</b>'+(it.origen==='Vigas T0'?' · <span style="color:var(--mut);font-size:.8rem">Vigas T0</span>':'')+'<br>'+
+    '<small>'+esc(it.proyecto)+' — '+esc(it.fecha)+(it.area?' — '+esc(it.area):'')+' — Reparado: '+(reparado?'Sí':'No')+'</small>'+
+    (it.detalle?'<br><small>'+esc(it.detalle)+'</small>':'')+
+    '</div></div>';
+}
+function renderRechList(){
+  const q=norm_((($('#rechSearch')||{}).value)||'');
+  const list=(rechItems||[]).filter(it=>!q||norm_(it.marca).includes(q)||norm_(it.proyecto).includes(q));
+  $('#rechCount').textContent = list.length + (list.length===1?' rechazado encontrado':' rechazados encontrados');
+  $('#rechList').innerHTML = list.length ? '<div class="pend">'+list.map(rechRowHtml).join('')+'</div>' : '<div class="count">No hay rechazados que coincidan.</div>';
+}
+function closeRechModal(){ $('#rechOverlay').hidden=true; $('#rechModal').hidden=true; }
+async function openRechModal(){
+  $('#rechSearch').value='';
+  $('#rechOverlay').hidden=false; $('#rechModal').hidden=false;
+  if(rechItems){ renderRechList(); return; }
+  $('#rechCount').textContent=''; $('#rechList').innerHTML=skeletonRows(4);
+  if(!navigator.onLine){ $('#rechCount').textContent='Sin conexión: conéctate para ver el histórico.'; $('#rechList').innerHTML=''; return; }
+  try{
+    const r=await api('getRechazadosHistorico');
+    if(r&&r.ok){ rechItems=r.items||[]; renderRechList(); }
+    else{ $('#rechCount').textContent='No se pudo cargar: '+(r&&r.error||'error desconocido'); $('#rechList').innerHTML=''; }
+  }catch(e){ $('#rechCount').textContent='No se pudo cargar (sin conexión o error de red).'; $('#rechList').innerHTML=''; }
+}
+function initRechModal(){
+  $('#homeKpis').addEventListener('click',e=>{ if(e.target.closest('#kpiRechazados')) openRechModal(); });
+  $('#rechClose').onclick=closeRechModal;
+  $('#rechOverlay').onclick=closeRechModal;
+  $('#rechSearch').oninput=renderRechList;
+}
 
 /* ===== Seguimiento: marcas detenidas + liberar Rechazado/Avance aprobado ===== */
 let stopDraft=[], segItems=[], segLoaded=false;
@@ -1106,7 +1155,7 @@ function initMenu(){
   $('#menuOverlay').onclick=()=>setMenuOpen(false);
   window.closeMenu=()=>setMenuOpen(false);
 }
-renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); initHome(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg();
+renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); initHome(); initRechModal(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg();
 </script>
 </body>
 </html>
