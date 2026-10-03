@@ -31,6 +31,7 @@ main{max-width:980px;margin:0 auto;padding:16px}
 label,.lbl{display:block;font-size:.9rem;color:var(--mut);margin-bottom:6px}
 .req::after{content:" *";color:var(--adv)}
 input,select,textarea{width:100%;min-height:48px;padding:10px 12px;font:inherit;color:var(--txt);background:#08203f;border:1px solid var(--line);border-radius:10px}
+input[type="date"]{-webkit-appearance:none;appearance:none;max-width:100%}
 textarea{min-height:100px;resize:vertical}
 input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--pri);outline-offset:1px}
 .other{margin-top:8px;display:none}
@@ -48,6 +49,9 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .chip{flex:0 0 auto;min-height:40px;border-radius:999px;padding:0 14px;font-size:.92rem}
 .chip.on{background:rgba(255,106,26,.16);border-color:var(--pri);color:#ffb27a;font-weight:600}
 .add{display:flex;gap:8px;margin-top:10px}.add input{min-height:40px}
+#formTabs{overflow-x:auto;overflow-y:hidden;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}
+#formTabs::-webkit-scrollbar{display:none}
+#formTabs button{flex:none;white-space:nowrap}
 .add button{flex:0 0 auto;min-height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--txt)}
 details{border:1px solid var(--line);border-radius:10px;margin-top:8px;background:#0a2244}
 summary{padding:12px;cursor:pointer;font-weight:600}
@@ -134,6 +138,10 @@ header{position:relative}
 .projRow .pct{font-weight:700;border-radius:999px;padding:2px 10px;font-size:.8rem;flex:none}
 .projRow small{color:var(--mut);display:block;margin-top:5px}
 .cardHead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+#formTabs{flex-wrap:nowrap!important;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}
+#formTabs::-webkit-scrollbar{display:none}
+#formTabs button{flex:0 0 auto;white-space:nowrap}
+input[type="date"],input[type="time"]{color-scheme:dark}
 .cardHead h2{margin:0}
 /* ---- Gráficos de torta (dona), sin librerías ---- */
 .chartsRow{display:flex;gap:28px;flex-wrap:wrap;justify-content:center;margin-top:16px}
@@ -205,6 +213,7 @@ header{position:relative}
   <button type="button" class="mini" id="tabFormInsp">Registro de inspección</button>
   <button type="button" class="mini" id="tabFormVigas">Vigas Tarea 0</button>
   <button type="button" class="mini" id="tabFormSeg">Seguimiento</button>
+  <button type="button" class="mini" id="tabFormCalc">Calculadora de filete</button>
 </div>
 <main>
 <section class="card pend" id="pend" hidden><div class="head"><h2 id="pendT"></h2><button type="button" id="syncNow">Sincronizar ahora</button></div><div id="pendL"></div></section>
@@ -322,6 +331,24 @@ header{position:relative}
     <input id="segSearch" type="search" placeholder="Buscar por marca o proyecto…" style="margin-bottom:10px">
     <div class="count" id="segCount"></div>
     <div id="segList"></div>
+  </section>
+</section>
+
+<section id="calcScreen" hidden>
+  <section class="card">
+    <h2>Filete ISO → Métrico</h2>
+    <div class="count">El valor de garganta (filete ISO) se multiplica por 1.414 para obtener el tamaño de filete (pata).</div>
+    <div class="grid" style="margin-top:14px">
+      <div class="field"><label for="calcIso">Filete ISO (mm)</label><input type="number" id="calcIso" inputmode="decimal" step="any" placeholder="Ej: 5"></div>
+      <div class="field"><label>Tamaño de filete</label><div id="calcIsoOut" style="min-height:48px;display:flex;align-items:center;padding:0 12px;background:#08203f;border:1px solid var(--line);border-radius:10px;font-family:'Oswald';font-size:1.25rem;font-weight:700">—</div></div>
+    </div>
+  </section>
+  <section class="card">
+    <h2>Cálculo de filete mínimo según espesor</h2>
+    <div class="count">Según norma AWS D1.1. Ingresa el espesor del metal base (T) y se calcula el filete mínimo requerido.</div>
+    <div class="field" style="margin-top:14px"><label for="calcEspesor">Espesor del metal base T (mm)</label><input type="number" id="calcEspesor" inputmode="decimal" step="any" placeholder="Ej: 10"></div>
+    <div class="count" id="calcEspesorOut" style="margin-top:8px;font-size:1rem"></div>
+    <div id="calcTabla" style="margin-top:12px"></div>
   </section>
 </section>
 
@@ -589,9 +616,9 @@ function validate(p){ return ACTIVE_FORM==='vigas' ? validateVigas(p) : validate
 function reset(keep){ return ACTIVE_FORM==='vigas' ? resetVigas(keep) : resetInsp(keep); }
 function switchForm(name){
   ACTIVE_FORM=name;
-  $('#homeScreen').hidden = name!=='home'; $('#f').hidden = name!=='insp'; $('#fVigas').hidden = name!=='vigas'; $('#segScreen').hidden = name!=='seg';
-  $('#tabFormHome').classList.toggle('on',name==='home'); $('#tabFormInsp').classList.toggle('on',name==='insp'); $('#tabFormVigas').classList.toggle('on',name==='vigas'); $('#tabFormSeg').classList.toggle('on',name==='seg');
-  $('.bar').style.display = (name==='seg'||name==='home') ? 'none' : '';
+  $('#homeScreen').hidden = name!=='home'; $('#f').hidden = name!=='insp'; $('#fVigas').hidden = name!=='vigas'; $('#segScreen').hidden = name!=='seg'; $('#calcScreen').hidden = name!=='calc';
+  $('#tabFormHome').classList.toggle('on',name==='home'); $('#tabFormInsp').classList.toggle('on',name==='insp'); $('#tabFormVigas').classList.toggle('on',name==='vigas'); $('#tabFormSeg').classList.toggle('on',name==='seg'); $('#tabFormCalc').classList.toggle('on',name==='calc');
+  $('.bar').style.display = (name==='seg'||name==='home'||name==='calc') ? 'none' : '';
   if(name==='seg') loadSeguimiento();
   if(name==='home') loadHome();
 }
@@ -878,6 +905,38 @@ async function refreshCfg(){
   }catch(e){}
   cfgBusy=false;
 }
+/* ===== Calculadora de filete ===== */
+const FILETE_TABLA = [
+  {max:6,  mm:3, inch:'1/8"',  rango:'Espesor T ≤ 1/4 pulg. (≤ 6 mm)'},
+  {max:12, mm:5, inch:'3/16"', rango:'1/4 < T ≤ 1/2 pulg. (6 a 12 mm)'},
+  {max:19, mm:6, inch:'1/4"',  rango:'1/2 < T ≤ 3/4 pulg. (12 a 19 mm)'},
+  {max:Infinity, mm:8, inch:'5/16"', rango:'T > 3/4 pulg. (> 19 mm)'}
+];
+function calcFileteMin(t){ for(const row of FILETE_TABLA){ if(t<=row.max) return row; } return FILETE_TABLA[FILETE_TABLA.length-1]; }
+function renderCalcTabla(t){
+  const match = (t!==null && !isNaN(t)) ? calcFileteMin(t) : null;
+  $('#calcTabla').innerHTML = '<div class="pend">'+FILETE_TABLA.map(row=>{
+    const on = !!(match && row===match);
+    return '<div class="row" style="'+(on?'border-color:var(--pri);background:rgba(255,106,26,.14)':'')+'"><div><b>'+(on?'➜ ':'')+row.rango+'</b><br><small>Filete mínimo: '+row.mm+' mm ('+row.inch+')</small></div></div>';
+  }).join('')+'</div>';
+}
+function updateCalcIso(){
+  const v=parseFloat($('#calcIso').value);
+  $('#calcIsoOut').textContent = isNaN(v) ? '—' : (v*1.414).toFixed(2)+' mm';
+}
+function updateCalcEspesor(){
+  const v=parseFloat($('#calcEspesor').value);
+  if(isNaN(v)){ $('#calcEspesorOut').textContent=''; renderCalcTabla(null); return; }
+  const row=calcFileteMin(v);
+  $('#calcEspesorOut').innerHTML = 'Filete mínimo requerido: <b style="color:var(--pri);font-size:1.15rem;font-family:\'Oswald\'">'+row.mm+' mm ('+row.inch+')</b>';
+  renderCalcTabla(v);
+}
+function initCalc(){
+  $('#calcIso').oninput=updateCalcIso;
+  $('#calcEspesor').oninput=updateCalcEspesor;
+  renderCalcTabla(null);
+}
+
 /* ===== Portada (Inicio): KPIs + proyectos activos + proyectos en general ===== */
 let homeLoaded=false, homeData=null, homeGenExpanded=false, homeSavedAt=0;
 const GEN_LIMIT=5;
@@ -969,6 +1028,7 @@ function initHome(){
   $('#homeGeneral').addEventListener('click',e=>{const r=e.target.closest('[data-proyecto]');if(r)goToProjectSeguimiento(r.dataset.proyecto);});
 }
 function showBigCheck(){const el=$('#bigCheck');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),650);}
+
 
 /* ===== Modal: rechazados (por defecto últimos 7 días, con opción de ver todo) ===== */
 let rechItems=null, rechFull=false;
@@ -1153,7 +1213,7 @@ function initLogin(){
   applySession();
 }
 
-$('#tabFormHome').onclick=()=>switchForm('home'); $('#tabFormInsp').onclick=()=>switchForm('insp'); $('#tabFormVigas').onclick=()=>switchForm('vigas'); $('#tabFormSeg').onclick=()=>switchForm('seg');
+$('#tabFormHome').onclick=()=>switchForm('home'); $('#tabFormInsp').onclick=()=>switchForm('insp'); $('#tabFormVigas').onclick=()=>switchForm('vigas'); $('#tabFormSeg').onclick=()=>switchForm('seg'); $('#tabFormCalc').onclick=()=>switchForm('calc');
 function initMenu(){
   const setMenuOpen=v=>{$('#menuCard').hidden=!v;$('#menuOverlay').hidden=!v;};
   $('#menuBtn').onclick=()=>{$('#menuCard').hidden?setMenuOpen(true):setMenuOpen(false);};
@@ -1161,7 +1221,7 @@ function initMenu(){
   $('#menuOverlay').onclick=()=>setMenuOpen(false);
   window.closeMenu=()=>setMenuOpen(false);
 }
-renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); initHome(); initRechModal(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg();
+renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); initHome(); initRechModal(); initCalc(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg();
 </script>
 </body>
 </html>
