@@ -246,10 +246,11 @@ header{position:relative}
 </div>
 <div id="rechOverlay" hidden></div>
 <div class="card" id="rechModal" hidden>
-  <div class="cfgHead"><h2>Rechazados · histórico completo</h2><button type="button" id="rechClose" aria-label="Cerrar">✕</button></div>
+  <div class="cfgHead"><h2 id="rechTitle">Rechazados</h2><button type="button" id="rechClose" aria-label="Cerrar">✕</button></div>
   <input id="rechSearch" type="search" placeholder="Buscar por marca o proyecto…" style="margin-bottom:10px">
   <div class="count" id="rechCount"></div>
   <div id="rechList"></div>
+  <div class="add" style="margin-top:12px"><button type="button" id="rechToggle"></button></div>
 </div>
 <div id="bigCheck"><div class="circle">✓</div></div>
 <section id="homeScreen">
@@ -969,8 +970,8 @@ function initHome(){
 }
 function showBigCheck(){const el=$('#bigCheck');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),650);}
 
-/* ===== Modal: histórico completo de rechazados (desde la tarjeta KPI de Inicio) ===== */
-let rechItems=null;
+/* ===== Modal: rechazados (por defecto últimos 7 días, con opción de ver todo) ===== */
+let rechItems=null, rechFull=false;
 function rechRowHtml(it){
   const reparado = norm_(it.reparado)==='si';
   return '<div class="row'+(reparado?'':' bad')+'"><div><b>'+esc(it.marca)+'</b>'+(it.origen==='Vigas T0'?' · <span style="color:var(--mut);font-size:.8rem">Vigas T0</span>':'')+'<br>'+
@@ -980,17 +981,21 @@ function rechRowHtml(it){
 }
 function renderRechList(){
   const q=norm_((($('#rechSearch')||{}).value)||'');
-  const list=(rechItems||[]).filter(it=>!q||norm_(it.marca).includes(q)||norm_(it.proyecto).includes(q));
+  const base=(rechItems||[]).filter(it=>rechFull||it.reciente);
+  const list=base.filter(it=>!q||norm_(it.marca).includes(q)||norm_(it.proyecto).includes(q));
+  $('#rechTitle').textContent = rechFull ? 'Rechazados · histórico completo' : 'Rechazados · últimos 7 días';
   $('#rechCount').textContent = list.length + (list.length===1?' rechazado encontrado':' rechazados encontrados');
   $('#rechList').innerHTML = list.length ? '<div class="pend">'+list.map(rechRowHtml).join('')+'</div>' : '<div class="count">No hay rechazados que coincidan.</div>';
+  const totalFull=(rechItems||[]).length;
+  $('#rechToggle').textContent = rechFull ? 'Ver solo últimos 7 días' : 'Ver histórico completo ('+totalFull+')';
 }
 function closeRechModal(){ $('#rechOverlay').hidden=true; $('#rechModal').hidden=true; }
 async function openRechModal(){
-  $('#rechSearch').value='';
+  $('#rechSearch').value=''; rechFull=false;
   $('#rechOverlay').hidden=false; $('#rechModal').hidden=false;
   if(rechItems){ renderRechList(); return; }
-  $('#rechCount').textContent=''; $('#rechList').innerHTML=skeletonRows(4);
-  if(!navigator.onLine){ $('#rechCount').textContent='Sin conexión: conéctate para ver el histórico.'; $('#rechList').innerHTML=''; return; }
+  $('#rechCount').textContent=''; $('#rechList').innerHTML=skeletonRows(4); $('#rechToggle').textContent='';
+  if(!navigator.onLine){ $('#rechCount').textContent='Sin conexión: conéctate para ver los rechazados.'; $('#rechList').innerHTML=''; return; }
   try{
     const r=await api('getRechazadosHistorico');
     if(r&&r.ok){ rechItems=r.items||[]; renderRechList(); }
@@ -1002,6 +1007,7 @@ function initRechModal(){
   $('#rechClose').onclick=closeRechModal;
   $('#rechOverlay').onclick=closeRechModal;
   $('#rechSearch').oninput=renderRechList;
+  $('#rechToggle').onclick=()=>{ rechFull=!rechFull; renderRechList(); };
 }
 
 /* ===== Seguimiento: marcas detenidas + liberar Rechazado/Avance aprobado ===== */
