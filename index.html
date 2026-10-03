@@ -124,6 +124,13 @@ header{position:relative}
 #rechModal[hidden]{display:block!important;opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.94)}
 #rechModal:not([hidden]){opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
 @media(prefers-reduced-motion:reduce){#rechModal,#rechOverlay{transition:none}}
+#persOverlay{position:fixed;inset:0;background:rgba(4,11,24,.6);z-index:18;opacity:0;transition:opacity .25s;pointer-events:none}
+#persOverlay[hidden]{display:block!important;opacity:0;pointer-events:none}
+#persOverlay:not([hidden]){opacity:1;pointer-events:auto}
+#persModal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.94);width:min(460px,92vw);max-height:84vh;overflow-y:auto;z-index:19;margin:0;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s}
+#persModal[hidden]{display:block!important;opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.94)}
+#persModal:not([hidden]){opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+@media(prefers-reduced-motion:reduce){#persModal,#persOverlay{transition:none}}
 #releaseSeg button.on{background:var(--pri);border-color:var(--pri);color:var(--pri-ink);font-weight:700}
 /* ---- Portada: KPIs y proyectos ---- */
 .kpiGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
@@ -213,6 +220,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
   <button type="button" class="mini" id="tabFormInsp">Registro de inspección</button>
   <button type="button" class="mini" id="tabFormVigas">Vigas Tarea 0</button>
   <button type="button" class="mini" id="tabFormSeg">Seguimiento</button>
+  <button type="button" class="mini" id="tabFormPersonas">Armadores y Soldadores</button>
   <button type="button" class="mini" id="tabFormCalc">Calculadora de filete</button>
 </div>
 <main>
@@ -333,6 +341,25 @@ input[type="date"],input[type="time"]{color-scheme:dark}
     <div id="segList"></div>
   </section>
 </section>
+
+<section id="personasScreen" hidden>
+  <section class="card">
+    <div class="cardHead"><h2>Armadores</h2><button type="button" class="mini" id="persRefresh">🔄 Actualizar</button></div>
+    <div class="count" id="persArmCount"></div>
+    <div id="persArmadores"></div>
+  </section>
+  <section class="card">
+    <h2>Soldadores</h2>
+    <div class="count" id="persSolCount"></div>
+    <div id="persSoldadores"></div>
+  </section>
+</section>
+<div id="persOverlay" hidden></div>
+<div class="card" id="persModal" hidden>
+  <div class="cfgHead"><h2 id="persModalName">—</h2><button type="button" id="persClose" aria-label="Cerrar">✕</button></div>
+  <div class="kpiGrid" id="persModalKpis"></div>
+  <div class="count" id="persModalDefecto" style="margin-top:14px"></div>
+</div>
 
 <section id="calcScreen" hidden>
   <section class="card">
@@ -616,11 +643,12 @@ function validate(p){ return ACTIVE_FORM==='vigas' ? validateVigas(p) : validate
 function reset(keep){ return ACTIVE_FORM==='vigas' ? resetVigas(keep) : resetInsp(keep); }
 function switchForm(name){
   ACTIVE_FORM=name;
-  $('#homeScreen').hidden = name!=='home'; $('#f').hidden = name!=='insp'; $('#fVigas').hidden = name!=='vigas'; $('#segScreen').hidden = name!=='seg'; $('#calcScreen').hidden = name!=='calc';
-  $('#tabFormHome').classList.toggle('on',name==='home'); $('#tabFormInsp').classList.toggle('on',name==='insp'); $('#tabFormVigas').classList.toggle('on',name==='vigas'); $('#tabFormSeg').classList.toggle('on',name==='seg'); $('#tabFormCalc').classList.toggle('on',name==='calc');
-  $('.bar').style.display = (name==='seg'||name==='home'||name==='calc') ? 'none' : '';
+  $('#homeScreen').hidden = name!=='home'; $('#f').hidden = name!=='insp'; $('#fVigas').hidden = name!=='vigas'; $('#segScreen').hidden = name!=='seg'; $('#personasScreen').hidden = name!=='personas'; $('#calcScreen').hidden = name!=='calc';
+  $('#tabFormHome').classList.toggle('on',name==='home'); $('#tabFormInsp').classList.toggle('on',name==='insp'); $('#tabFormVigas').classList.toggle('on',name==='vigas'); $('#tabFormSeg').classList.toggle('on',name==='seg'); $('#tabFormPersonas').classList.toggle('on',name==='personas'); $('#tabFormCalc').classList.toggle('on',name==='calc');
+  $('.bar').style.display = (name==='seg'||name==='home'||name==='calc'||name==='personas') ? 'none' : '';
   if(name==='seg') loadSeguimiento();
   if(name==='home') loadHome();
+  if(name==='personas') loadPersonas();
 }
 
 /* ===== Modo offline: cola local + sincronización automática ===== */
@@ -711,7 +739,7 @@ $('#save').onclick=()=>{
   Q.push({uid:newUid(),p:p,action:(ACTIVE_FORM==='vigas'?'saveVigas':'saveInspeccion'),t:Date.now(),tries:0,err:''}); qSave();
   showBigCheck();
   toast(navigator.onLine?'Registro guardado. Enviando a la hoja…':'Sin conexión: registro guardado en este dispositivo. Se enviará al volver internet.');
-  reset($('#keep').checked); renderPend(); syncNow(); homeLoaded=false; segLoaded=false; rechItems=null;
+  reset($('#keep').checked); renderPend(); syncNow(); homeLoaded=false; segLoaded=false; rechItems=null; personasLoaded=false;
 };
 $('#clear').onclick=()=>{if(confirm('¿Limpiar todo el formulario?'))reset(false);};
 
@@ -1029,6 +1057,53 @@ function initHome(){
 }
 function showBigCheck(){const el=$('#bigCheck');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),650);}
 
+/* ===== Armadores y Soldadores: lista + detalle por persona ===== */
+let personasData=null, personasLoaded=false;
+function personaRowHtml(p,rol){
+  return '<div class="projRow" data-nombre="'+esc(p.nombre)+'" data-rol="'+rol+'"><div class="top"><b>'+esc(p.nombre)+'</b>'+
+    '<span class="pct" style="background:rgba(255,255,255,.08);color:var(--mut);border:1px solid var(--line)">'+p.total+' total</span></div>'+
+    '<small>'+p.reciente+' esta semana · '+p.rechazos+' rechazo'+(p.rechazos===1?'':'s')+'</small></div>';
+}
+function renderPersonas(){
+  const d=personasData; if(!d)return;
+  $('#persArmCount').textContent=d.armadores.length+(d.armadores.length===1?' armador':' armadores');
+  $('#persArmadores').innerHTML=d.armadores.length?d.armadores.map(p=>personaRowHtml(p,'armador')).join(''):'<div class="count">Sin datos todavía.</div>';
+  $('#persSolCount').textContent=d.soldadores.length+(d.soldadores.length===1?' soldador':' soldadores');
+  $('#persSoldadores').innerHTML=d.soldadores.length?d.soldadores.map(p=>personaRowHtml(p,'soldador')).join(''):'<div class="count">Sin datos todavía.</div>';
+}
+async function loadPersonas(force){
+  if(personasLoaded && !force){ renderPersonas(); return; }
+  $('#persArmCount').textContent=''; $('#persArmadores').innerHTML=skeletonRows(3);
+  $('#persSolCount').textContent=''; $('#persSoldadores').innerHTML=skeletonRows(3);
+  if(!navigator.onLine){ $('#persArmCount').textContent='Sin conexión: conéctate para ver esta información.'; $('#persArmadores').innerHTML=''; $('#persSoldadores').innerHTML=''; return; }
+  try{
+    const r=await api('getPersonas');
+    if(r&&r.ok){ personasLoaded=true; personasData=r; renderPersonas(); }
+    else{ $('#persArmCount').textContent='No se pudo cargar: '+(r&&r.error||'error desconocido'); $('#persArmadores').innerHTML=''; }
+  }catch(e){ $('#persArmCount').textContent='No se pudo cargar (sin conexión o error de red).'; $('#persArmadores').innerHTML=''; }
+}
+function openPersonaModal(nombre,rol){
+  const d=personasData; if(!d)return;
+  const list=rol==='armador'?d.armadores:d.soldadores;
+  const p=list.find(x=>x.nombre===nombre); if(!p)return;
+  $('#persModalName').textContent=p.nombre+' · '+(rol==='armador'?'Armador':'Soldador');
+  $('#persModalKpis').innerHTML=
+    '<div class="kpiCard"><div class="num">'+p.total+'</div><div class="lbl3">Revisiones totales</div></div>'+
+    '<div class="kpiCard"><div class="num">'+p.reciente+'</div><div class="lbl3">Últimos 7 días</div></div>'+
+    '<div class="kpiCard"><div class="num" style="color:var(--bad)">'+p.rechazos+'</div><div class="lbl3">Rechazos</div></div>'+
+    '<div class="kpiCard"><div class="num" style="font-size:1rem">'+(p.defectoTop?esc(p.defectoTop):'—')+'</div><div class="lbl3">Defecto más común</div></div>';
+  $('#persModalDefecto').textContent = p.defectoTop ? ('Ese defecto aparece '+p.defectoTopCount+' '+(p.defectoTopCount===1?'vez':'veces')+' entre sus rechazos.') : 'Sin rechazos registrados todavía.';
+  $('#persOverlay').hidden=false; $('#persModal').hidden=false;
+}
+function closePersonaModal(){ $('#persOverlay').hidden=true; $('#persModal').hidden=true; }
+function initPersonas(){
+  $('#persRefresh').onclick=()=>loadPersonas(true);
+  $('#persArmadores').addEventListener('click',e=>{const r=e.target.closest('[data-nombre]'); if(r)openPersonaModal(r.dataset.nombre,r.dataset.rol);});
+  $('#persSoldadores').addEventListener('click',e=>{const r=e.target.closest('[data-nombre]'); if(r)openPersonaModal(r.dataset.nombre,r.dataset.rol);});
+  $('#persClose').onclick=closePersonaModal;
+  $('#persOverlay').onclick=closePersonaModal;
+}
+
 
 /* ===== Modal: rechazados (por defecto últimos 7 días, con opción de ver todo) ===== */
 let rechItems=null, rechFull=false;
@@ -1213,7 +1288,7 @@ function initLogin(){
   applySession();
 }
 
-$('#tabFormHome').onclick=()=>switchForm('home'); $('#tabFormInsp').onclick=()=>switchForm('insp'); $('#tabFormVigas').onclick=()=>switchForm('vigas'); $('#tabFormSeg').onclick=()=>switchForm('seg'); $('#tabFormCalc').onclick=()=>switchForm('calc');
+$('#tabFormHome').onclick=()=>switchForm('home'); $('#tabFormInsp').onclick=()=>switchForm('insp'); $('#tabFormVigas').onclick=()=>switchForm('vigas'); $('#tabFormSeg').onclick=()=>switchForm('seg'); $('#tabFormPersonas').onclick=()=>switchForm('personas'); $('#tabFormCalc').onclick=()=>switchForm('calc');
 function initMenu(){
   const setMenuOpen=v=>{$('#menuCard').hidden=!v;$('#menuOverlay').hidden=!v;};
   $('#menuBtn').onclick=()=>{$('#menuCard').hidden?setMenuOpen(true):setMenuOpen(false);};
@@ -1221,7 +1296,7 @@ function initMenu(){
   $('#menuOverlay').onclick=()=>setMenuOpen(false);
   window.closeMenu=()=>setMenuOpen(false);
 }
-renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); initHome(); initRechModal(); initCalc(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg();
+renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); initHome(); initRechModal(); initCalc(); initPersonas(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg();
 </script>
 </body>
 </html>
