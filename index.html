@@ -127,7 +127,12 @@ header{position:relative}
 #persOverlay{position:fixed;inset:0;background:rgba(4,11,24,.6);z-index:18;opacity:0;transition:opacity .25s;pointer-events:none}
 #persOverlay[hidden]{display:block!important;opacity:0;pointer-events:none}
 #persOverlay:not([hidden]){opacity:1;pointer-events:auto}
-#persModal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.94);width:min(460px,92vw);max-height:84vh;overflow-y:auto;z-index:19;margin:0;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s}
+#persModal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.94);width:min(480px,92vw);max-height:86vh;overflow-y:auto;z-index:19;margin:0;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s}
+.trendBars{display:flex;align-items:flex-end;gap:12px;height:110px;margin-top:10px;padding:0 6px}
+.trendCol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.trendCol .bar{width:100%;max-width:34px;border-radius:6px 6px 2px 2px;background:var(--bad);min-height:4px}
+.trendCol .vals{font-size:.72rem;color:var(--mut);margin-bottom:4px;text-align:center}
+.trendCol .lbl4{font-size:.66rem;color:var(--mut);margin-top:6px;text-align:center;line-height:1.2}
 #persModal[hidden]{display:block!important;opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.94)}
 #persModal:not([hidden]){opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
 @media(prefers-reduced-motion:reduce){#persModal,#persOverlay{transition:none}}
@@ -357,8 +362,15 @@ input[type="date"],input[type="time"]{color-scheme:dark}
 <div id="persOverlay" hidden></div>
 <div class="card" id="persModal" hidden>
   <div class="cfgHead"><h2 id="persModalName">—</h2><button type="button" id="persClose" aria-label="Cerrar">✕</button></div>
+  <div class="count" id="persModalVariantes" style="margin-bottom:10px"></div>
   <div class="kpiGrid" id="persModalKpis"></div>
-  <div class="count" id="persModalDefecto" style="margin-top:14px"></div>
+  <div id="persModalChart" style="margin-top:4px"></div>
+  <div class="count" id="persModalDefecto" style="margin-top:12px"></div>
+  <div class="lbl2">Tendencia del último mes</div>
+  <div class="count" id="persModalTendTxt"></div>
+  <div id="persModalBars" class="trendBars"></div>
+  <div class="lbl2">Errores de la última semana</div>
+  <div id="persModalErrores"></div>
 </div>
 
 <section id="calcScreen" hidden>
@@ -1062,7 +1074,7 @@ let personasData=null, personasLoaded=false;
 function personaRowHtml(p,rol){
   return '<div class="projRow" data-nombre="'+esc(p.nombre)+'" data-rol="'+rol+'"><div class="top"><b>'+esc(p.nombre)+'</b>'+
     '<span class="pct" style="background:rgba(255,255,255,.08);color:var(--mut);border:1px solid var(--line)">'+p.total+' total</span></div>'+
-    '<small>'+p.reciente+' esta semana · '+p.rechazos+' rechazo'+(p.rechazos===1?'':'s')+'</small></div>';
+    '<small>'+p.reciente+' esta semana · '+p.rechazados+' rechazo'+(p.rechazados===1?'':'s')+'</small></div>';
 }
 function renderPersonas(){
   const d=personasData; if(!d)return;
@@ -1082,17 +1094,41 @@ async function loadPersonas(force){
     else{ $('#persArmCount').textContent='No se pudo cargar: '+(r&&r.error||'error desconocido'); $('#persArmadores').innerHTML=''; }
   }catch(e){ $('#persArmCount').textContent='No se pudo cargar (sin conexión o error de red).'; $('#persArmadores').innerHTML=''; }
 }
+const TENDENCIA_TXT={
+  alza:{icon:'⚠️',txt:'Al alza: esta semana tiene más rechazos que el promedio de las 3 semanas anteriores.',color:'var(--bad)'},
+  baja:{icon:'✅',txt:'A la baja: esta semana tiene menos rechazos que el promedio de las 3 semanas anteriores.',color:'var(--ok)'},
+  estable:{icon:'→',txt:'Estable: sin cambios relevantes respecto al mes anterior.',color:'var(--mut)'}
+};
+function renderTrendBars(semanas){
+  const maxR=Math.max(1,...semanas.map(s=>s.rechazados));
+  $('#persModalBars').innerHTML=semanas.map(s=>{
+    const h=Math.max(Math.round(s.rechazados/maxR*100),s.rechazados>0?6:2);
+    return '<div class="trendCol"><div class="vals">'+s.rechazados+'</div><div class="bar" style="height:'+h+'%"></div><div class="lbl4">'+esc(s.etiqueta)+'</div></div>';
+  }).join('');
+}
+function errorRowHtml(e){
+  return '<div class="row bad"><div><b>'+esc(e.marca)+'</b><br>'+
+    '<small>'+esc(e.proyecto)+' — '+esc(e.fecha)+(e.area?' — '+esc(e.area):'')+'</small>'+
+    (e.detalle?'<br><small>'+esc(e.detalle)+'</small>':'')+'</div></div>';
+}
 function openPersonaModal(nombre,rol){
   const d=personasData; if(!d)return;
   const list=rol==='armador'?d.armadores:d.soldadores;
   const p=list.find(x=>x.nombre===nombre); if(!p)return;
   $('#persModalName').textContent=p.nombre+' · '+(rol==='armador'?'Armador':'Soldador');
+  $('#persModalVariantes').textContent = (p.variantes&&p.variantes.length>1) ? 'También se registra como: '+p.variantes.filter(v=>v!==p.nombre).join(', ') : '';
   $('#persModalKpis').innerHTML=
     '<div class="kpiCard"><div class="num">'+p.total+'</div><div class="lbl3">Revisiones totales</div></div>'+
     '<div class="kpiCard"><div class="num">'+p.reciente+'</div><div class="lbl3">Últimos 7 días</div></div>'+
-    '<div class="kpiCard"><div class="num" style="color:var(--bad)">'+p.rechazos+'</div><div class="lbl3">Rechazos</div></div>'+
+    '<div class="kpiCard"><div class="num" style="color:var(--bad)">'+p.rechazados+'</div><div class="lbl3">Rechazos totales</div></div>'+
     '<div class="kpiCard"><div class="num" style="font-size:1rem">'+(p.defectoTop?esc(p.defectoTop):'—')+'</div><div class="lbl3">Defecto más común</div></div>';
+  const segs=[{label:'Aprobado',value:p.aprobados,color:'var(--ok)'},{label:'Rechazado',value:p.rechazados,color:'var(--bad)'},{label:'Avance aprobado',value:p.avanceAprobado,color:'var(--adv)'}];
+  $('#persModalChart').innerHTML = p.total ? '<div class="chartsRow">'+donutHtml('Resultados (histórico)',segs,p.total,'registros')+'</div>' : '';
   $('#persModalDefecto').textContent = p.defectoTop ? ('Ese defecto aparece '+p.defectoTopCount+' '+(p.defectoTopCount===1?'vez':'veces')+' entre sus rechazos.') : 'Sin rechazos registrados todavía.';
+  const t=TENDENCIA_TXT[p.tendencia]||TENDENCIA_TXT.estable;
+  $('#persModalTendTxt').innerHTML='<span style="color:'+t.color+'">'+t.icon+' '+esc(t.txt)+'</span>';
+  renderTrendBars(p.semanas);
+  $('#persModalErrores').innerHTML = p.erroresSemana.length ? '<div class="pend">'+p.erroresSemana.map(errorRowHtml).join('')+'</div>' : '<div class="count">Sin rechazos en los últimos 7 días.</div>';
   $('#persOverlay').hidden=false; $('#persModal').hidden=false;
 }
 function closePersonaModal(){ $('#persOverlay').hidden=true; $('#persModal').hidden=true; }
