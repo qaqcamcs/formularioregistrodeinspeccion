@@ -127,7 +127,7 @@ header{position:relative}
 #persOverlay{position:fixed;inset:0;background:rgba(4,11,24,.6);z-index:18;opacity:0;transition:opacity .25s;pointer-events:none}
 #persOverlay[hidden]{display:block!important;opacity:0;pointer-events:none}
 #persOverlay:not([hidden]){opacity:1;pointer-events:auto}
-#persModal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.94);width:min(480px,92vw);max-height:86vh;overflow-y:auto;z-index:19;margin:0;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s}
+#persModal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.94);width:min(480px,92vw);max-height:86vh;overflow-y:auto;overflow-x:hidden;z-index:19;margin:0;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s}
 .trendBars{display:flex;align-items:flex-end;gap:12px;height:110px;margin-top:10px;padding:0 6px}
 .trendCol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
 .trendCol .trendFill{width:100%;max-width:34px;border-radius:6px 6px 2px 2px;background:var(--bad);min-height:4px}
@@ -140,7 +140,7 @@ header{position:relative}
 /* ---- Portada: KPIs y proyectos ---- */
 .kpiGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
 @media(min-width:600px){.kpiGrid{grid-template-columns:repeat(4,1fr)}}
-.kpiCard{background:#0a2244;border:1px solid var(--line);border-radius:12px;padding:14px 10px;text-align:center}
+.kpiCard{background:#0a2244;border:1px solid var(--line);border-radius:12px;padding:14px 10px;text-align:center;min-width:0;overflow-wrap:break-word}
 .kpiCard .num{font-family:'Oswald';font-size:1.9rem;font-weight:700;line-height:1.05}
 .kpiCard .lbl3{font-size:.78rem;color:var(--mut);margin-top:4px}
 .projRow{border:1px solid var(--line);background:#0a2244;border-radius:10px;padding:10px 12px;margin-top:8px;cursor:pointer}
@@ -150,6 +150,9 @@ header{position:relative}
 .projRow .pct{font-weight:700;border-radius:999px;padding:2px 10px;font-size:.8rem;flex:none}
 .projRow small{color:var(--mut);display:block;margin-top:5px}
 .cardHead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.persSoldadoresCard h2::before{background:#3d8bfd}
+.persSoldadoresCard .projRow .pct{background:rgba(61,139,253,.16)!important;color:#7fb1ff!important;border-color:#3d8bfd!important}
+.persArmadoresCard .projRow .pct{background:rgba(255,106,26,.14)!important;color:#ffb27a!important;border-color:var(--pri)!important}
 #formTabs{flex-wrap:nowrap!important;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}
 #formTabs::-webkit-scrollbar{display:none}
 #formTabs button{flex:0 0 auto;white-space:nowrap}
@@ -348,15 +351,17 @@ input[type="date"],input[type="time"]{color-scheme:dark}
 </section>
 
 <section id="personasScreen" hidden>
-  <section class="card">
+  <section class="card persArmadoresCard">
     <div class="cardHead"><h2>Armadores</h2><button type="button" class="mini" id="persRefresh">🔄 Actualizar</button></div>
     <div class="count" id="persArmCount"></div>
     <div id="persArmadores"></div>
+    <div class="add" style="margin-top:10px"><button type="button" id="persArmToggle"></button></div>
   </section>
-  <section class="card">
+  <section class="card persSoldadoresCard">
     <h2>Soldadores</h2>
     <div class="count" id="persSolCount"></div>
     <div id="persSoldadores"></div>
+    <div class="add" style="margin-top:10px"><button type="button" id="persSolToggle"></button></div>
   </section>
 </section>
 <div id="persOverlay" hidden></div>
@@ -1070,18 +1075,25 @@ function initHome(){
 function showBigCheck(){const el=$('#bigCheck');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),650);}
 
 /* ===== Armadores y Soldadores: lista + detalle por persona ===== */
-let personasData=null, personasLoaded=false;
+let personasData=null, personasLoaded=false, persArmFull=false, persSolFull=false;
 function personaRowHtml(p,rol){
   return '<div class="projRow" data-nombre="'+esc(p.nombre)+'" data-rol="'+rol+'"><div class="top"><b>'+esc(p.nombre)+'</b>'+
-    '<span class="pct" style="background:rgba(255,255,255,.08);color:var(--mut);border:1px solid var(--line)">'+p.total+' total</span></div>'+
+    '<span class="pct">'+p.total+' total</span></div>'+
     '<small>'+p.reciente+' esta semana · '+p.rechazados+' rechazo'+(p.rechazados===1?'':'s')+'</small></div>';
+}
+function renderPersonaSeccion(lista,rol,full,countId,listId,toggleId){
+  const tieneFlag = lista.some(p=>p.activo!==undefined); // compat: servidor viejo sin el campo "activo"
+  const vistos = (full||!tieneFlag) ? lista : lista.filter(p=>p.activo);
+  $('#'+countId).textContent = vistos.length + (vistos.length===1?' persona':' personas') + (tieneFlag?(full?' (todas)':' activas'):'');
+  $('#'+listId).innerHTML = vistos.length ? vistos.map(p=>personaRowHtml(p,rol)).join('') : '<div class="count">Sin datos todavía.</div>';
+  const inactivas = tieneFlag ? (lista.length - lista.filter(p=>p.activo).length) : 0;
+  $('#'+toggleId).hidden = inactivas<=0;
+  $('#'+toggleId).textContent = full ? 'Ver solo activos' : 'Ver totalidad ('+lista.length+')';
 }
 function renderPersonas(){
   const d=personasData; if(!d)return;
-  $('#persArmCount').textContent=d.armadores.length+(d.armadores.length===1?' armador':' armadores');
-  $('#persArmadores').innerHTML=d.armadores.length?d.armadores.map(p=>personaRowHtml(p,'armador')).join(''):'<div class="count">Sin datos todavía.</div>';
-  $('#persSolCount').textContent=d.soldadores.length+(d.soldadores.length===1?' soldador':' soldadores');
-  $('#persSoldadores').innerHTML=d.soldadores.length?d.soldadores.map(p=>personaRowHtml(p,'soldador')).join(''):'<div class="count">Sin datos todavía.</div>';
+  renderPersonaSeccion(d.armadores,'armador',persArmFull,'persArmCount','persArmadores','persArmToggle');
+  renderPersonaSeccion(d.soldadores,'soldador',persSolFull,'persSolCount','persSoldadores','persSolToggle');
 }
 async function loadPersonas(force){
   if(personasLoaded && !force){ renderPersonas(); return; }
@@ -1117,12 +1129,13 @@ function openPersonaModal(nombre,rol){
   const p=list.find(x=>x.nombre===nombre); if(!p)return;
   $('#persModalName').textContent=p.nombre+' · '+(rol==='armador'?'Armador':'Soldador');
   $('#persModalVariantes').textContent = (p.variantes&&p.variantes.length>1) ? 'También se registra como: '+p.variantes.filter(v=>v!==p.nombre).join(', ') : '';
+  const cantidadSum=p.cantidadSum||0, rechazosReciente=p.rechazosReciente||0, pctRechazo=p.pctRechazo||0;
   $('#persModalKpis').innerHTML=
     '<div class="kpiCard"><div class="num">'+p.total+'</div><div class="lbl3">Cantidad de registros</div></div>'+
-    '<div class="kpiCard"><div class="num">'+p.cantidadSum+'</div><div class="lbl3">Elementos revisados</div></div>'+
+    '<div class="kpiCard"><div class="num">'+cantidadSum+'</div><div class="lbl3">Elementos revisados</div></div>'+
     '<div class="kpiCard"><div class="num" style="color:var(--bad)">'+p.rechazados+'</div><div class="lbl3">Rechazos totales</div></div>'+
-    '<div class="kpiCard"><div class="num" style="color:var(--bad)">'+p.rechazosReciente+'</div><div class="lbl3">Rechazos últ. semana</div></div>'+
-    '<div class="kpiCard"><div class="num" style="color:'+pctColor(100-p.pctRechazo)+'">'+p.pctRechazo+'%</div><div class="lbl3">% de rechazo</div></div>';
+    '<div class="kpiCard"><div class="num" style="color:var(--bad)">'+rechazosReciente+'</div><div class="lbl3">Rechazos últ. semana</div></div>'+
+    '<div class="kpiCard"><div class="num" style="color:'+pctColor(100-pctRechazo)+'">'+pctRechazo+'%</div><div class="lbl3">% de rechazo</div></div>';
   const segs=[{label:'Aprobado',value:p.aprobados,color:'var(--ok)'},{label:'Rechazado',value:p.rechazados,color:'var(--bad)'},{label:'Avance aprobado',value:p.avanceAprobado,color:'var(--adv)'}];
   $('#persModalChart').innerHTML = p.total ? '<div class="chartsRow">'+donutHtml('Resultados (histórico)',segs,p.total,'registros')+'</div>' : '';
   $('#persModalDefecto').textContent = p.defectoTop ? ('Ese defecto aparece '+p.defectoTopCount+' '+(p.defectoTopCount===1?'vez':'veces')+' entre sus rechazos.') : 'Sin rechazos registrados todavía.';
@@ -1137,6 +1150,8 @@ function initPersonas(){
   $('#persRefresh').onclick=()=>loadPersonas(true);
   $('#persArmadores').addEventListener('click',e=>{const r=e.target.closest('[data-nombre]'); if(r)openPersonaModal(r.dataset.nombre,r.dataset.rol);});
   $('#persSoldadores').addEventListener('click',e=>{const r=e.target.closest('[data-nombre]'); if(r)openPersonaModal(r.dataset.nombre,r.dataset.rol);});
+  $('#persArmToggle').onclick=()=>{persArmFull=!persArmFull; renderPersonas();};
+  $('#persSolToggle').onclick=()=>{persSolFull=!persSolFull; renderPersonas();};
   $('#persClose').onclick=closePersonaModal;
   $('#persOverlay').onclick=closePersonaModal;
 }
