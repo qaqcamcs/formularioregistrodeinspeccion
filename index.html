@@ -130,7 +130,7 @@ header{position:relative}
 #persModal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.94);width:min(480px,92vw);max-height:86vh;overflow-y:auto;z-index:19;margin:0;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s}
 .trendBars{display:flex;align-items:flex-end;gap:12px;height:110px;margin-top:10px;padding:0 6px}
 .trendCol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
-.trendCol .bar{width:100%;max-width:34px;border-radius:6px 6px 2px 2px;background:var(--bad);min-height:4px}
+.trendCol .trendFill{width:100%;max-width:34px;border-radius:6px 6px 2px 2px;background:var(--bad);min-height:4px}
 .trendCol .vals{font-size:.72rem;color:var(--mut);margin-bottom:4px;text-align:center}
 .trendCol .lbl4{font-size:.66rem;color:var(--mut);margin-top:6px;text-align:center;line-height:1.2}
 #persModal[hidden]{display:block!important;opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.94)}
@@ -1103,7 +1103,7 @@ function renderTrendBars(semanas){
   const maxR=Math.max(1,...semanas.map(s=>s.rechazados));
   $('#persModalBars').innerHTML=semanas.map(s=>{
     const h=Math.max(Math.round(s.rechazados/maxR*100),s.rechazados>0?6:2);
-    return '<div class="trendCol"><div class="vals">'+s.rechazados+'</div><div class="bar" style="height:'+h+'%"></div><div class="lbl4">'+esc(s.etiqueta)+'</div></div>';
+    return '<div class="trendCol"><div class="vals">'+s.rechazados+'</div><div class="trendFill" style="height:'+h+'%"></div><div class="lbl4">'+esc(s.etiqueta)+'</div></div>';
   }).join('');
 }
 function errorRowHtml(e){
@@ -1118,10 +1118,11 @@ function openPersonaModal(nombre,rol){
   $('#persModalName').textContent=p.nombre+' · '+(rol==='armador'?'Armador':'Soldador');
   $('#persModalVariantes').textContent = (p.variantes&&p.variantes.length>1) ? 'También se registra como: '+p.variantes.filter(v=>v!==p.nombre).join(', ') : '';
   $('#persModalKpis').innerHTML=
-    '<div class="kpiCard"><div class="num">'+p.total+'</div><div class="lbl3">Revisiones totales</div></div>'+
-    '<div class="kpiCard"><div class="num">'+p.reciente+'</div><div class="lbl3">Últimos 7 días</div></div>'+
+    '<div class="kpiCard"><div class="num">'+p.total+'</div><div class="lbl3">Cantidad de registros</div></div>'+
+    '<div class="kpiCard"><div class="num">'+p.cantidadSum+'</div><div class="lbl3">Elementos revisados</div></div>'+
     '<div class="kpiCard"><div class="num" style="color:var(--bad)">'+p.rechazados+'</div><div class="lbl3">Rechazos totales</div></div>'+
-    '<div class="kpiCard"><div class="num" style="font-size:1rem">'+(p.defectoTop?esc(p.defectoTop):'—')+'</div><div class="lbl3">Defecto más común</div></div>';
+    '<div class="kpiCard"><div class="num" style="color:var(--bad)">'+p.rechazosReciente+'</div><div class="lbl3">Rechazos últ. semana</div></div>'+
+    '<div class="kpiCard"><div class="num" style="color:'+pctColor(100-p.pctRechazo)+'">'+p.pctRechazo+'%</div><div class="lbl3">% de rechazo</div></div>';
   const segs=[{label:'Aprobado',value:p.aprobados,color:'var(--ok)'},{label:'Rechazado',value:p.rechazados,color:'var(--bad)'},{label:'Avance aprobado',value:p.avanceAprobado,color:'var(--adv)'}];
   $('#persModalChart').innerHTML = p.total ? '<div class="chartsRow">'+donutHtml('Resultados (histórico)',segs,p.total,'registros')+'</div>' : '';
   $('#persModalDefecto').textContent = p.defectoTop ? ('Ese defecto aparece '+p.defectoTopCount+' '+(p.defectoTopCount===1?'vez':'veces')+' entre sus rechazos.') : 'Sin rechazos registrados todavía.';
