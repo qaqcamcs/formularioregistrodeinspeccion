@@ -80,6 +80,8 @@ header{position:relative}
 .pend .row{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--line);background:#0a2244;border-radius:10px;padding:10px 12px;margin-top:8px}
 .pend .row small{display:block;color:var(--mut);word-break:break-word}
 .pend .row.bad{border-color:var(--bad)}.pend .row.bad small{color:var(--bad)}
+.pend .row.ok{border-color:var(--ok)}
+.pend .row.adv{border-color:var(--adv)}
 .pend button{min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--txt);padding:0 14px;font:inherit;cursor:pointer;flex:0 0 auto}
 .pend button:disabled{opacity:.6}
 
@@ -186,6 +188,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
 #cfgSave{background:var(--pri);border-color:var(--pri);color:var(--pri-ink);font-weight:700;flex:1}
 #cfgSave:disabled{opacity:.6}
 .mini.on{background:var(--pri);border-color:var(--pri);font-weight:700;color:var(--pri-ink)}
+.tabBadge{display:inline-block;background:var(--bad);color:#fff;font-size:.7rem;font-weight:700;border-radius:999px;min-width:17px;height:17px;line-height:17px;padding:0 5px;margin-left:6px;vertical-align:middle}
 .rule{border:1px solid var(--line);background:#0a2244;border-radius:12px;padding:14px;margin-bottom:12px}
 .rule .lbl2{font-size:.9rem;color:#b9d2f5;font-weight:600;margin:10px 0 6px}
 .rule .mapv{border-top:1px dashed var(--line);padding-top:10px;margin-top:10px}
@@ -230,6 +233,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
   <button type="button" class="mini" id="tabFormSeg">Seguimiento</button>
   <button type="button" class="mini" id="tabFormPersonas">Armadores y Soldadores</button>
   <button type="button" class="mini" id="tabFormCalc">Calculadora de filete</button>
+  <button type="button" class="mini" id="tabFormBuscar">Búsqueda de Elementos</button>
 </div>
 <main>
 <section class="card pend" id="pend" hidden><div class="head"><h2 id="pendT"></h2><button type="button" id="syncNow">Sincronizar ahora</button></div><div id="pendL"></div></section>
@@ -353,6 +357,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
 <section id="personasScreen" hidden>
   <section class="card persArmadoresCard">
     <div class="cardHead"><h2>Armadores</h2><button type="button" class="mini" id="persRefresh">🔄 Actualizar</button></div>
+    <div class="count" id="persUpdated" style="margin-bottom:6px"></div>
     <div class="count" id="persArmCount"></div>
     <div id="persArmadores"></div>
     <div class="add" style="margin-top:10px"><button type="button" id="persArmToggle"></button></div>
@@ -377,6 +382,24 @@ input[type="date"],input[type="time"]{color-scheme:dark}
   <div class="lbl2">Errores de la última semana</div>
   <div id="persModalErrores"></div>
 </div>
+
+<section id="buscarScreen" hidden>
+  <section class="card">
+    <h2>Búsqueda de Elementos</h2>
+    <div class="count">Deja cualquier campo en blanco para no filtrar por ese dato. Si dejas todo en blanco, te muestra los registros más recientes.</div>
+    <div class="grid" style="margin-top:12px">
+      <div class="field"><label for="bqInspector">Inspector</label><input id="bqInspector" autocomplete="off" placeholder="Todos"></div>
+      <div class="field"><label for="bqProyecto">Proyecto</label><input id="bqProyecto" autocomplete="off" placeholder="Todos"></div>
+      <div class="field"><label for="bqMarca">Marca</label><input id="bqMarca" autocomplete="off" placeholder="Todas"></div>
+      <div class="field"><label for="bqCorrelativo">Correlativo</label><input id="bqCorrelativo" autocomplete="off" placeholder="Todos"></div>
+    </div>
+    <div class="add"><button type="button" id="bqLimpiar">Limpiar</button><button type="button" id="bqBuscar">Buscar</button></div>
+  </section>
+  <section class="card">
+    <div class="count" id="bqCount"></div>
+    <div id="bqList"></div>
+  </section>
+</section>
 
 <section id="calcScreen" hidden>
   <section class="card">
@@ -660,9 +683,9 @@ function validate(p){ return ACTIVE_FORM==='vigas' ? validateVigas(p) : validate
 function reset(keep){ return ACTIVE_FORM==='vigas' ? resetVigas(keep) : resetInsp(keep); }
 function switchForm(name){
   ACTIVE_FORM=name;
-  $('#homeScreen').hidden = name!=='home'; $('#f').hidden = name!=='insp'; $('#fVigas').hidden = name!=='vigas'; $('#segScreen').hidden = name!=='seg'; $('#personasScreen').hidden = name!=='personas'; $('#calcScreen').hidden = name!=='calc';
-  $('#tabFormHome').classList.toggle('on',name==='home'); $('#tabFormInsp').classList.toggle('on',name==='insp'); $('#tabFormVigas').classList.toggle('on',name==='vigas'); $('#tabFormSeg').classList.toggle('on',name==='seg'); $('#tabFormPersonas').classList.toggle('on',name==='personas'); $('#tabFormCalc').classList.toggle('on',name==='calc');
-  $('.bar').style.display = (name==='seg'||name==='home'||name==='calc'||name==='personas') ? 'none' : '';
+  $('#homeScreen').hidden = name!=='home'; $('#f').hidden = name!=='insp'; $('#fVigas').hidden = name!=='vigas'; $('#segScreen').hidden = name!=='seg'; $('#personasScreen').hidden = name!=='personas'; $('#calcScreen').hidden = name!=='calc'; $('#buscarScreen').hidden = name!=='buscar';
+  $('#tabFormHome').classList.toggle('on',name==='home'); $('#tabFormInsp').classList.toggle('on',name==='insp'); $('#tabFormVigas').classList.toggle('on',name==='vigas'); $('#tabFormSeg').classList.toggle('on',name==='seg'); $('#tabFormPersonas').classList.toggle('on',name==='personas'); $('#tabFormCalc').classList.toggle('on',name==='calc'); $('#tabFormBuscar').classList.toggle('on',name==='buscar');
+  $('.bar').style.display = (name==='seg'||name==='home'||name==='calc'||name==='personas'||name==='buscar') ? 'none' : '';
   if(name==='seg') loadSeguimiento();
   if(name==='home') loadHome();
   if(name==='personas') loadPersonas();
@@ -756,7 +779,7 @@ $('#save').onclick=()=>{
   Q.push({uid:newUid(),p:p,action:(ACTIVE_FORM==='vigas'?'saveVigas':'saveInspeccion'),t:Date.now(),tries:0,err:''}); qSave();
   showBigCheck();
   toast(navigator.onLine?'Registro guardado. Enviando a la hoja…':'Sin conexión: registro guardado en este dispositivo. Se enviará al volver internet.');
-  reset($('#keep').checked); renderPend(); syncNow(); homeLoaded=false; segLoaded=false; rechItems=null; personasLoaded=false;
+  reset($('#keep').checked); renderPend(); syncNow(); homeLoaded=false; segLoaded=false; rechItems=null; personasLoaded=false; refreshSegBadge();
 };
 $('#clear').onclick=()=>{if(confirm('¿Limpiar todo el formulario?'))reset(false);};
 
@@ -1074,8 +1097,39 @@ function initHome(){
 }
 function showBigCheck(){const el=$('#bigCheck');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),650);}
 
+/* ===== Búsqueda de Elementos: filtro libre por inspector/proyecto/marca/correlativo ===== */
+function bqRowClass(resultado){
+  const r=norm_(resultado);
+  return r==='rechazado'?'bad':r==='avance aprobado'?'adv':r==='aprobado'?'ok':'';
+}
+function bqRowHtml(it){
+  const cls=bqRowClass(it.resultado);
+  return '<div class="row'+(cls?' '+cls:'')+'"><div><b>'+esc(it.marca)+'</b> · '+esc(it.resultado||'—')+'<br>'+
+    '<small>'+esc(it.proyecto)+' — '+esc(it.fecha)+' — '+esc(it.inspector)+(it.correlativos?' — Corr: '+esc(it.correlativos):'')+' — '+esc(it.area)+'</small>'+
+    (it.detalle?'<br><small>'+esc(it.detalle)+'</small>':'')+
+    '</div></div>';
+}
+async function buscarElementosRun(){
+  const filtros={inspector:$('#bqInspector').value.trim(),proyecto:$('#bqProyecto').value.trim(),marca:$('#bqMarca').value.trim(),correlativo:$('#bqCorrelativo').value.trim()};
+  $('#bqCount').textContent=''; $('#bqList').innerHTML=skeletonRows(4);
+  if(!navigator.onLine){$('#bqCount').textContent='Sin conexión: conéctate para buscar.';$('#bqList').innerHTML='';return;}
+  try{
+    const r=await api('buscarElementos',filtros);
+    if(r&&r.ok){
+      const items=r.items||[];
+      $('#bqCount').textContent=items.length+(items.length===1?' resultado':' resultados')+(r.limitado?' (hay más; usa los filtros para acotar)':'');
+      $('#bqList').innerHTML=items.length?'<div class="pend">'+items.map(bqRowHtml).join('')+'</div>':'<div class="count">No se encontraron registros con esos filtros.</div>';
+    }else{ $('#bqCount').textContent='No se pudo buscar: '+(r&&r.error||'error desconocido'); $('#bqList').innerHTML=''; }
+  }catch(e){ $('#bqCount').textContent='No se pudo buscar (sin conexión o error de red).'; $('#bqList').innerHTML=''; }
+}
+function initBusqueda(){
+  $('#bqBuscar').onclick=buscarElementosRun;
+  $('#bqLimpiar').onclick=()=>{$('#bqInspector').value='';$('#bqProyecto').value='';$('#bqMarca').value='';$('#bqCorrelativo').value='';$('#bqCount').textContent='';$('#bqList').innerHTML='';};
+  ['bqInspector','bqProyecto','bqMarca','bqCorrelativo'].forEach(id=>{$('#'+id).addEventListener('keydown',e=>{if(e.key==='Enter')buscarElementosRun();});});
+}
+
 /* ===== Armadores y Soldadores: lista + detalle por persona ===== */
-let personasData=null, personasLoaded=false, persArmFull=false, persSolFull=false;
+let personasData=null, personasLoaded=false, persArmFull=false, persSolFull=false, personasSavedAt=0;
 function personaRowHtml(p,rol){
   return '<div class="projRow" data-nombre="'+esc(p.nombre)+'" data-rol="'+rol+'"><div class="top"><b>'+esc(p.nombre)+'</b>'+
     '<span class="pct">'+p.total+' total</span></div>'+
@@ -1088,10 +1142,11 @@ function renderPersonaSeccion(lista,rol,full,countId,listId,toggleId){
   $('#'+listId).innerHTML = vistos.length ? vistos.map(p=>personaRowHtml(p,rol)).join('') : '<div class="count">Sin datos todavía.</div>';
   const inactivas = tieneFlag ? (lista.length - lista.filter(p=>p.activo).length) : 0;
   $('#'+toggleId).hidden = inactivas<=0;
-  $('#'+toggleId).textContent = full ? 'Ver solo activos' : 'Ver totalidad ('+lista.length+')';
+  $('#'+toggleId).textContent = full ? 'Ocultar no activos' : 'Mostrar no activos ('+inactivas+')';
 }
 function renderPersonas(){
   const d=personasData; if(!d)return;
+  $('#persUpdated').textContent = 'Actualizado '+timeAgo(personasSavedAt);
   renderPersonaSeccion(d.armadores,'armador',persArmFull,'persArmCount','persArmadores','persArmToggle');
   renderPersonaSeccion(d.soldadores,'soldador',persSolFull,'persSolCount','persSoldadores','persSolToggle');
 }
@@ -1102,7 +1157,7 @@ async function loadPersonas(force){
   if(!navigator.onLine){ $('#persArmCount').textContent='Sin conexión: conéctate para ver esta información.'; $('#persArmadores').innerHTML=''; $('#persSoldadores').innerHTML=''; return; }
   try{
     const r=await api('getPersonas');
-    if(r&&r.ok){ personasLoaded=true; personasData=r; renderPersonas(); }
+    if(r&&r.ok){ personasLoaded=true; personasData=r; personasSavedAt=Date.now(); renderPersonas(); }
     else{ $('#persArmCount').textContent='No se pudo cargar: '+(r&&r.error||'error desconocido'); $('#persArmadores').innerHTML=''; }
   }catch(e){ $('#persArmCount').textContent='No se pudo cargar (sin conexión o error de red).'; $('#persArmadores').innerHTML=''; }
 }
@@ -1229,6 +1284,14 @@ function renderSegList(){
     : '<div class="count">No hay marcas rechazadas o en avance aprobado pendientes de reparar.</div>';
 }
 function norm_(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();}
+function setSegBadge(n){
+  const b=$('#tabFormSeg');
+  b.innerHTML = 'Seguimiento' + (n>0 ? ' <span class="tabBadge">'+(n>99?'99+':n)+'</span>' : '');
+}
+async function refreshSegBadge(){
+  if(!navigator.onLine) return;
+  try{ const r=await api('getPending'); if(r&&r.ok) setSegBadge((r.items||[]).length); }catch(e){}
+}
 async function loadSeguimiento(force){
   stopDraft = (CFG.marcasDetenidas||[]).slice(); renderStopChips();
   if(segLoaded && !force){ renderSegList(); return; }
@@ -1295,7 +1358,7 @@ function initSeguimiento(){
     $('#releaseConfirm').disabled=true; $('#releaseConfirm').textContent='Guardando…';
     try{
       const r=await api('releaseRepair',{row:row,liberadoPor:releaseName});
-      if(r&&r.ok){segItems=segItems.filter(it=>it.row!==row);renderSegList();toast('Marca liberada y guardada en Registro de cambios');closeReleaseModal();}
+      if(r&&r.ok){segItems=segItems.filter(it=>it.row!==row);renderSegList();setSegBadge(segItems.length);toast('Marca liberada y guardada en Registro de cambios');closeReleaseModal();}
       else{toast(r&&r.error||'No se pudo liberar',true);$('#releaseConfirm').disabled=false;$('#releaseConfirm').textContent='Marcar reparado';}
     }catch(e){toast('Sin conexión: no se pudo liberar',true);$('#releaseConfirm').disabled=false;$('#releaseConfirm').textContent='Marcar reparado';}
   };
@@ -1340,7 +1403,7 @@ function initLogin(){
   applySession();
 }
 
-$('#tabFormHome').onclick=()=>switchForm('home'); $('#tabFormInsp').onclick=()=>switchForm('insp'); $('#tabFormVigas').onclick=()=>switchForm('vigas'); $('#tabFormSeg').onclick=()=>switchForm('seg'); $('#tabFormPersonas').onclick=()=>switchForm('personas'); $('#tabFormCalc').onclick=()=>switchForm('calc');
+$('#tabFormHome').onclick=()=>switchForm('home'); $('#tabFormInsp').onclick=()=>switchForm('insp'); $('#tabFormVigas').onclick=()=>switchForm('vigas'); $('#tabFormSeg').onclick=()=>switchForm('seg'); $('#tabFormPersonas').onclick=()=>switchForm('personas'); $('#tabFormCalc').onclick=()=>switchForm('calc'); $('#tabFormBuscar').onclick=()=>switchForm('buscar');
 function initMenu(){
   const setMenuOpen=v=>{$('#menuCard').hidden=!v;$('#menuOverlay').hidden=!v;};
   $('#menuBtn').onclick=()=>{$('#menuCard').hidden?setMenuOpen(true):setMenuOpen(false);};
@@ -1348,7 +1411,7 @@ function initMenu(){
   $('#menuOverlay').onclick=()=>setMenuOpen(false);
   window.closeMenu=()=>setMenuOpen(false);
 }
-renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); initHome(); initRechModal(); initCalc(); initPersonas(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg();
+renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); initHome(); initRechModal(); initCalc(); initPersonas(); initBusqueda(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg(); refreshSegBadge();
 </script>
 </body>
 </html>
