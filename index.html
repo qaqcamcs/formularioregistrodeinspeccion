@@ -169,7 +169,8 @@ header{position:relative}
 .tabsWrap::after{right:0;background:linear-gradient(270deg,var(--bg),transparent)}
 .tabsWrap.scrollL::before{opacity:1}
 .tabsWrap.scrollR::after{opacity:1}
-#formTabs{flex-wrap:nowrap!important;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}
+#formTabs{flex-wrap:nowrap!important;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;cursor:grab}
+#formTabs.dragging{cursor:grabbing;user-select:none}
 #formTabs::-webkit-scrollbar{display:none}
 #formTabs button{flex:0 0 auto;white-space:nowrap}
 input[type="date"],input[type="time"]{color-scheme:dark}
@@ -1476,6 +1477,23 @@ function initTabsFade(){
   window.addEventListener('resize',updateTabsFade);
   updateTabsFade();
 }
+function initTabsDrag(){
+  const el=$('#formTabs');
+  let isDown=false, startX=0, startScroll=0, moved=false;
+  el.addEventListener('mousedown',e=>{ isDown=true; moved=false; startX=e.pageX; startScroll=el.scrollLeft; });
+  window.addEventListener('mouseup',()=>{ isDown=false; el.classList.remove('dragging'); });
+  window.addEventListener('mousemove',e=>{
+    if(!isDown)return;
+    const dx=e.pageX-startX;
+    if(Math.abs(dx)>4){ moved=true; el.classList.add('dragging'); }
+    if(moved) el.scrollLeft=startScroll-dx;
+  });
+  // Si hubo arrastre, que no dispare el click del botón que quedó debajo del cursor al soltar.
+  el.addEventListener('click',e=>{ if(moved){ e.preventDefault(); e.stopPropagation(); moved=false; } },true);
+  el.addEventListener('wheel',e=>{
+    if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){ el.scrollLeft+=e.deltaY; e.preventDefault(); }
+  },{passive:false});
+}
 function initMenu(){
   const setMenuOpen=v=>{$('#menuCard').hidden=!v;$('#menuOverlay').hidden=!v;};
   $('#menuBtn').onclick=()=>{$('#menuCard').hidden?setMenuOpen(true):setMenuOpen(false);};
@@ -1483,7 +1501,7 @@ function initMenu(){
   $('#menuOverlay').onclick=()=>setMenuOpen(false);
   window.closeMenu=()=>setMenuOpen(false);
 }
-renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); initHome(); initRechModal(); initCalc(); initPersonas(); initBusqueda(); initTabsFade(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg(); refreshSegBadge();
+renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); initHome(); initRechModal(); initCalc(); initPersonas(); initBusqueda(); initTabsFade(); initTabsDrag(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg(); refreshSegBadge();
 </script>
 </body>
 </html>
