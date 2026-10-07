@@ -138,6 +138,14 @@ header{position:relative}
 #persModal[hidden]{display:block!important;opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.94)}
 #persModal:not([hidden]){opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
 @media(prefers-reduced-motion:reduce){#persModal,#persOverlay{transition:none}}
+#persRechOverlay{position:fixed;inset:0;background:rgba(4,11,24,.65);z-index:20;opacity:0;transition:opacity .25s;pointer-events:none}
+#persRechOverlay[hidden]{display:block!important;opacity:0;pointer-events:none}
+#persRechOverlay:not([hidden]){opacity:1;pointer-events:auto}
+#persRechModal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.94);width:min(480px,92vw);max-height:84vh;overflow-y:auto;overflow-x:hidden;z-index:21;margin:0;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s}
+#persRechModal[hidden]{display:block!important;opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.94)}
+#persRechModal:not([hidden]){opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+@media(prefers-reduced-motion:reduce){#persRechModal,#persRechOverlay{transition:none}}
+#persModalKpis .kpiCard[data-click]{cursor:pointer}
 #releaseSeg button.on{background:var(--pri);border-color:var(--pri);color:var(--pri-ink);font-weight:700}
 /* ---- Portada: KPIs y proyectos ---- */
 .kpiGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
@@ -382,6 +390,13 @@ input[type="date"],input[type="time"]{color-scheme:dark}
   <div class="lbl2">Errores de la última semana</div>
   <div id="persModalErrores"></div>
 </div>
+<div id="persRechOverlay" hidden></div>
+<div class="card" id="persRechModal" hidden>
+  <div class="cfgHead"><h2 id="persRechTitle">Rechazos</h2><button type="button" id="persRechClose" aria-label="Cerrar">✕</button></div>
+  <input id="persRechSearch" type="search" placeholder="Buscar por marca o proyecto…" style="margin-bottom:10px">
+  <div class="count" id="persRechCount"></div>
+  <div id="persRechList"></div>
+</div>
 
 <section id="buscarScreen" hidden>
   <section class="card">
@@ -535,6 +550,9 @@ function effectiveCond(){
 let CFG = DEFAULT_CFG, COND = DEFAULT_COND, cfgRev = '';
 const CKEY = 'qaqc_cfg_v1';
 const HKEY = 'qaqc_home_v1';
+const PKEY = 'qaqc_personas_v1';
+function cachePersonas(data){ try{ localStorage.setItem(PKEY, JSON.stringify({data:data, savedAt:Date.now()})); }catch(e){} }
+function loadCachedPersonas(){ try{ const o=JSON.parse(localStorage.getItem(PKEY)); return (o&&o.data)?o:null; }catch(e){ return null; } }
 function cacheHome(data){ try{ localStorage.setItem(HKEY, JSON.stringify({data:data, savedAt:Date.now()})); }catch(e){} }
 function loadCachedHome(){ try{ const o=JSON.parse(localStorage.getItem(HKEY)); return (o&&o.data)?o:null; }catch(e){ return null; } }
 function timeAgo(ms){
@@ -1152,14 +1170,22 @@ function renderPersonas(){
 }
 async function loadPersonas(force){
   if(personasLoaded && !force){ renderPersonas(); return; }
-  $('#persArmCount').textContent=''; $('#persArmadores').innerHTML=skeletonRows(3);
-  $('#persSolCount').textContent=''; $('#persSoldadores').innerHTML=skeletonRows(3);
-  if(!navigator.onLine){ $('#persArmCount').textContent='Sin conexión: conéctate para ver esta información.'; $('#persArmadores').innerHTML=''; $('#persSoldadores').innerHTML=''; return; }
+  if(!personasData){
+    const cached=loadCachedPersonas();
+    if(cached){ personasData=cached.data; personasSavedAt=cached.savedAt; renderPersonas(); }
+    else{ $('#persUpdated').textContent=''; $('#persArmCount').textContent=''; $('#persArmadores').innerHTML=skeletonRows(3);
+      $('#persSolCount').textContent=''; $('#persSoldadores').innerHTML=skeletonRows(3); }
+  }
+  if(!navigator.onLine){
+    if(!personasData){ $('#persArmCount').textContent='Sin conexión: conéctate para ver esta información.'; }
+    else { $('#persUpdated').textContent='Sin conexión, mostrando datos '+timeAgo(personasSavedAt); }
+    return;
+  }
   try{
     const r=await api('getPersonas');
-    if(r&&r.ok){ personasLoaded=true; personasData=r; personasSavedAt=Date.now(); renderPersonas(); }
-    else{ $('#persArmCount').textContent='No se pudo cargar: '+(r&&r.error||'error desconocido'); $('#persArmadores').innerHTML=''; }
-  }catch(e){ $('#persArmCount').textContent='No se pudo cargar (sin conexión o error de red).'; $('#persArmadores').innerHTML=''; }
+    if(r&&r.ok){ personasLoaded=true; personasData=r; personasSavedAt=Date.now(); cachePersonas(r); renderPersonas(); }
+    else if(!personasData){ $('#persArmCount').textContent='No se pudo cargar: '+(r&&r.error||'error desconocido'); }
+  }catch(e){ if(!personasData) $('#persArmCount').textContent='No se pudo cargar (sin conexión o error de red).'; }
 }
 const TENDENCIA_TXT={
   alza:{icon:'⚠️',txt:'Al alza: esta semana tiene más rechazos que el promedio de las 3 semanas anteriores.',color:'var(--bad)'},
@@ -1178,17 +1204,19 @@ function errorRowHtml(e){
     '<small>'+esc(e.proyecto)+' — '+esc(e.fecha)+(e.area?' — '+esc(e.area):'')+'</small>'+
     (e.detalle?'<br><small>'+esc(e.detalle)+'</small>':'')+'</div></div>';
 }
+let persModalNombre=null, persModalRol=null;
 function openPersonaModal(nombre,rol){
   const d=personasData; if(!d)return;
   const list=rol==='armador'?d.armadores:d.soldadores;
   const p=list.find(x=>x.nombre===nombre); if(!p)return;
+  persModalNombre=nombre; persModalRol=rol;
   $('#persModalName').textContent=p.nombre+' · '+(rol==='armador'?'Armador':'Soldador');
   $('#persModalVariantes').textContent = (p.variantes&&p.variantes.length>1) ? 'También se registra como: '+p.variantes.filter(v=>v!==p.nombre).join(', ') : '';
   const cantidadSum=p.cantidadSum||0, rechazosReciente=p.rechazosReciente||0, pctRechazo=p.pctRechazo||0;
   $('#persModalKpis').innerHTML=
     '<div class="kpiCard"><div class="num">'+p.total+'</div><div class="lbl3">Cantidad de registros</div></div>'+
     '<div class="kpiCard"><div class="num">'+cantidadSum+'</div><div class="lbl3">Elementos revisados</div></div>'+
-    '<div class="kpiCard"><div class="num" style="color:var(--bad)">'+p.rechazados+'</div><div class="lbl3">Rechazos totales</div></div>'+
+    '<div class="kpiCard" data-click="rechazosTotales"><div class="num" style="color:var(--bad)">'+p.rechazados+'</div><div class="lbl3">Rechazos totales ↗</div></div>'+
     '<div class="kpiCard"><div class="num" style="color:var(--bad)">'+rechazosReciente+'</div><div class="lbl3">Rechazos últ. semana</div></div>'+
     '<div class="kpiCard"><div class="num" style="color:'+pctColor(100-pctRechazo)+'">'+pctRechazo+'%</div><div class="lbl3">% de rechazo</div></div>';
   const segs=[{label:'Aprobado',value:p.aprobados,color:'var(--ok)'},{label:'Rechazado',value:p.rechazados,color:'var(--bad)'},{label:'Avance aprobado',value:p.avanceAprobado,color:'var(--adv)'}];
@@ -1201,7 +1229,30 @@ function openPersonaModal(nombre,rol){
   $('#persOverlay').hidden=false; $('#persModal').hidden=false;
 }
 function closePersonaModal(){ $('#persOverlay').hidden=true; $('#persModal').hidden=true; }
+let persRechItems=[];
+function openPersonaRechazos(){
+  if(!persModalNombre)return;
+  const d=personasData; if(!d)return;
+  const list=persModalRol==='armador'?d.armadores:d.soldadores;
+  const p=list.find(x=>x.nombre===persModalNombre); if(!p)return;
+  persRechItems=p.erroresTotal||[];
+  $('#persRechTitle').textContent='Rechazos · '+p.nombre;
+  $('#persRechSearch').value='';
+  renderPersonaRechazos();
+  $('#persRechOverlay').hidden=false; $('#persRechModal').hidden=false;
+}
+function renderPersonaRechazos(){
+  const q=norm_((($('#persRechSearch')||{}).value)||'');
+  const list=persRechItems.filter(it=>!q||norm_(it.marca).includes(q)||norm_(it.proyecto).includes(q));
+  $('#persRechCount').textContent=list.length+(list.length===1?' rechazo':' rechazos');
+  $('#persRechList').innerHTML=list.length?'<div class="pend">'+list.map(errorRowHtml).join('')+'</div>':'<div class="count">No hay rechazos que coincidan.</div>';
+}
+function closePersonaRechazos(){ $('#persRechOverlay').hidden=true; $('#persRechModal').hidden=true; }
 function initPersonas(){
+  $('#persModalKpis').addEventListener('click',e=>{ if(e.target.closest('[data-click="rechazosTotales"]')) openPersonaRechazos(); });
+  $('#persRechClose').onclick=closePersonaRechazos;
+  $('#persRechOverlay').onclick=closePersonaRechazos;
+  $('#persRechSearch').oninput=renderPersonaRechazos;
   $('#persRefresh').onclick=()=>loadPersonas(true);
   $('#persArmadores').addEventListener('click',e=>{const r=e.target.closest('[data-nombre]'); if(r)openPersonaModal(r.dataset.nombre,r.dataset.rol);});
   $('#persSoldadores').addEventListener('click',e=>{const r=e.target.closest('[data-nombre]'); if(r)openPersonaModal(r.dataset.nombre,r.dataset.rol);});
