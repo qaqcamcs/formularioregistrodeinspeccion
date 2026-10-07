@@ -163,6 +163,12 @@ header{position:relative}
 .persSoldadoresCard h2::before{background:#3d8bfd}
 .persSoldadoresCard .projRow .pct{background:rgba(61,139,253,.16)!important;color:#7fb1ff!important;border-color:#3d8bfd!important}
 .persArmadoresCard .projRow .pct{background:rgba(255,106,26,.14)!important;color:#ffb27a!important;border-color:var(--pri)!important}
+.tabsWrap{position:relative;max-width:980px;margin:10px auto 0}
+.tabsWrap::before,.tabsWrap::after{content:"";position:absolute;top:0;bottom:2px;width:30px;pointer-events:none;z-index:2;opacity:0;transition:opacity .2s}
+.tabsWrap::before{left:0;background:linear-gradient(90deg,var(--bg),transparent)}
+.tabsWrap::after{right:0;background:linear-gradient(270deg,var(--bg),transparent)}
+.tabsWrap.scrollL::before{opacity:1}
+.tabsWrap.scrollR::after{opacity:1}
 #formTabs{flex-wrap:nowrap!important;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}
 #formTabs::-webkit-scrollbar{display:none}
 #formTabs button{flex:0 0 auto;white-space:nowrap}
@@ -234,14 +240,16 @@ input[type="date"],input[type="time"]{color-scheme:dark}
   <button type="button" class="menuItem" id="cfgBtn">Opciones</button>
   <button type="button" class="menuItem" id="logoutBtn" hidden>Cerrar sesión</button>
 </aside>
-<div class="add" id="formTabs" style="max-width:980px;margin:10px auto 0;padding:0 16px">
-  <button type="button" class="mini on" id="tabFormHome">Inicio</button>
-  <button type="button" class="mini" id="tabFormInsp">Registro de inspección</button>
-  <button type="button" class="mini" id="tabFormVigas">Vigas Tarea 0</button>
-  <button type="button" class="mini" id="tabFormSeg">Seguimiento</button>
-  <button type="button" class="mini" id="tabFormPersonas">Armadores y Soldadores</button>
-  <button type="button" class="mini" id="tabFormCalc">Calculadora de filete</button>
-  <button type="button" class="mini" id="tabFormBuscar">Búsqueda de Elementos</button>
+<div class="tabsWrap" id="tabsWrap">
+  <div class="add" id="formTabs" style="margin:0;padding:0 16px">
+    <button type="button" class="mini on" id="tabFormHome">Inicio</button>
+    <button type="button" class="mini" id="tabFormInsp">Registro de inspección</button>
+    <button type="button" class="mini" id="tabFormVigas">Vigas Tarea 0</button>
+    <button type="button" class="mini" id="tabFormSeg">Seguimiento</button>
+    <button type="button" class="mini" id="tabFormPersonas">Armadores y Soldadores</button>
+    <button type="button" class="mini" id="tabFormCalc">Calculadora de filete</button>
+    <button type="button" class="mini" id="tabFormBuscar">Búsqueda de Elementos</button>
+  </div>
 </div>
 <main>
 <section class="card pend" id="pend" hidden><div class="head"><h2 id="pendT"></h2><button type="button" id="syncNow">Sincronizar ahora</button></div><div id="pendL"></div></section>
@@ -1338,6 +1346,7 @@ function norm_(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]
 function setSegBadge(n){
   const b=$('#tabFormSeg');
   b.innerHTML = 'Seguimiento' + (n>0 ? ' <span class="tabBadge">'+(n>99?'99+':n)+'</span>' : '');
+  if(typeof updateTabsFade==='function') updateTabsFade();
 }
 async function refreshSegBadge(){
   if(!navigator.onLine) return;
@@ -1455,6 +1464,18 @@ function initLogin(){
 }
 
 $('#tabFormHome').onclick=()=>switchForm('home'); $('#tabFormInsp').onclick=()=>switchForm('insp'); $('#tabFormVigas').onclick=()=>switchForm('vigas'); $('#tabFormSeg').onclick=()=>switchForm('seg'); $('#tabFormPersonas').onclick=()=>switchForm('personas'); $('#tabFormCalc').onclick=()=>switchForm('calc'); $('#tabFormBuscar').onclick=()=>switchForm('buscar');
+function updateTabsFade(){
+  const el=$('#formTabs'), w=$('#tabsWrap');
+  const max=el.scrollWidth-el.clientWidth;
+  w.classList.toggle('scrollL', el.scrollLeft>4);
+  w.classList.toggle('scrollR', el.scrollLeft<max-4);
+}
+function initTabsFade(){
+  const el=$('#formTabs');
+  el.addEventListener('scroll',updateTabsFade);
+  window.addEventListener('resize',updateTabsFade);
+  updateTabsFade();
+}
 function initMenu(){
   const setMenuOpen=v=>{$('#menuCard').hidden=!v;$('#menuOverlay').hidden=!v;};
   $('#menuBtn').onclick=()=>{$('#menuCard').hidden?setMenuOpen(true):setMenuOpen(false);};
@@ -1462,7 +1483,7 @@ function initMenu(){
   $('#menuOverlay').onclick=()=>setMenuOpen(false);
   window.closeMenu=()=>setMenuOpen(false);
 }
-renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); initHome(); initRechModal(); initCalc(); initPersonas(); initBusqueda(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg(); refreshSegBadge();
+renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); initHome(); initRechModal(); initCalc(); initPersonas(); initBusqueda(); initTabsFade(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg(); refreshSegBadge();
 </script>
 </body>
 </html>
