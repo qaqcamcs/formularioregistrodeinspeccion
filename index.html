@@ -146,6 +146,14 @@ header{position:relative}
 #persRechModal:not([hidden]){opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
 @media(prefers-reduced-motion:reduce){#persRechModal,#persRechOverlay{transition:none}}
 #persModalKpis .kpiCard[data-click]{cursor:pointer}
+#infoOverlay{position:fixed;inset:0;background:rgba(4,11,24,.6);z-index:18;opacity:0;transition:opacity .25s;pointer-events:none}
+#infoOverlay[hidden]{display:block!important;opacity:0;pointer-events:none}
+#infoOverlay:not([hidden]){opacity:1;pointer-events:auto}
+#infoModal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.96);width:min(640px,94vw);max-height:92vh;overflow-y:auto;overflow-x:hidden;z-index:19;margin:0;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s}
+#infoModal[hidden]{display:block!important;opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.96)}
+#infoModal:not([hidden]){opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+@media(prefers-reduced-motion:reduce){#infoModal,#infoOverlay{transition:none}}
+#infGenerar:disabled{opacity:.6}
 #releaseSeg button.on{background:var(--pri);border-color:var(--pri);color:var(--pri-ink);font-weight:700}
 /* ---- Portada: KPIs y proyectos ---- */
 .kpiGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
@@ -218,6 +226,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
 .loginErr{display:none;color:var(--bad);font-size:.88rem;margin:4px 0 10px}
 #inspectorBox{min-height:48px;padding:10px 12px;background:#08203f;border:1px solid var(--line);border-radius:10px;display:flex;align-items:center;color:var(--txt)}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 <div class="loginOverlay" id="loginOverlay">
@@ -250,6 +259,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
     <button type="button" class="mini" id="tabFormPersonas">Armadores y Soldadores</button>
     <button type="button" class="mini" id="tabFormCalc">Calculadora de filete</button>
     <button type="button" class="mini" id="tabFormBuscar">Búsqueda de Elementos</button>
+    <button type="button" class="mini" id="tabFormInformes">Informes</button>
   </div>
 </div>
 <main>
@@ -424,6 +434,40 @@ input[type="date"],input[type="time"]{color-scheme:dark}
     <div id="bqList"></div>
   </section>
 </section>
+
+<section id="informesScreen" hidden>
+  <section class="card">
+    <h2>Informes</h2>
+    <div class="count">Toca un informe para completarlo y generar el documento. Vamos a ir agregando más con el tiempo.</div>
+    <div id="informesList" style="margin-top:12px">
+      <div class="projRow" id="infoAbrirTerreno">
+        <div class="top"><b>Informe de Inspección en Terreno</b></div>
+        <small>Datos de la visita, observaciones y evidencia fotográfica. Se descarga como PDF al celular.</small>
+      </div>
+    </div>
+  </section>
+</section>
+<div id="infoOverlay" hidden></div>
+<div class="card" id="infoModal" hidden>
+  <div class="cfgHead"><h2>Informe de Inspección en Terreno</h2><button type="button" id="infoClose" aria-label="Cerrar">✕</button></div>
+  <div class="count">Firma como Control de Calidad: <b id="infoFirmante" style="color:var(--txt)"></b></div>
+  <div class="grid" style="margin-top:12px">
+    <div class="field"><label for="infCliente">Cliente</label><input id="infCliente" autocomplete="off"></div>
+    <div class="field"><label for="infObra">Obra</label><input id="infObra" autocomplete="off"></div>
+    <div class="field"><label for="infReporte">N° de reporte</label><input id="infReporte" autocomplete="off" placeholder="Ej: 001"></div>
+    <div class="field"><label for="infFecha">Fecha</label><input id="infFecha" type="date"></div>
+  </div>
+  <div class="field"><label for="infConjunto">Conjunto a inspeccionar</label><input id="infConjunto" autocomplete="off"></div>
+  <div class="field"><label for="infPlano">Plano de referencia</label><input id="infPlano" autocomplete="off"></div>
+  <div class="field"><label for="infLugar">Lugar de inspección</label><input id="infLugar" autocomplete="off"></div>
+  <div class="field"><label for="infCausa">Causa</label><input id="infCausa" autocomplete="off"></div>
+  <div class="field"><label for="infDescripcion">Descripción</label><textarea id="infDescripcion" style="min-height:130px"></textarea></div>
+  <div class="field"><label for="infObservaciones">Observaciones</label><textarea id="infObservaciones" style="min-height:90px"></textarea></div>
+  <div class="field"><label for="infNotas">Notas y recomendaciones</label><textarea id="infNotas" style="min-height:70px"></textarea></div>
+  <div class="field"><label for="infFotos">Evidencia fotográfica (va en la página 2 del informe)</label><input id="infFotos" type="file" accept="image/*" multiple></div>
+  <div class="count" id="infFotosCount"></div>
+  <div class="add" style="margin-top:14px"><button type="button" id="infCancelar">Cancelar</button><button type="button" id="infGenerar">Generar documento</button></div>
+</div>
 
 <section id="calcScreen" hidden>
   <section class="card">
@@ -710,9 +754,9 @@ function validate(p){ return ACTIVE_FORM==='vigas' ? validateVigas(p) : validate
 function reset(keep){ return ACTIVE_FORM==='vigas' ? resetVigas(keep) : resetInsp(keep); }
 function switchForm(name){
   ACTIVE_FORM=name;
-  $('#homeScreen').hidden = name!=='home'; $('#f').hidden = name!=='insp'; $('#fVigas').hidden = name!=='vigas'; $('#segScreen').hidden = name!=='seg'; $('#personasScreen').hidden = name!=='personas'; $('#calcScreen').hidden = name!=='calc'; $('#buscarScreen').hidden = name!=='buscar';
-  $('#tabFormHome').classList.toggle('on',name==='home'); $('#tabFormInsp').classList.toggle('on',name==='insp'); $('#tabFormVigas').classList.toggle('on',name==='vigas'); $('#tabFormSeg').classList.toggle('on',name==='seg'); $('#tabFormPersonas').classList.toggle('on',name==='personas'); $('#tabFormCalc').classList.toggle('on',name==='calc'); $('#tabFormBuscar').classList.toggle('on',name==='buscar');
-  $('.bar').style.display = (name==='seg'||name==='home'||name==='calc'||name==='personas'||name==='buscar') ? 'none' : '';
+  $('#homeScreen').hidden = name!=='home'; $('#f').hidden = name!=='insp'; $('#fVigas').hidden = name!=='vigas'; $('#segScreen').hidden = name!=='seg'; $('#personasScreen').hidden = name!=='personas'; $('#calcScreen').hidden = name!=='calc'; $('#buscarScreen').hidden = name!=='buscar'; $('#informesScreen').hidden = name!=='informes';
+  $('#tabFormHome').classList.toggle('on',name==='home'); $('#tabFormInsp').classList.toggle('on',name==='insp'); $('#tabFormVigas').classList.toggle('on',name==='vigas'); $('#tabFormSeg').classList.toggle('on',name==='seg'); $('#tabFormPersonas').classList.toggle('on',name==='personas'); $('#tabFormCalc').classList.toggle('on',name==='calc'); $('#tabFormBuscar').classList.toggle('on',name==='buscar'); $('#tabFormInformes').classList.toggle('on',name==='informes');
+  $('.bar').style.display = (name==='seg'||name==='home'||name==='calc'||name==='personas'||name==='buscar'||name==='informes') ? 'none' : '';
   if(name==='seg') loadSeguimiento();
   if(name==='home') loadHome();
   if(name==='personas') loadPersonas();
@@ -1124,6 +1168,130 @@ function initHome(){
 }
 function showBigCheck(){const el=$('#bigCheck');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),650);}
 
+/* ===== Informes: Informe de Inspección en Terreno (PDF generado en el dispositivo) ===== */
+let infFotosFiles=[];
+function openInformeModal(){
+  $('#infoFirmante').textContent=(SESSION&&SESSION.nombre)||'(sin sesión)';
+  ['infCliente','infObra','infReporte','infConjunto','infPlano','infLugar','infCausa','infDescripcion','infObservaciones','infNotas'].forEach(id=>$('#'+id).value='');
+  $('#infFecha').value=today();
+  infFotosFiles=[]; $('#infFotos').value=''; $('#infFotosCount').textContent='';
+  $('#infoOverlay').hidden=false; $('#infoModal').hidden=false;
+}
+function closeInformeModal(){ $('#infoOverlay').hidden=true; $('#infoModal').hidden=true; }
+function fileToImage(file){
+  return new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(file), img=new Image();
+    img.onload=()=>resolve(img); img.onerror=reject; img.src=url;
+  });
+}
+// Dibuja un bloque con etiqueta en negrita y texto envuelto dentro de un recuadro; devuelve el y siguiente.
+function pdfBox(doc,label,text,x,y,w,h){
+  doc.setDrawColor(180); doc.rect(x,y,w,h);
+  doc.setFont(undefined,'bold'); doc.setFontSize(9); doc.setTextColor(40);
+  doc.text(label,x+2,y+5);
+  doc.setFont(undefined,'normal'); doc.setFontSize(9.5);
+  const lines=doc.splitTextToSize(text||'—',w-4);
+  doc.text(lines,x+2,y+10.5);
+  return y+h+4;
+}
+function pdfHeader(doc,paginaTxt){
+  const logo=document.querySelector('header .logo');
+  if(logo&&logo.complete&&logo.naturalWidth) doc.addImage(logo,'PNG',15,10,34,13);
+  doc.setFont(undefined,'bold'); doc.setFontSize(14); doc.setTextColor(20);
+  doc.text('INFORME DE INSPECCIÓN',105,17,{align:'center'});
+  const bx=155,by=9,bw=40;
+  doc.setDrawColor(180); doc.rect(bx,by,bw,20);
+  doc.setFontSize(7.5); doc.setFont(undefined,'bold');
+  [['REF.:','II-E-01'],['REV.:','1'],['FECHA:',today()],['PÁG.:',paginaTxt]].forEach((row,i)=>{
+    doc.text(row[0],bx+2,by+5+i*4.6); doc.setFont(undefined,'normal'); doc.text(String(row[1]),bx+16,by+5+i*4.6); doc.setFont(undefined,'bold');
+  });
+  doc.setDrawColor(40); doc.setLineWidth(.4); doc.line(15,26,195,26); doc.setLineWidth(.2);
+}
+async function generarInforme(){
+  if(!$('#infCliente').value.trim()||!$('#infObra').value.trim()){ toast('Completa al menos Cliente y Obra',true); return; }
+  if(!window.jspdf){ toast('No se pudo cargar el generador de PDF (revisa tu conexión)',true); return; }
+  $('#infGenerar').disabled=true; $('#infGenerar').textContent='Generando…';
+  try{
+    const { jsPDF }=window.jspdf;
+    const doc=new jsPDF({unit:'mm',format:'a4'});
+    const totalPag = infFotosFiles.length? 2:1;
+    pdfHeader(doc, '1 DE '+totalPag);
+    doc.setFontSize(9.5); doc.setTextColor(20);
+    let y=32;
+    doc.setFont(undefined,'bold'); doc.text('Cliente:',15,y); doc.setFont(undefined,'normal'); doc.text($('#infCliente').value,32,y);
+    doc.setFont(undefined,'bold'); doc.text('Obra:',110,y); doc.setFont(undefined,'normal'); doc.text($('#infObra').value,124,y);
+    y+=7;
+    doc.setFont(undefined,'bold'); doc.text('Reporte N°:',15,y); doc.setFont(undefined,'normal'); doc.text($('#infReporte').value||'—',38,y);
+    doc.setFont(undefined,'bold'); doc.text('Fecha:',110,y); doc.setFont(undefined,'normal'); doc.text(fDate($('#infFecha').value),124,y);
+    y+=8;
+    [['Conjunto a inspeccionar:',$('#infConjunto').value],['Plano de referencia:',$('#infPlano').value],['Lugar de inspección:',$('#infLugar').value],['Causa:',$('#infCausa').value]].forEach(([lbl,val])=>{
+      doc.setFont(undefined,'bold'); doc.text(lbl,15,y); doc.setFont(undefined,'normal');
+      doc.text(doc.splitTextToSize(val||'—',140),55,y);
+      y+=6.5;
+    });
+    y+=3;
+    y=pdfBox(doc,'Descripción:',$('#infDescripcion').value,15,y,180,55);
+    y=pdfBox(doc,'Observaciones:',$('#infObservaciones').value,15,y,180,32);
+    y=pdfBox(doc,'Notas y recomendaciones:',$('#infNotas').value,15,y,180,22);
+
+    // Bloque de firmas
+    const fy=y+2, fw=56.6, fx=[15,15+fw,15+fw*2];
+    const firmas=[
+      {titulo:'Control de Calidad (AMCS)', nombre:(SESSION&&SESSION.nombre)||'', fecha:fDate($('#infFecha').value)},
+      {titulo:'Jefe de Calidad (AMCS)', nombre:'ALEJANDRO SUÁREZ', fecha:''},
+      {titulo:'Jefe de Operaciones (AMCS)', nombre:'RODRIGO GARAY', fecha:''}
+    ];
+    firmas.forEach((f,i)=>{
+      const x=fx[i];
+      doc.setDrawColor(180); doc.rect(x,fy,fw,24);
+      doc.setFont(undefined,'bold'); doc.setFontSize(8); doc.text(f.titulo,x+2,fy+4.5,{maxWidth:fw-4});
+      doc.line(x+2,fy+13,x+fw-2,fy+13);
+      doc.setFont(undefined,'normal'); doc.setFontSize(7.5); doc.text('Firma',x+2,fy+12);
+      doc.setFontSize(8); doc.text(f.nombre||'—',x+2,fy+18,{maxWidth:fw-4});
+      doc.setFontSize(7); doc.text('Fecha: '+(f.fecha||'—'),x+2,fy+22);
+    });
+
+    // Página 2: evidencia fotográfica
+    if(infFotosFiles.length){
+      const imgs=await Promise.all(infFotosFiles.map(fileToImage));
+      doc.addPage();
+      pdfHeader(doc,'2 DE 2');
+      doc.setFont(undefined,'bold'); doc.setFontSize(12); doc.text('EVIDENCIA FOTOGRÁFICA',105,33,{align:'center'});
+      const boxW=85, boxH=62, gap=6, startX=15, startY=40, perRow=2;
+      imgs.forEach((img,i)=>{
+        const col=i%perRow, rowOnPage=Math.floor(i/perRow)%4;
+        if(i>0 && i%8===0){ doc.addPage(); pdfHeader(doc,'2 DE 2'); }
+        const x=startX+col*(boxW+gap), yy=startY+rowOnPage*(boxH+8);
+        const ratio=Math.min(boxW/img.naturalWidth, boxH/img.naturalHeight);
+        const w=img.naturalWidth*ratio, h=img.naturalHeight*ratio;
+        doc.setDrawColor(180); doc.rect(x,yy,boxW,boxH);
+        doc.addImage(img,'JPEG',x+(boxW-w)/2,yy+(boxH-h)/2,w,h);
+        doc.setFontSize(7.5); doc.setTextColor(90); doc.text('Foto '+(i+1),x+boxW/2,yy+boxH+4,{align:'center'});
+      });
+    }
+
+    const nombreArchivo='Informe_Inspeccion_'+($('#infObra').value||'obra').replace(/[^\w\-]+/g,'_')+'_'+$('#infFecha').value+'.pdf';
+    doc.save(nombreArchivo);
+    toast('Informe generado y descargado');
+    closeInformeModal();
+  }catch(e){
+    toast('No se pudo generar el PDF: '+(e&&e.message||'error desconocido'),true);
+  }
+  $('#infGenerar').disabled=false; $('#infGenerar').textContent='Generar documento';
+}
+function fDate(iso){ if(!iso)return '—'; const [y,m,d]=iso.split('-'); return d+'/'+m+'/'+y; }
+function initInformes(){
+  $('#infoAbrirTerreno').onclick=openInformeModal;
+  $('#infoClose').onclick=closeInformeModal;
+  $('#infoOverlay').onclick=closeInformeModal;
+  $('#infCancelar').onclick=closeInformeModal;
+  $('#infFotos').onchange=()=>{
+    infFotosFiles=[...$('#infFotos').files];
+    $('#infFotosCount').textContent=infFotosFiles.length+(infFotosFiles.length===1?' foto seleccionada':' fotos seleccionadas');
+  };
+  $('#infGenerar').onclick=generarInforme;
+}
+
 /* ===== Búsqueda de Elementos: filtro libre por inspector/proyecto/marca/correlativo ===== */
 function bqRowClass(resultado){
   const r=norm_(resultado);
@@ -1464,7 +1632,7 @@ function initLogin(){
   applySession();
 }
 
-$('#tabFormHome').onclick=()=>switchForm('home'); $('#tabFormInsp').onclick=()=>switchForm('insp'); $('#tabFormVigas').onclick=()=>switchForm('vigas'); $('#tabFormSeg').onclick=()=>switchForm('seg'); $('#tabFormPersonas').onclick=()=>switchForm('personas'); $('#tabFormCalc').onclick=()=>switchForm('calc'); $('#tabFormBuscar').onclick=()=>switchForm('buscar');
+$('#tabFormHome').onclick=()=>switchForm('home'); $('#tabFormInsp').onclick=()=>switchForm('insp'); $('#tabFormVigas').onclick=()=>switchForm('vigas'); $('#tabFormSeg').onclick=()=>switchForm('seg'); $('#tabFormPersonas').onclick=()=>switchForm('personas'); $('#tabFormCalc').onclick=()=>switchForm('calc'); $('#tabFormBuscar').onclick=()=>switchForm('buscar'); $('#tabFormInformes').onclick=()=>switchForm('informes');
 function updateTabsFade(){
   const el=$('#formTabs'), w=$('#tabsWrap');
   const max=el.scrollWidth-el.clientWidth;
@@ -1501,7 +1669,7 @@ function initMenu(){
   $('#menuOverlay').onclick=()=>setMenuOpen(false);
   window.closeMenu=()=>setMenuOpen(false);
 }
-renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); initHome(); initRechModal(); initCalc(); initPersonas(); initBusqueda(); initTabsFade(); initTabsDrag(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg(); refreshSegBadge();
+renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); initHome(); initRechModal(); initCalc(); initPersonas(); initBusqueda(); initInformes(); initTabsFade(); initTabsDrag(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg(); refreshSegBadge();
 </script>
 </body>
 </html>
