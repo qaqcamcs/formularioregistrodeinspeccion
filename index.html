@@ -1250,8 +1250,8 @@ async function generarInforme(){
     y+=9;
     [['Conjunto a inspeccionar: ',$('#infConjunto').value],['Plano de referencia: ',$('#infPlano').value],['Lugar de inspección: ',$('#infLugar').value],['Causa: ',$('#infCausa').value]].forEach(([lbl,val])=>{
       doc.setFont(undefined,'bold');
-      const texto=lbl+(val||'—');
-      doc.text(texto,105,y,{align:'center',maxWidth:170});
+      doc.text(lbl.trim(),18,y);                                   // enunciado a la izquierda
+      doc.text(val||'—',105,y,{align:'center',maxWidth:110});      // respuesta centrada
       y+=6.5;
     });
     y+=3;
