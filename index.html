@@ -451,19 +451,16 @@ input[type="date"],input[type="time"]{color-scheme:dark}
 <div class="card" id="infoModal" hidden>
   <div class="cfgHead"><h2>Informe de Inspección en Terreno</h2><button type="button" id="infoClose" aria-label="Cerrar">✕</button></div>
   <div class="count">Firma como Control de Calidad: <b id="infoFirmante" style="color:var(--txt)"></b></div>
-  <div class="grid" style="margin-top:12px">
-    <div class="field"><label for="infCliente">Cliente</label><select id="infCliente"></select></div>
-    <div class="field"><label for="infObra">Obra</label><select id="infObra"></select></div>
-    <div class="field"><label for="infReporte">N° de reporte</label><input id="infReporte" disabled placeholder="Se asigna al generar"></div>
+  <div class="field"><label for="infProyecto">Proyecto</label><select id="infProyecto"></select></div>
+  <div class="grid">
+    <div class="field"><label for="infReporte">N° de reporte</label><input id="infReporte" disabled placeholder="Se asigna al generar, según el proyecto"></div>
     <div class="field"><label for="infFecha">Fecha</label><input id="infFecha" type="date"></div>
   </div>
   <div class="field"><label for="infConjunto">Conjunto a inspeccionar</label><input id="infConjunto" autocomplete="off"></div>
   <div class="field"><label for="infPlano">Plano de referencia</label><input id="infPlano" autocomplete="off"></div>
   <div class="field"><label for="infLugar">Lugar de inspección</label><input id="infLugar" autocomplete="off"></div>
   <div class="field"><label for="infCausa">Causa</label><input id="infCausa" autocomplete="off"></div>
-  <div class="field"><label for="infDescripcion">Descripción</label><textarea id="infDescripcion" style="min-height:130px"></textarea></div>
-  <div class="field"><label for="infObservaciones">Observaciones</label><textarea id="infObservaciones" style="min-height:90px"></textarea></div>
-  <div class="field"><label for="infNotas">Notas y recomendaciones</label><textarea id="infNotas" style="min-height:70px"></textarea></div>
+  <div class="field"><label for="infDescripcion">Descripción</label><textarea id="infDescripcion" style="min-height:160px"></textarea></div>
   <div class="field"><label for="infFotos">Evidencia fotográfica (va en la página 2 del informe)</label><input id="infFotos" type="file" accept="image/*" multiple></div>
   <div class="count" id="infFotosCount"></div>
   <div class="add" style="margin-top:14px"><button type="button" id="infCancelar">Cancelar</button><button type="button" id="infGenerar">Generar documento</button></div>
@@ -1177,9 +1174,8 @@ function fillPlainSelect(id,list,ph){
 }
 function openInformeModal(){
   $('#infoFirmante').textContent=(SESSION&&SESSION.nombre)||'(sin sesión)';
-  fillPlainSelect('infCliente',CFG.proyectos,'Selecciona…');
-  fillPlainSelect('infObra',CFG.proyectos,'Selecciona…');
-  ['infConjunto','infPlano','infLugar','infCausa','infDescripcion','infObservaciones','infNotas'].forEach(id=>$('#'+id).value='');
+  fillPlainSelect('infProyecto',CFG.proyectos,'Selecciona…');
+  ['infConjunto','infPlano','infLugar','infCausa','infDescripcion'].forEach(id=>$('#'+id).value='');
   $('#infReporte').value='';
   $('#infFecha').value=today();
   infFotosFiles=[]; $('#infFotos').value=''; $('#infFotosCount').textContent='';
@@ -1209,7 +1205,7 @@ function pdfHeader(doc,paginaTxt){
   const bx=155,by=9,bw=40,bh=20;
   doc.setDrawColor(180); doc.rect(bx,by,bw,bh);
   doc.setFontSize(7.5); doc.setFont(undefined,'bold');
-  [['REF.:','II-E-01'],['REV.:','1'],['FECHA:',today()],['PÁG.:',paginaTxt]].forEach((row,i)=>{
+  [['REF.:','II-E-01'],['REV.:','1'],['FECHA:','14/05/2026'],['PÁG.:',paginaTxt]].forEach((row,i)=>{
     doc.text(row[0],bx+2,by+5+i*4.6); doc.setFont(undefined,'normal'); doc.text(String(row[1]),bx+16,by+5+i*4.6); doc.setFont(undefined,'bold');
   });
   // La línea separadora va DEBAJO del recuadro (by+bh), para que no se traslape con "PÁG.".
@@ -1224,12 +1220,13 @@ function pdfFooter(doc,pageNum,totalPages){
   doc.setTextColor(20);
 }
 async function generarInforme(){
-  if(!$('#infCliente').value||!$('#infObra').value){ toast('Selecciona Cliente y Obra',true); return; }
+  if(!$('#infProyecto').value){ toast('Selecciona el proyecto',true); return; }
   if(!window.jspdf){ toast('No se pudo cargar el generador de PDF (revisa tu conexión)',true); return; }
   if(!navigator.onLine){ toast('Necesitas conexión a internet para asignar el número de reporte',true); return; }
   $('#infGenerar').disabled=true; $('#infGenerar').textContent='Reservando N° de reporte…';
   try{
-    const rn=await api('siguienteNumeroInforme');
+    const proyecto=$('#infProyecto').value;
+    const rn=await api('siguienteNumeroInforme',{proyecto:proyecto});
     if(!rn||!rn.ok) throw new Error(rn&&rn.error||'No se pudo asignar el número de reporte');
     const numeroReporte=String(rn.numero).padStart(3,'0');
     $('#infGenerar').textContent='Generando…';
@@ -1242,32 +1239,28 @@ async function generarInforme(){
     let y=pdfHeader(doc, '1 DE '+totalPag)+6;
     const boxTop=y-3;
     doc.setFontSize(9.5); doc.setTextColor(20);
-    doc.setFont(undefined,'bold'); doc.text('Cliente:',18,y); doc.setFont(undefined,'normal'); doc.text($('#infCliente').value,35,y,{maxWidth:72});
-    doc.setFont(undefined,'bold'); doc.text('Obra:',110,y); doc.setFont(undefined,'normal'); doc.text($('#infObra').value,124,y,{maxWidth:65});
+    doc.setFont(undefined,'bold'); doc.text('Proyecto:',18,y); doc.setFont(undefined,'normal'); doc.text(proyecto,40,y,{maxWidth:150});
     y+=7;
-    doc.setFont(undefined,'bold'); doc.text('Reporte N°:',18,y); doc.setFont(undefined,'normal'); doc.text(numeroReporte,41,y);
-    doc.setFont(undefined,'bold'); doc.text('Fecha:',110,y); doc.setFont(undefined,'normal'); doc.text(fDate($('#infFecha').value),124,y);
+    doc.setFont(undefined,'bold'); doc.text('Reporte N°:',18,y); doc.setFont(undefined,'normal'); doc.text(numeroReporte+' (de este proyecto)',41,y);
+    doc.setFont(undefined,'bold'); doc.text('Fecha:',130,y); doc.setFont(undefined,'normal'); doc.text(fDate($('#infFecha').value),144,y);
     y+=9;
     [['Conjunto a inspeccionar: ',$('#infConjunto').value],['Plano de referencia: ',$('#infPlano').value],['Lugar de inspección: ',$('#infLugar').value],['Causa: ',$('#infCausa').value]].forEach(([lbl,val])=>{
       doc.setFont(undefined,'bold');
-      doc.text(lbl.trim(),18,y);                                   // enunciado a la izquierda
-      doc.text(val||'—',105,y,{align:'center',maxWidth:110});      // respuesta centrada
+      const texto=lbl+(val||'—');
+      doc.text(texto,105,y,{align:'center',maxWidth:170});
       y+=6.5;
     });
     y+=3;
     doc.setDrawColor(180); doc.rect(15,boxTop,180,y-boxTop);
     y+=3;
 
-    y=pdfBox(doc,'Descripción:',$('#infDescripcion').value,15,y,180,55);
-    y=pdfBox(doc,'Observaciones:',$('#infObservaciones').value,15,y,180,32);
-    y=pdfBox(doc,'Notas y recomendaciones:',$('#infNotas').value,15,y,180,22);
+    y=pdfBox(doc,'Descripción:',$('#infDescripcion').value,15,y,180,95);
 
-    // Bloque de firmas
-    const fy=y+2, fw=56.6, fx=[15,15+fw,15+fw*2];
+    // Bloque de firmas (solo Control de Calidad y Jefe de Calidad)
+    const fy=y+2, fw=86, fx=[15,15+fw+8];
     const firmas=[
       {titulo:'Control de Calidad (AMCS)', nombre:(SESSION&&SESSION.nombre)||'', fecha:fDate($('#infFecha').value)},
-      {titulo:'Jefe de Calidad (AMCS)', nombre:'ALEJANDRO SUÁREZ', fecha:''},
-      {titulo:'Jefe de Operaciones (AMCS)', nombre:'RODRIGO GARAY', fecha:''}
+      {titulo:'Jefe de Calidad (AMCS)', nombre:'Alejandro Suárez', fecha:''}
     ];
     firmas.forEach((f,i)=>{
       const x=fx[i];
@@ -1304,7 +1297,7 @@ async function generarInforme(){
     const totalPaginasReal=doc.internal.getNumberOfPages();
     for(let p=1;p<=totalPaginasReal;p++){ doc.setPage(p); pdfFooter(doc,p,totalPaginasReal); }
 
-    const nombreArchivo='Informe_'+numeroReporte+'_'+($('#infObra').value||'obra').replace(/[^\w\-]+/g,'_')+'_'+$('#infFecha').value+'.pdf';
+    const nombreArchivo='Informe_'+numeroReporte+'_'+(proyecto||'proyecto').replace(/[^\w\-]+/g,'_')+'_'+$('#infFecha').value+'.pdf';
     doc.save(nombreArchivo);
     toast('Informe N° '+numeroReporte+' generado y descargado');
     closeInformeModal();
