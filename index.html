@@ -1244,20 +1244,21 @@ async function generarInforme(){
     doc.setFont(undefined,'bold'); doc.text('Reporte N°:',18,y); doc.setFont(undefined,'normal'); doc.text(numeroReporte+' (de este proyecto)',41,y);
     doc.setFont(undefined,'bold'); doc.text('Fecha:',130,y); doc.setFont(undefined,'normal'); doc.text(fDate($('#infFecha').value),144,y);
     y+=9;
-    [['Conjunto a inspeccionar: ',$('#infConjunto').value],['Plano de referencia: ',$('#infPlano').value],['Lugar de inspección: ',$('#infLugar').value],['Causa: ',$('#infCausa').value]].forEach(([lbl,val])=>{
-      doc.setFont(undefined,'bold');
-      const texto=lbl+(val||'—');
-      doc.text(texto,105,y,{align:'center',maxWidth:170});
+    [['Conjunto a inspeccionar:',$('#infConjunto').value],['Plano de referencia:',$('#infPlano').value],['Lugar de inspección:',$('#infLugar').value],['Causa:',$('#infCausa').value]].forEach(([lbl,val])=>{
+      doc.setFont(undefined,'bold'); doc.text(lbl,18,y);
+      doc.setFont(undefined,'normal'); doc.text(val||'—',105,y,{align:'center',maxWidth:140});
       y+=6.5;
     });
     y+=3;
     doc.setDrawColor(180); doc.rect(15,boxTop,180,y-boxTop);
     y+=3;
 
-    y=pdfBox(doc,'Descripción:',$('#infDescripcion').value,15,y,180,95);
+    const SIGN_Y=253; // posición fija del bloque de firmas, cerca del pie de página
+    const descH=SIGN_Y-3-y; // la Descripción ocupa todo lo que quede libre hasta ahí
+    y=pdfBox(doc,'Descripción:',$('#infDescripcion').value,15,y,180,descH);
 
-    // Bloque de firmas (solo Control de Calidad y Jefe de Calidad)
-    const fy=y+2, fw=86, fx=[15,15+fw+8];
+    // Bloque de firmas (solo Control de Calidad y Jefe de Calidad), ancladas cerca del pie
+    const fy=SIGN_Y, fw=86, fx=[15,15+fw+8];
     const firmas=[
       {titulo:'Control de Calidad (AMCS)', nombre:(SESSION&&SESSION.nombre)||'', fecha:fDate($('#infFecha').value)},
       {titulo:'Jefe de Calidad (AMCS)', nombre:'Alejandro Suárez', fecha:''}
