@@ -1241,7 +1241,7 @@ async function generarInforme(){
     doc.setFontSize(9.5); doc.setTextColor(20);
     doc.setFont(undefined,'bold'); doc.text('Proyecto:',18,y); doc.setFont(undefined,'normal'); doc.text(proyecto,40,y,{maxWidth:150});
     y+=7;
-    doc.setFont(undefined,'bold'); doc.text('Reporte N°:',18,y); doc.setFont(undefined,'normal'); doc.text(numeroReporte+' (de este proyecto)',41,y);
+    doc.setFont(undefined,'bold'); doc.text('Reporte N°:',18,y); doc.setFont(undefined,'normal'); doc.text(numeroReporte,41,y);
     doc.setFont(undefined,'bold'); doc.text('Fecha:',130,y); doc.setFont(undefined,'normal'); doc.text(fDate($('#infFecha').value),144,y);
     y+=9;
     [['Conjunto a inspeccionar:',$('#infConjunto').value],['Plano de referencia:',$('#infPlano').value],['Lugar de inspección:',$('#infLugar').value],['Causa:',$('#infCausa').value]].forEach(([lbl,val])=>{
