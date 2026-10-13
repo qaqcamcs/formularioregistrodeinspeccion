@@ -529,26 +529,32 @@ input[type="date"],input[type="time"]{color-scheme:dark}
     </div>
   </div></section>
 </form>
-<form id="fRecepcion" novalidate hidden>
-  <section class="card"><h2>Datos de recepción</h2><div class="grid">
-    <div class="field"><label class="req" for="rc_fecha">Fecha de recepción</label><input type="date" id="rc_fecha"><span class="msg">Elige la fecha.</span></div>
-    <div class="field"><label>Inspector que recibe</label><div id="rc_inspectorBox" class="field" style="min-height:48px;padding:10px 12px;background:#08203f;border:1px solid var(--line);border-radius:10px;display:flex;align-items:center;color:var(--txt)"></div></div>
-    <div class="field full"><label class="req" for="rc_tipo">Tipo</label><select id="rc_tipo"></select><span class="msg">Elige el tipo de material.</span></div>
-    <div class="field full"><label class="req" for="rc_descripcion">Descripción</label><input id="rc_descripcion" autocomplete="off"><span class="msg">Escribe la descripción.</span></div>
-    <div class="field"><label class="req" for="rc_cantidad">Cantidad TOTAL recibida</label><input type="number" id="rc_cantidad" min="0" step="any" inputmode="decimal"><span class="msg">Escribe la cantidad.</span></div>
-    <div class="field"><label for="rc_espesor">Espesor</label><input id="rc_espesor" autocomplete="off" placeholder="Ej: 10mm"></div>
-    <div class="field full"><label class="req" for="rc_proveedor">Proveedor</label><select id="rc_proveedor" data-other></select><input class="other" id="rc_proveedor_o" placeholder="Escribe el proveedor nuevo"><span class="msg">Elige o escribe el proveedor.</span></div>
-    <div class="field"><label for="rc_calidad">Calidad del acero</label><input id="rc_calidad" autocomplete="off"></div>
-    <div class="field"><label for="rc_lote">Lote</label><input id="rc_lote" autocomplete="off"></div>
-    <div class="field"><label for="rc_colada">Colada</label><input id="rc_colada" autocomplete="off"></div>
-    <div class="field"><label for="rc_guia">N° Guía de despacho</label><input id="rc_guia" autocomplete="off"></div>
-    <div class="field"><label for="rc_oc">OC</label><input id="rc_oc" autocomplete="off"></div>
-    <div class="field"><label for="rc_peso">Peso total kg</label><input type="number" id="rc_peso" min="0" step="any" inputmode="decimal"></div>
-    <div class="field"><label for="rc_cantidadNC">Cantidad No Conforme</label><input type="number" id="rc_cantidadNC" min="0" step="any" inputmode="decimal" placeholder="0"></div>
-    <div class="field"><label for="rc_transportadoPor">Transportado por</label><input id="rc_transportadoPor" autocomplete="off"></div>
-  </div></section>
-  <section class="card"><h2>Estado de recepción</h2>
-    <div class="field full"><label class="req">Estado de recepción</label>
+<section id="recepcionScreen" hidden>
+  <section class="card"><h2>Datos generales de la guía</h2>
+    <div class="count">Estos datos son los mismos para todos los materiales de esta guía — se llenan una sola vez.</div>
+    <div class="grid" style="margin-top:12px">
+      <div class="field"><label class="req" for="rc_fecha">Fecha de recepción</label><input type="date" id="rc_fecha"><span class="msg">Elige la fecha.</span></div>
+      <div class="field"><label>Inspector que recibe</label><div id="rc_inspectorBox" style="min-height:48px;padding:10px 12px;background:#08203f;border:1px solid var(--line);border-radius:10px;display:flex;align-items:center;color:var(--txt)"></div></div>
+      <div class="field full"><label class="req" for="rc_proveedor">Proveedor</label><select id="rc_proveedor" data-other></select><input class="other" id="rc_proveedor_o" placeholder="Escribe el proveedor nuevo"><span class="msg">Elige o escribe el proveedor.</span></div>
+      <div class="field"><label for="rc_guia">N° Guía de despacho</label><input id="rc_guia" autocomplete="off"></div>
+      <div class="field"><label for="rc_oc">OC</label><input id="rc_oc" autocomplete="off"></div>
+      <div class="field"><label for="rc_transportadoPor">Transportado por</label><input id="rc_transportadoPor" autocomplete="off"></div>
+    </div>
+  </section>
+  <section class="card"><h2>Agregar material</h2>
+    <div class="count">Cada plancha o material con su propio número identificatorio va por separado — llena esto y toca "Agregar", tantas veces como materiales traiga la guía.</div>
+    <div class="grid" style="margin-top:12px">
+      <div class="field full"><label class="req" for="rc_tipo">Tipo</label><select id="rc_tipo"></select><span class="msg">Elige el tipo de material.</span></div>
+      <div class="field full"><label class="req" for="rc_descripcion">Descripción</label><input id="rc_descripcion" autocomplete="off"><span class="msg">Escribe la descripción.</span></div>
+      <div class="field"><label class="req" for="rc_cantidad">Cantidad</label><input type="number" id="rc_cantidad" min="0" step="any" inputmode="decimal"><span class="msg">Escribe la cantidad.</span></div>
+      <div class="field"><label for="rc_espesor">Espesor</label><input id="rc_espesor" autocomplete="off" placeholder="Ej: 10mm"></div>
+      <div class="field"><label for="rc_calidad">Calidad del acero</label><input id="rc_calidad" autocomplete="off"></div>
+      <div class="field"><label for="rc_lote">Lote</label><input id="rc_lote" autocomplete="off"></div>
+      <div class="field"><label for="rc_colada">Colada</label><input id="rc_colada" autocomplete="off"></div>
+      <div class="field"><label for="rc_peso">Peso kg</label><input type="number" id="rc_peso" min="0" step="any" inputmode="decimal"></div>
+      <div class="field"><label for="rc_cantidadNC">Cantidad No Conforme</label><input type="number" id="rc_cantidadNC" min="0" step="any" inputmode="decimal" placeholder="0"></div>
+    </div>
+    <div class="field full" style="margin-top:4px"><label class="req">Estado de recepción</label>
       <div class="seg" id="rc_estado">
         <button type="button" class="estBtn estP1" data-v="P-1 Conforme">P-1 Conforme</button>
         <button type="button" class="estBtn estP2" data-v="P-2 Conforme con observaciones">P-2 Conforme con observaciones</button>
@@ -559,8 +565,23 @@ input[type="date"],input[type="time"]{color-scheme:dark}
     </div>
     <div class="field full"><label for="rc_observaciones">Observaciones</label><textarea id="rc_observaciones"></textarea></div>
     <div class="field full"><label for="rc_fotos">Evidencia fotográfica (opcional)</label><input type="file" id="rc_fotos" accept="image/*" multiple><div class="count" id="rc_fotos_count"></div></div>
+    <div class="add"><button type="button" id="rc_agregarMaterial">+ Agregar material a la lista</button></div>
   </section>
-</form>
+  <section class="card">
+    <h2>Materiales de esta guía (<span id="rc_matCount">0</span>)</h2>
+    <div id="rc_matList"><div class="count">Todavía no agregas ningún material.</div></div>
+  </section>
+  <section class="card">
+    <div class="add"><button type="button" class="btn save" id="rc_guardarTodo" style="flex:1">Guardar todos los materiales</button></div>
+  </section>
+  <section class="card">
+    <h2>Ejecutar macro de correos</h2>
+    <div class="count">Una vez guardados los materiales, esto genera los IDs de recepción y arma los borradores de correo en Gmail (exactamente lo que hace el botón "Ejecutar Todo" de esa planilla) — sin tener que abrirla.</div>
+    <div class="field" style="margin-top:10px"><label for="rc_adminKey">Clave de administrador</label><input type="password" id="rc_adminKey" autocomplete="off" placeholder="Necesaria para ejecutar el macro"></div>
+    <div class="add"><button type="button" id="rc_ejecutarMacro">Ejecutar macro de correos</button></div>
+    <div class="count" id="rc_macroResult" style="margin-top:8px;white-space:pre-line"></div>
+  </section>
+</section>
 </main>
 <div class="bar"><div class="in">
   <label class="keep"><input type="checkbox" id="keep" checked>Conservar proyecto, área y responsables al guardar</label>
@@ -784,14 +805,14 @@ function resetVigas(keep){
 
 /* Despachadores: según qué formulario esté activo */
 let ACTIVE_FORM='insp';
-function payload(){ return ACTIVE_FORM==='vigas' ? payloadVigas() : ACTIVE_FORM==='recepcion' ? payloadRecepcion() : payloadInsp(); }
-function validate(p){ return ACTIVE_FORM==='vigas' ? validateVigas(p) : ACTIVE_FORM==='recepcion' ? validateRecepcion(p) : validateInsp(p); }
-function reset(keep){ return ACTIVE_FORM==='vigas' ? resetVigas(keep) : ACTIVE_FORM==='recepcion' ? resetRecepcion() : resetInsp(keep); }
+function payload(){ return ACTIVE_FORM==='vigas' ? payloadVigas() : payloadInsp(); }
+function validate(p){ return ACTIVE_FORM==='vigas' ? validateVigas(p) : validateInsp(p); }
+function reset(keep){ return ACTIVE_FORM==='vigas' ? resetVigas(keep) : resetInsp(keep); }
 function switchForm(name){
   ACTIVE_FORM=name;
-  $('#homeScreen').hidden = name!=='home'; $('#f').hidden = name!=='insp'; $('#fVigas').hidden = name!=='vigas'; $('#fRecepcion').hidden = name!=='recepcion'; $('#segScreen').hidden = name!=='seg'; $('#personasScreen').hidden = name!=='personas'; $('#calcScreen').hidden = name!=='calc'; $('#buscarScreen').hidden = name!=='buscar'; $('#informesScreen').hidden = name!=='informes';
+  $('#homeScreen').hidden = name!=='home'; $('#f').hidden = name!=='insp'; $('#fVigas').hidden = name!=='vigas'; $('#recepcionScreen').hidden = name!=='recepcion'; $('#segScreen').hidden = name!=='seg'; $('#personasScreen').hidden = name!=='personas'; $('#calcScreen').hidden = name!=='calc'; $('#buscarScreen').hidden = name!=='buscar'; $('#informesScreen').hidden = name!=='informes';
   $('#tabFormHome').classList.toggle('on',name==='home'); $('#tabFormInsp').classList.toggle('on',name==='insp'); $('#tabFormVigas').classList.toggle('on',name==='vigas'); $('#tabFormRecepcion').classList.toggle('on',name==='recepcion'); $('#tabFormSeg').classList.toggle('on',name==='seg'); $('#tabFormPersonas').classList.toggle('on',name==='personas'); $('#tabFormCalc').classList.toggle('on',name==='calc'); $('#tabFormBuscar').classList.toggle('on',name==='buscar'); $('#tabFormInformes').classList.toggle('on',name==='informes');
-  $('.bar').style.display = (name==='seg'||name==='home'||name==='calc'||name==='personas'||name==='buscar'||name==='informes') ? 'none' : '';
+  $('.bar').style.display = (name==='seg'||name==='home'||name==='calc'||name==='personas'||name==='buscar'||name==='informes'||name==='recepcion') ? 'none' : '';
   if(name==='seg') loadSeguimiento();
   if(name==='home') loadHome();
   if(name==='personas') loadPersonas();
@@ -883,8 +904,7 @@ function initOffline(){
 
 $('#save').onclick=()=>{
   const p=payload(); if(!validate(p))return;
-  const accion=ACTIVE_FORM==='vigas'?'saveVigas':ACTIVE_FORM==='recepcion'?'guardarRecepcion':'saveInspeccion';
-  Q.push({uid:newUid(),p:p,action:accion,t:Date.now(),tries:0,err:''}); qSave();
+  Q.push({uid:newUid(),p:p,action:(ACTIVE_FORM==='vigas'?'saveVigas':'saveInspeccion'),t:Date.now(),tries:0,err:''}); qSave();
   showBigCheck();
   toast(navigator.onLine?'Registro guardado. Enviando a la hoja…':'Sin conexión: registro guardado en este dispositivo. Se enviará al volver internet.');
   reset($('#keep').checked); renderPend(); syncNow(); homeLoaded=false; segLoaded=false; rechItems=null; personasLoaded=false; refreshSegBadge();
@@ -1350,7 +1370,9 @@ async function generarInforme(){
 function fDate(iso){ if(!iso)return '—'; const [y,m,d]=iso.split('-'); return d+'/'+m+'/'+y; }
 /* ===== Recepción de materiales (escribe en otra planilla, vía el servidor) ===== */
 const TIPO_RECEPCION=['PL','---','ALAMBRE','Alambre','ANG','ANG','BARRA','BOBINA','CAN','CERCO','CODO','COST','CUA','CUA','ESPARRAGOS','FLEJE','FUNDENTE','GOLILLAS','GRATING','HILO','MALLA','MM','OMEGA','PINTURA','PLD','PLETINA','REC','REC','RED','RIEL','RIEL','Rieles','Tipo','TIRANTE','TUBO','TUBO','TUERCAS','U','VIGA'];
-let S_RC_ESTADO='', RC_FOTOS=[], proveedoresCargados=false;
+// Lista de respaldo (se reemplaza apenas carga la real desde la hoja CORREOS, por si hay nombres nuevos).
+const PROVEEDORES_RESPALDO=['ACENOR','ACEROTOTAL','AHOSA','AMERICAN SCREW CO','ASTEEL','AZA','B. BOSCH','BARON','CACERES','CELO','CINTAC','CONSTRUMART','COPROMET','CTM','DAGOMET','DARTEL','FAIWOOD','FORMAC','FRANCISCO PETRICIO','GYMSA','IMEL','IMPORTADO','IMPORTRADE','IPACER','KUBIEC','KUPFER','MEDESTUK','MULTIACEROS','OTERO','PERFILAM','PERFIMET','PPG','PRODALAM','PROINDAR','SACK','SODIMAC','SODIPER','STEEL PLUS','VH','INDURA'];
+let S_RC_ESTADO='', RC_FOTOS=[], proveedoresCargados=false, RC_MATERIALES=[];
 function fileToBase64(file){
   return new Promise((resolve,reject)=>{
     const r=new FileReader();
@@ -1359,43 +1381,57 @@ function fileToBase64(file){
   });
 }
 async function cargarProveedores(){
-  if(proveedoresCargados)return;
-  if(!navigator.onLine)return;
+  fillSelect('rc_proveedor', PROVEEDORES_RESPALDO, 'Selecciona…'); // de entrada, para no dejarlo vacío
+  if(proveedoresCargados||!navigator.onLine)return;
   try{
     const r=await api('getProveedoresRecepcion');
-    if(r&&r.ok){ fillSelect('rc_proveedor', r.proveedores||[], 'Selecciona…'); proveedoresCargados=true; }
+    if(r&&r.ok&&r.proveedores&&r.proveedores.length){ fillSelect('rc_proveedor', r.proveedores, 'Selecciona…'); proveedoresCargados=true; }
   }catch(e){}
 }
 function renderRcEstado(){
   $('#rc_estado').querySelectorAll('.estBtn').forEach(b=>b.classList.toggle('on', b.dataset.v===S_RC_ESTADO));
 }
-function payloadRecepcion(){
+function rcMaterialActual(){
   return {
-    fecha:$('#rc_fecha').value, inspector:(SESSION&&SESSION.nombre)||'',
     tipo:$('#rc_tipo').value, descripcion:$('#rc_descripcion').value.trim(),
     cantidad:$('#rc_cantidad').value, espesor:$('#rc_espesor').value.trim(),
-    proveedor:val('rc_proveedor'), calidad:$('#rc_calidad').value.trim(),
-    lote:$('#rc_lote').value.trim(), colada:$('#rc_colada').value.trim(),
-    guia:$('#rc_guia').value.trim(), oc:$('#rc_oc').value.trim(),
-    peso:$('#rc_peso').value, cantidadNC:$('#rc_cantidadNC').value||0,
-    estado:S_RC_ESTADO, observaciones:$('#rc_observaciones').value.trim(),
-    transportadoPor:$('#rc_transportadoPor').value.trim(), fotos:RC_FOTOS
+    calidad:$('#rc_calidad').value.trim(), lote:$('#rc_lote').value.trim(),
+    colada:$('#rc_colada').value.trim(), peso:$('#rc_peso').value,
+    cantidadNC:$('#rc_cantidadNC').value||0, estado:S_RC_ESTADO,
+    observaciones:$('#rc_observaciones').value.trim(), fotos:RC_FOTOS
   };
 }
-function validateRecepcion(p){
-  const bad=[]; const chk=(ok,el)=>{const f=(typeof el==='string'?$(el):el).closest('.field'); f.classList.toggle('invalid',!ok); if(!ok)bad.push(f);};
-  chk(!!p.fecha,'#rc_fecha'); chk(!!p.tipo,'#rc_tipo'); chk(!!p.descripcion,'#rc_descripcion');
-  chk(Number(p.cantidad)>0,'#rc_cantidad'); chk(!!p.proveedor,'#rc_proveedor');
-  chk(!!p.estado,'#rc_estado');
+function validarMaterialActual(){
+  const bad=[]; const chk=(ok,el)=>{const f=$(el).closest('.field'); f.classList.toggle('invalid',!ok); if(!ok)bad.push(f);};
+  chk(!!$('#rc_tipo').value,'#rc_tipo'); chk(!!$('#rc_descripcion').value.trim(),'#rc_descripcion');
+  chk(Number($('#rc_cantidad').value)>0,'#rc_cantidad'); chk(!!S_RC_ESTADO,'#rc_estado');
   if(bad.length){bad[0].scrollIntoView({behavior:'smooth',block:'center'}); toast('Revisa los campos marcados',true);} return !bad.length;
 }
-function resetRecepcion(){
-  ['rc_descripcion','rc_espesor','rc_calidad','rc_lote','rc_colada','rc_guia','rc_oc','rc_peso','rc_cantidadNC','rc_observaciones','rc_transportadoPor'].forEach(id=>$('#'+id).value='');
-  $('#rc_tipo').value=''; $('#rc_proveedor').value=''; $('#rc_proveedor_o').style.display='none'; $('#rc_proveedor_o').value='';
-  $('#rc_fecha').value=today();
+function limpiarMaterialActual(){
+  ['rc_descripcion','rc_espesor','rc_calidad','rc_lote','rc_colada','rc_peso','rc_cantidadNC','rc_observaciones'].forEach(id=>$('#'+id).value='');
+  $('#rc_tipo').value=''; $('#rc_cantidad').value='';
   S_RC_ESTADO=''; renderRcEstado();
   RC_FOTOS=[]; $('#rc_fotos').value=''; $('#rc_fotos_count').textContent='';
-  $('#fRecepcion').querySelectorAll('.field.invalid').forEach(f=>f.classList.remove('invalid'));
+  $('#recepcionScreen').querySelectorAll('.field.invalid').forEach(f=>f.classList.remove('invalid'));
+}
+function renderMatList(){
+  $('#rc_matCount').textContent=RC_MATERIALES.length;
+  $('#rc_matList').innerHTML = RC_MATERIALES.length ? RC_MATERIALES.map((m,i)=>
+    '<div class="projRow" data-i="'+i+'" style="cursor:default"><div class="top"><b>'+esc(m.descripcion)+'</b><button type="button" class="mini" data-del="'+i+'" style="flex:none">Quitar</button></div>'+
+    '<small>'+esc(m.tipo)+' — Cant: '+esc(m.cantidad)+(m.espesor?' — '+esc(m.espesor):'')+' — '+esc(m.estado)+(m.fotos&&m.fotos.length?' — '+m.fotos.length+' foto(s)':'')+'</small></div>'
+  ).join('') : '<div class="count">Todavía no agregas ningún material.</div>';
+}
+function datosGeneralesGuia(){
+  return {
+    fecha:$('#rc_fecha').value, inspector:(SESSION&&SESSION.nombre)||'',
+    proveedor:val('rc_proveedor'), guia:$('#rc_guia').value.trim(),
+    oc:$('#rc_oc').value.trim(), transportadoPor:$('#rc_transportadoPor').value.trim()
+  };
+}
+function validarDatosGenerales(){
+  const bad=[]; const chk=(ok,el)=>{const f=$(el).closest('.field'); f.classList.toggle('invalid',!ok); if(!ok)bad.push(f);};
+  chk(!!$('#rc_fecha').value,'#rc_fecha'); chk(!!val('rc_proveedor'),'#rc_proveedor');
+  if(bad.length){bad[0].scrollIntoView({behavior:'smooth',block:'center'}); toast('Completa la fecha y el proveedor de la guía',true);} return !bad.length;
 }
 function initRecepcion(){
   fillPlainSelect('rc_tipo',TIPO_RECEPCION,'Selecciona…');
@@ -1409,6 +1445,46 @@ function initRecepcion(){
     $('#rc_fotos_count').textContent='Cargando '+files.length+' foto(s)…';
     try{ RC_FOTOS=await Promise.all(files.map(fileToBase64)); $('#rc_fotos_count').textContent=RC_FOTOS.length?RC_FOTOS.length+' foto(s) lista(s)':''; }
     catch(e){ RC_FOTOS=[]; $('#rc_fotos_count').textContent='No se pudieron leer las fotos'; }
+  };
+  $('#rc_agregarMaterial').onclick=()=>{
+    if(!validarDatosGenerales())return;
+    if(!validarMaterialActual())return;
+    RC_MATERIALES.push(rcMaterialActual());
+    renderMatList();
+    limpiarMaterialActual();
+    toast('Material agregado a la lista ('+RC_MATERIALES.length+' en total)');
+  };
+  $('#rc_matList').addEventListener('click',e=>{
+    const b=e.target.closest('[data-del]'); if(!b)return;
+    RC_MATERIALES.splice(+b.dataset.del,1); renderMatList();
+  });
+  $('#rc_guardarTodo').onclick=()=>{
+    if(!validarDatosGenerales())return;
+    if(!RC_MATERIALES.length){ toast('Agrega al menos un material antes de guardar',true); return; }
+    const generales=datosGeneralesGuia();
+    RC_MATERIALES.forEach(m=>{
+      const p=Object.assign({},generales,m);
+      Q.push({uid:newUid(),p:p,action:'guardarRecepcion',t:Date.now(),tries:0,err:''});
+    });
+    qSave();
+    toast(RC_MATERIALES.length+' material(es) guardado(s). '+(navigator.onLine?'Enviando a la hoja…':'Se enviarán al volver internet.'));
+    RC_MATERIALES=[]; renderMatList(); limpiarMaterialActual();
+    $('#rc_guia').value=''; $('#rc_oc').value=''; $('#rc_transportadoPor').value='';
+    renderPend(); syncNow();
+  };
+  $('#rc_ejecutarMacro').onclick=async()=>{
+    const adminKey=$('#rc_adminKey').value;
+    if(!adminKey){ toast('Escribe la clave de administrador',true); return; }
+    if(!navigator.onLine){ toast('Necesitas conexión a internet para ejecutar el macro',true); return; }
+    $('#rc_ejecutarMacro').disabled=true; $('#rc_ejecutarMacro').textContent='Ejecutando… puede tardar un momento';
+    $('#rc_macroResult').textContent='';
+    try{
+      const r=await api('ejecutarMacroRecepcion',{adminKey:adminKey});
+      if(r&&r.ok){ $('#rc_macroResult').textContent=r.resumen; toast('Macro ejecutado'); }
+      else{ $('#rc_macroResult').textContent=''; toast(r&&r.error||'No se pudo ejecutar el macro',true); }
+    }catch(e){ toast('No se pudo ejecutar (sin conexión o error de red)',true); }
+    $('#rc_ejecutarMacro').disabled=false; $('#rc_ejecutarMacro').textContent='Ejecutar macro de correos';
+    $('#rc_adminKey').value='';
   };
 }
 function initInformes(){
