@@ -154,6 +154,19 @@ header{position:relative}
 #infoModal:not([hidden]){opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
 @media(prefers-reduced-motion:reduce){#infoModal,#infoOverlay{transition:none}}
 #infGenerar:disabled{opacity:.6}
+#rcDraftOverlay{position:fixed;inset:0;background:rgba(4,11,24,.6);z-index:18;opacity:0;transition:opacity .25s;pointer-events:none}
+#rcDraftOverlay[hidden]{display:block!important;opacity:0;pointer-events:none}
+#rcDraftOverlay:not([hidden]){opacity:1;pointer-events:auto}
+#rcDraftModal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.94);width:min(560px,92vw);max-height:86vh;overflow-y:auto;overflow-x:hidden;z-index:19;margin:0;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s}
+#rcDraftModal[hidden]{display:block!important;opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.94)}
+#rcDraftModal:not([hidden]){opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+@media(prefers-reduced-motion:reduce){#rcDraftModal,#rcDraftOverlay{transition:none}}
+.draftRow{border:1px solid var(--line);background:#0a2244;border-radius:10px;padding:10px 12px;margin-top:8px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.draftRow .info b{display:block;font-size:.92rem}
+.draftRow .info small{color:var(--mut)}
+.draftRow .acts{display:flex;gap:6px;flex:none}
+.draftRow .acts button{min-height:36px;padding:0 10px;font-size:.82rem;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--txt);cursor:pointer}
+.draftRow.enviado{opacity:.55}
 .estBtn{font:inherit;color:var(--txt);background:#08203f;border:1px solid var(--line);border-radius:10px;min-height:48px;padding:0 12px;cursor:pointer;flex:1 1 150px;font-size:.88rem}
 .estBtn.estP1.on{background:#2fbf71;border-color:#2fbf71;color:#03210f;font-weight:700}
 .estBtn.estP2.on{background:#8bd17c;border-color:#8bd17c;color:#0e2b06;font-weight:700}
@@ -576,12 +589,20 @@ input[type="date"],input[type="time"]{color-scheme:dark}
   </section>
   <section class="card">
     <h2>Ejecutar macro de correos</h2>
-    <div class="count">Una vez guardados los materiales, esto genera los IDs de recepción y arma los borradores de correo en Gmail (exactamente lo que hace el botón "Ejecutar Todo" de esa planilla) — sin tener que abrirla.</div>
-    <div class="field" style="margin-top:10px"><label for="rc_adminKey">Clave de administrador</label><input type="password" id="rc_adminKey" autocomplete="off" placeholder="Necesaria para ejecutar el macro"></div>
-    <div class="add"><button type="button" id="rc_ejecutarMacro">Ejecutar macro de correos</button></div>
+    <div class="count">Una vez guardados los materiales, esto genera los IDs de recepción y arma los borradores de correo en Gmail (exactamente lo que hace el botón "Ejecutar Todo" de esa planilla) — sin tener que abrirla. Se ejecuta con tu sesión de inspector, no necesitas otra clave.</div>
+    <div class="add" style="margin-top:10px"><button type="button" id="rc_ejecutarMacro">Ejecutar macro de correos</button></div>
     <div class="count" id="rc_macroResult" style="margin-top:8px;white-space:pre-line"></div>
+    <div id="rc_borradores" style="margin-top:10px"></div>
   </section>
 </section>
+<div id="rcDraftOverlay" hidden></div>
+<div class="card" id="rcDraftModal" hidden>
+  <div class="cfgHead"><h2 id="rcDraftTitulo">Borrador</h2><button type="button" id="rcDraftClose" aria-label="Cerrar">✕</button></div>
+  <div class="count"><b>Para:</b> <span id="rcDraftPara"></span></div>
+  <div class="count" id="rcDraftCcWrap"><b>CC:</b> <span id="rcDraftCc"></span></div>
+  <div class="field"><label>Texto del correo</label><textarea id="rcDraftTexto" readonly style="min-height:260px"></textarea></div>
+  <div class="add"><button type="button" id="rcDraftCerrar">Cerrar</button><button type="button" id="rcDraftEnviar">Enviar ahora</button></div>
+</div>
 </main>
 <div class="bar"><div class="in">
   <label class="keep"><input type="checkbox" id="keep" checked>Conservar proyecto, área y responsables al guardar</label>
@@ -1473,19 +1494,53 @@ function initRecepcion(){
     renderPend(); syncNow();
   };
   $('#rc_ejecutarMacro').onclick=async()=>{
-    const adminKey=$('#rc_adminKey').value;
-    if(!adminKey){ toast('Escribe la clave de administrador',true); return; }
+    if(!(SESSION&&SESSION.nombre)){ toast('Inicia sesión como inspector para ejecutar el macro',true); return; }
     if(!navigator.onLine){ toast('Necesitas conexión a internet para ejecutar el macro',true); return; }
+    if(!confirm('Esto genera IDs y arma borradores de correo para todo lo pendiente en la planilla de Recepción. ¿Continuar?'))return;
     $('#rc_ejecutarMacro').disabled=true; $('#rc_ejecutarMacro').textContent='Ejecutando… puede tardar un momento';
-    $('#rc_macroResult').textContent='';
+    $('#rc_macroResult').textContent=''; $('#rc_borradores').innerHTML='';
     try{
-      const r=await api('ejecutarMacroRecepcion',{adminKey:adminKey});
-      if(r&&r.ok){ $('#rc_macroResult').textContent=r.resumen; toast('Macro ejecutado'); }
-      else{ $('#rc_macroResult').textContent=''; toast(r&&r.error||'No se pudo ejecutar el macro',true); }
+      const r=await api('ejecutarMacroRecepcion',{inspector:SESSION.nombre});
+      if(r&&r.ok){ $('#rc_macroResult').textContent=r.resumen; RC_BORRADORES=r.borradores||[]; renderBorradores(); toast('Macro ejecutado'); }
+      else{ toast(r&&r.error||'No se pudo ejecutar el macro',true); }
     }catch(e){ toast('No se pudo ejecutar (sin conexión o error de red)',true); }
     $('#rc_ejecutarMacro').disabled=false; $('#rc_ejecutarMacro').textContent='Ejecutar macro de correos';
-    $('#rc_adminKey').value='';
   };
+  $('#rc_borradores').addEventListener('click',e=>{
+    const b=e.target.closest('[data-ver]'); if(b){ verBorrador(+b.dataset.ver); return; }
+    const s=e.target.closest('[data-enviar]'); if(s){ enviarBorrador(+s.dataset.enviar); }
+  });
+  $('#rcDraftClose').onclick=closeDraftModal;
+  $('#rcDraftCerrar').onclick=closeDraftModal;
+  $('#rcDraftOverlay').onclick=closeDraftModal;
+  $('#rcDraftEnviar').onclick=()=>{ if(RC_DRAFT_IDX!=null) enviarBorrador(RC_DRAFT_IDX); };
+}
+let RC_BORRADORES=[], RC_DRAFT_IDX=null;
+function renderBorradores(){
+  $('#rc_borradores').innerHTML = RC_BORRADORES.length ? RC_BORRADORES.map((b,i)=>
+    '<div class="draftRow'+(b.enviado?' enviado':'')+'"><div class="info"><b>'+esc(b.proveedor)+' · '+esc(b.codigo)+'</b><small>'+esc(b.asunto)+'</small></div>'+
+    '<div class="acts"><button type="button" data-ver="'+i+'">Ver</button><button type="button" data-enviar="'+i+'" '+(b.enviado?'disabled':'')+'>'+(b.enviado?'Enviado':'Enviar')+'</button></div></div>'
+  ).join('') : '';
+}
+function verBorrador(i){
+  const b=RC_BORRADORES[i]; if(!b)return; RC_DRAFT_IDX=i;
+  $('#rcDraftTitulo').textContent=b.proveedor+' · '+b.codigo;
+  $('#rcDraftPara').textContent=b.para;
+  $('#rcDraftCcWrap').hidden=!b.cc; $('#rcDraftCc').textContent=b.cc||'';
+  $('#rcDraftTexto').value=b.asunto+'\n\n'+b.texto;
+  $('#rcDraftEnviar').disabled=!!b.enviado; $('#rcDraftEnviar').textContent=b.enviado?'Ya enviado':'Enviar ahora';
+  $('#rcDraftOverlay').hidden=false; $('#rcDraftModal').hidden=false;
+}
+function closeDraftModal(){ $('#rcDraftOverlay').hidden=true; $('#rcDraftModal').hidden=true; RC_DRAFT_IDX=null; }
+async function enviarBorrador(i){
+  const b=RC_BORRADORES[i]; if(!b||b.enviado)return;
+  if(!navigator.onLine){ toast('Necesitas conexión a internet para enviar',true); return; }
+  if(!confirm('¿Enviar este correo a '+b.para+' ahora?'))return;
+  try{
+    const r=await api('enviarBorradorRecepcion',{id:b.id});
+    if(r&&r.ok){ b.enviado=true; renderBorradores(); if(RC_DRAFT_IDX===i){$('#rcDraftEnviar').disabled=true;$('#rcDraftEnviar').textContent='Ya enviado';} toast('Correo enviado a '+b.proveedor); }
+    else toast(r&&r.error||'No se pudo enviar',true);
+  }catch(e){ toast('No se pudo enviar (sin conexión o error de red)',true); }
 }
 function initInformes(){
   $('#infoAbrirTerreno').onclick=openInformeModal;
