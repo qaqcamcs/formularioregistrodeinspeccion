@@ -555,7 +555,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
     </div>
   </section>
   <section class="card"><h2>Agregar material</h2>
-    <div class="count">Cada plancha o material con su propio número identificatorio va por separado — llena esto y toca "Agregar", tantas veces como materiales traiga la guía.</div>
+    <div class="count">Agregar datos de cada material recibido.</div>
     <div class="grid" style="margin-top:12px">
       <div class="field full"><label class="req" for="rc_tipo">Tipo</label><select id="rc_tipo"></select><span class="msg">Elige el tipo de material.</span></div>
       <div class="field full"><label class="req" for="rc_descripcion">Descripción</label><input id="rc_descripcion" autocomplete="off"><span class="msg">Escribe la descripción.</span></div>
@@ -578,6 +578,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
     </div>
     <div class="field full"><label for="rc_observaciones">Observaciones</label><textarea id="rc_observaciones"></textarea></div>
     <div class="field full"><label for="rc_fotos">Evidencia fotográfica (opcional)</label><input type="file" id="rc_fotos" accept="image/*" multiple><div class="count" id="rc_fotos_count"></div></div>
+    <label class="keep"><input type="checkbox" id="rc_keepLast" checked>Mantener el último Tipo, Descripción, Cantidad, Espesor, Calidad del acero y Peso al agregar</label>
     <div class="add"><button type="button" id="rc_agregarMaterial">+ Agregar material a la lista</button></div>
   </section>
   <section class="card">
@@ -589,7 +590,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
   </section>
   <section class="card">
     <h2>Ejecutar macro de correos</h2>
-    <div class="count">Una vez guardados los materiales, esto genera los IDs de recepción y arma los borradores de correo en Gmail (exactamente lo que hace el botón "Ejecutar Todo" de esa planilla) — sin tener que abrirla. Se ejecuta con tu sesión de inspector, no necesitas otra clave.</div>
+    <div class="count">Una vez ingresado el material haz clic aquí para generar los borradores de material recibido y de solicitud de certificados de calidad.</div>
     <div class="add" style="margin-top:10px"><button type="button" id="rc_ejecutarMacro">Ejecutar macro de correos</button></div>
     <div class="count" id="rc_macroResult" style="margin-top:8px;white-space:pre-line"></div>
     <div id="rc_borradores" style="margin-top:10px"></div>
@@ -1429,8 +1430,14 @@ function validarMaterialActual(){
   if(bad.length){bad[0].scrollIntoView({behavior:'smooth',block:'center'}); toast('Revisa los campos marcados',true);} return !bad.length;
 }
 function limpiarMaterialActual(){
-  ['rc_descripcion','rc_espesor','rc_calidad','rc_lote','rc_colada','rc_peso','rc_cantidadNC','rc_observaciones'].forEach(id=>$('#'+id).value='');
-  $('#rc_tipo').value=''; $('#rc_cantidad').value='';
+  const keepLast = $('#rc_keepLast').checked;
+  // Siempre se limpian (son específicos de cada material, no tiene sentido repetirlos).
+  ['rc_lote','rc_colada','rc_cantidadNC','rc_observaciones'].forEach(id=>$('#'+id).value='');
+  // Estos solo se limpian si el interruptor "mantener último dato" está apagado.
+  if(!keepLast){
+    ['rc_descripcion','rc_espesor','rc_calidad','rc_peso'].forEach(id=>$('#'+id).value='');
+    $('#rc_tipo').value=''; $('#rc_cantidad').value='';
+  }
   S_RC_ESTADO=''; renderRcEstado();
   RC_FOTOS=[]; $('#rc_fotos').value=''; $('#rc_fotos_count').textContent='';
   $('#recepcionScreen').querySelectorAll('.field.invalid').forEach(f=>f.classList.remove('invalid'));
