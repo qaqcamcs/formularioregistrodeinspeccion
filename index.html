@@ -1266,11 +1266,27 @@ function openInformeModal(){
   $('#infoOverlay').hidden=false; $('#infoModal').hidden=false;
 }
 function closeInformeModal(){ $('#infoOverlay').hidden=true; $('#infoModal').hidden=true; }
-function fileToImage(file){
-  return new Promise((resolve,reject)=>{
-    const url=URL.createObjectURL(file), img=new Image();
-    img.onload=()=>resolve(img); img.onerror=reject; img.src=url;
-  });
+// Lee una foto y la "hornea" en un canvas respetando su orientación EXIF (las fotos de celular
+// traen esa metadata para mostrarse derechas; jsPDF no siempre la respeta si se le pasa la
+// imagen cruda, lo que se veía como fotos rotadas). Devuelve {dataUrl, width, height} listos
+// para jsPDF, ya sin ninguna rotación pendiente.
+async function fileToCanvasImg(file){
+  try{
+    const bitmap=await createImageBitmap(file,{imageOrientation:'from-image'});
+    const canvas=document.createElement('canvas');
+    canvas.width=bitmap.width; canvas.height=bitmap.height;
+    canvas.getContext('2d').drawImage(bitmap,0,0);
+    return {dataUrl:canvas.toDataURL('image/jpeg',0.85), width:bitmap.width, height:bitmap.height};
+  }catch(e){
+    // Respaldo para navegadores muy viejos sin createImageBitmap (no corrige EXIF, pero no rompe el PDF).
+    const img=await new Promise((resolve,reject)=>{
+      const el=new Image(); el.onload=()=>resolve(el); el.onerror=reject; el.src=URL.createObjectURL(file);
+    });
+    const canvas=document.createElement('canvas');
+    canvas.width=img.naturalWidth; canvas.height=img.naturalHeight;
+    canvas.getContext('2d').drawImage(img,0,0);
+    return {dataUrl:canvas.toDataURL('image/jpeg',0.85), width:img.naturalWidth, height:img.naturalHeight};
+  }
 }
 // Dibuja un bloque con etiqueta en negrita y texto envuelto dentro de un recuadro; devuelve el y siguiente.
 function pdfBox(doc,label,text,x,y,w,h){
@@ -1318,7 +1334,7 @@ async function generarInforme(){
 
     const { jsPDF }=window.jspdf;
     const doc=new jsPDF({unit:'mm',format:'a4'});
-    const paginasFotos = infFotosFiles.length? Math.ceil(infFotosFiles.length/8) : 0;
+    const paginasFotos = infFotosFiles.length? Math.ceil(infFotosFiles.length/6) : 0;
     const totalPag = 1+paginasFotos;
 
     let y=pdfHeader(doc, '1 DE '+totalPag)+6;
@@ -1339,7 +1355,7 @@ async function generarInforme(){
     y+=3;
 
     const SIGN_Y=253; // posición fija del bloque de firmas, cerca del pie de página
-    const acopioImgs = infFotosAcopioFiles.length ? await Promise.all(infFotosAcopioFiles.slice(0,2).map(fileToImage)) : [];
+    const acopioImgs = infFotosAcopioFiles.length ? await Promise.all(infFotosAcopioFiles.slice(0,2).map(fileToCanvasImg)) : [];
     const ACOPIO_H = acopioImgs.length ? 66 : 0; // bloque reservado para hasta 2 fotos de acopio
     const descH=SIGN_Y-3-(ACOPIO_H?ACOPIO_H+4:0)-y; // la Descripción ocupa todo lo que quede libre hasta ahí
     y=pdfBox(doc,'Descripción:',$('#infDescripcion').value,15,y,180,descH);
@@ -1352,10 +1368,10 @@ async function generarInforme(){
       const boxW=acopioImgs.length>1?86:180, boxH=ACOPIO_H-8, gap=8;
       acopioImgs.forEach((img,i)=>{
         const x=15+i*(boxW+gap);
-        const ratio=Math.min(boxW/img.naturalWidth, boxH/img.naturalHeight);
-        const w=img.naturalWidth*ratio, h=img.naturalHeight*ratio;
+        const ratio=Math.min(boxW/img.width, boxH/img.height);
+        const w=img.width*ratio, h=img.height*ratio;
         doc.setDrawColor(180); doc.rect(x,y,boxW,boxH);
-        doc.addImage(img,'JPEG',x+(boxW-w)/2,y+(boxH-h)/2,w,h);
+        doc.addImage(img.dataUrl,'JPEG',x+(boxW-w)/2,y+(boxH-h)/2,w,h);
       });
       y+=boxH;
     }
@@ -1376,23 +1392,24 @@ async function generarInforme(){
       doc.setFontSize(7); doc.text('Fecha: '+(f.fecha||'—'),x+2,fy+22);
     });
 
-    // Páginas siguientes: evidencia fotográfica
+    // Páginas siguientes: evidencia fotográfica (6 fotos por página, 2 columnas x 3 filas)
+    const FOTOS_POR_PAGINA=6;
     if(infFotosFiles.length){
-      const imgs=await Promise.all(infFotosFiles.map(fileToImage));
+      const imgs=await Promise.all(infFotosFiles.map(fileToCanvasImg));
       let pagFoto=1;
       doc.addPage();
       let yy0=pdfHeader(doc,(1+pagFoto)+' DE '+totalPag)+8;
-      doc.setFont(undefined,'bold'); doc.setFontSize(12); doc.text('EVIDENCIA FOTOGRÁFICA',105,yy0-2,{align:'center'});
-      const boxW=85, boxH=62, gap=6, startX=15, startY=yy0+5, perRow=2;
+      doc.setFont(undefined,'bold'); doc.setFontSize(12); doc.setTextColor(20); doc.text('EVIDENCIA FOTOGRÁFICA',105,yy0-2,{align:'center'});
+      const boxW=85, boxH=68, gap=9, startX=15, startY=yy0+6, perRow=2;
       imgs.forEach((img,i)=>{
-        if(i>0 && i%8===0){ pagFoto++; doc.addPage(); const ny=pdfHeader(doc,(1+pagFoto)+' DE '+totalPag)+8; doc.setFont(undefined,'bold'); doc.setFontSize(12); doc.text('EVIDENCIA FOTOGRÁFICA',105,ny-2,{align:'center'}); }
-        const idxEnPag=i%8, col=idxEnPag%perRow, rowOnPage=Math.floor(idxEnPag/perRow);
-        const x=startX+col*(boxW+gap), yy=startY+rowOnPage*(boxH+8);
-        const ratio=Math.min(boxW/img.naturalWidth, boxH/img.naturalHeight);
-        const w=img.naturalWidth*ratio, h=img.naturalHeight*ratio;
+        if(i>0 && i%FOTOS_POR_PAGINA===0){ pagFoto++; doc.addPage(); const ny=pdfHeader(doc,(1+pagFoto)+' DE '+totalPag)+8; doc.setFont(undefined,'bold'); doc.setFontSize(12); doc.setTextColor(20); doc.text('EVIDENCIA FOTOGRÁFICA',105,ny-2,{align:'center'}); }
+        const idxEnPag=i%FOTOS_POR_PAGINA, col=idxEnPag%perRow, rowOnPage=Math.floor(idxEnPag/perRow);
+        const x=startX+col*(boxW+gap), yy=startY+rowOnPage*(boxH+10);
+        const ratio=Math.min(boxW/img.width, boxH/img.height);
+        const w=img.width*ratio, h=img.height*ratio;
         doc.setDrawColor(180); doc.rect(x,yy,boxW,boxH);
-        doc.addImage(img,'JPEG',x+(boxW-w)/2,yy+(boxH-h)/2,w,h);
-        doc.setFontSize(7.5); doc.setTextColor(90); doc.text('Foto '+(i+1),x+boxW/2,yy+boxH+4,{align:'center'});
+        doc.addImage(img.dataUrl,'JPEG',x+(boxW-w)/2,yy+(boxH-h)/2,w,h);
+        doc.setFontSize(7.5); doc.setTextColor(90); doc.text('Foto '+(i+1),x+boxW/2,yy+boxH+5,{align:'center'});
         doc.setTextColor(20);
       });
     }
