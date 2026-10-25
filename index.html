@@ -45,6 +45,8 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .seg.res button.on[data-v="Rechazado"]{background:var(--bad);border-color:var(--bad);color:#2b0505}
 .seg.res button.on[data-v="Avance aprobado"]{background:var(--adv);border-color:var(--adv);color:#2b1f00}
 .seg.res button{min-height:56px;font-size:1.05rem}
+.seg[data-k="criticidad"] button.on[data-v="Alta"]{background:var(--bad);border-color:var(--bad);color:#2b0505}
+.seg[data-k="criticidad"] button.on[data-v="Baja"]{background:var(--adv);border-color:var(--adv);color:#2b1f00}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{flex:0 0 auto;min-height:40px;border-radius:999px;padding:0 14px;font-size:.92rem}
 .chip.on{background:rgba(255,106,26,.16);border-color:var(--pri);color:#ffb27a;font-weight:600}
@@ -154,6 +156,46 @@ header{position:relative}
 #infoModal:not([hidden]){opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
 @media(prefers-reduced-motion:reduce){#infoModal,#infoOverlay{transition:none}}
 #infGenerar:disabled{opacity:.6}
+.areaGrid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px}
+@media(min-width:600px){.areaGrid{grid-template-columns:repeat(2,1fr)}}
+.areaTile{background:#0a2244;border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}
+.areaTile .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.areaTile .top b{font-family:'Oswald';font-size:1.02rem;letter-spacing:.02em}
+.areaTile .tot{font-family:'Oswald';font-size:1.6rem;font-weight:700;line-height:1}
+.areaTile small{color:var(--mut);font-size:.78rem;display:block}
+.areaStats{display:flex;gap:12px;flex-wrap:wrap;font-size:.82rem;margin-top:6px}
+.stackBar{display:flex;height:8px;border-radius:999px;overflow:hidden;background:#12305c;margin:8px 0 4px}
+.stackBar i{display:block;height:100%;width:0;transition:width .8s cubic-bezier(.2,.7,.2,1)}
+.diasChart{display:flex;align-items:flex-end;gap:8px;height:160px;margin-top:12px}
+.diaCol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
+.diaCol .stack{width:100%;max-width:40px;display:flex;flex-direction:column-reverse;border-radius:6px 6px 2px 2px;overflow:hidden;height:0;transition:height .8s cubic-bezier(.2,.7,.2,1)}
+.diaCol .stack i{display:block;width:100%}
+.diaCol .v{font-size:.74rem;color:var(--txt);margin-bottom:3px;font-weight:600}
+.diaCol .l{font-size:.64rem;color:var(--mut);margin-top:6px;text-align:center;line-height:1.15}
+.defRow{margin-top:10px}
+.defRow .t{display:flex;justify-content:space-between;font-size:.86rem;gap:8px}
+.defRow .bar2{height:7px;border-radius:999px;background:#12305c;margin-top:4px;overflow:hidden}
+.defRow .bar2 i{display:block;height:100%;width:0;background:var(--bad);transition:width .8s cubic-bezier(.2,.7,.2,1)}
+.critChips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 2px}
+.critChip{border:1px solid var(--line);background:#0a2244;border-radius:999px;padding:5px 13px;font-size:.84rem}
+@media(prefers-reduced-motion:reduce){.stackBar i,.diaCol .stack,.defRow .bar2 i{transition:none}}
+#projOverlay{position:fixed;inset:0;background:rgba(4,11,24,.6);z-index:18;opacity:0;transition:opacity .25s;pointer-events:none}
+#projOverlay[hidden]{display:block!important;opacity:0;pointer-events:none}
+#projOverlay:not([hidden]){opacity:1;pointer-events:auto}
+#projModal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.94);width:min(560px,92vw);max-height:88vh;overflow-y:auto;overflow-x:hidden;z-index:19;margin:0;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s}
+#projModal[hidden]{display:block!important;opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.94)}
+#projModal:not([hidden]){opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+@media(prefers-reduced-motion:reduce){#projModal,#projOverlay{transition:none}}
+#bqOverlay{position:fixed;inset:0;background:rgba(4,11,24,.6);z-index:18;opacity:0;transition:opacity .25s;pointer-events:none}
+#bqOverlay[hidden]{display:block!important;opacity:0;pointer-events:none}
+#bqOverlay:not([hidden]){opacity:1;pointer-events:auto}
+#bqModal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.94);width:min(520px,92vw);max-height:86vh;overflow-y:auto;overflow-x:hidden;z-index:19;margin:0;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s}
+#bqModal[hidden]{display:block!important;opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.94)}
+#bqModal:not([hidden]){opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+@media(prefers-reduced-motion:reduce){#bqModal,#bqOverlay{transition:none}}
+.bqKV{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--line);font-size:.9rem}
+.bqKV span{color:var(--mut);flex:none}
+.bqKV b{text-align:right;font-weight:600;word-break:break-word}
 #rcDraftOverlay{position:fixed;inset:0;background:rgba(4,11,24,.6);z-index:18;opacity:0;transition:opacity .25s;pointer-events:none}
 #rcDraftOverlay[hidden]{display:block!important;opacity:0;pointer-events:none}
 #rcDraftOverlay:not([hidden]){opacity:1;pointer-events:auto}
@@ -336,6 +378,21 @@ input[type="date"],input[type="time"]{color-scheme:dark}
     <div id="homeCharts"></div>
   </section>
   <section class="card">
+    <h2>Resultados por área (últimos 7 días)</h2>
+    <div class="areaGrid" id="homeAreas"></div>
+  </section>
+  <section class="card">
+    <h2>Actividad día por día</h2>
+    <div class="count"><span style="color:var(--ok)">■</span> aprobados &nbsp; <span style="color:var(--adv)">■</span> avance aprobado &nbsp; <span style="color:var(--bad)">■</span> rechazados</div>
+    <div class="diasChart" id="homeDias"></div>
+  </section>
+  <section class="card">
+    <h2>Rechazos de la semana</h2>
+    <div class="critChips" id="homeCrit"></div>
+    <div class="count" style="margin-top:8px">Defectos más frecuentes en los rechazos</div>
+    <div id="homeDefectos"></div>
+  </section>
+  <section class="card">
     <h2>Proyectos activos (últimos 7 días)</h2>
     <div class="count" id="homeActCount"></div>
     <div id="homeActivos"></div>
@@ -371,6 +428,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
 
   <section class="card"><h2>Resultado</h2><div class="grid">
     <div class="field full"><span class="lbl req">Resultado</span><div class="seg res" data-k="resultado"></div><span class="msg">Elige el resultado.</span></div>
+    <div class="field full" id="fld-criticidad" hidden><span class="lbl req">Criticidad del error</span><div class="seg" data-k="criticidad"></div><span class="msg">Elige la criticidad.</span></div>
     <div class="field" id="fld-reparado"><span class="lbl">Reparado o terminado</span><div class="seg" data-k="reparado" data-toggle="1"></div></div>
     <div class="field" id="fld-areaNC"><label for="areaNC">Área donde se detecta NC</label><select id="areaNC" data-other></select><input class="other" id="areaNC_o" placeholder="Escribe el área"></div>
     <div class="field full" id="fld-defectos"><span class="lbl">Defectos detectados</span>
@@ -438,21 +496,36 @@ input[type="date"],input[type="time"]{color-scheme:dark}
 
 <section id="buscarScreen" hidden>
   <section class="card">
-    <h2>Búsqueda de Elementos</h2>
-    <div class="count">Deja cualquier campo en blanco para no filtrar por ese dato. Si dejas todo en blanco, te muestra los registros más recientes.</div>
+    <div class="cardHead"><h2>Búsqueda de Elementos</h2><button type="button" class="mini" id="bqRefresh">🔄 Actualizar</button></div>
+    <div class="count">Escribe en cualquier campo y la lista se filtra al instante. Deja en blanco lo que no quieras filtrar. Toca un elemento para ver su información completa.</div>
     <div class="grid" style="margin-top:12px">
       <div class="field"><label for="bqInspector">Inspector</label><input id="bqInspector" autocomplete="off" placeholder="Todos"></div>
       <div class="field"><label for="bqProyecto">Proyecto</label><input id="bqProyecto" autocomplete="off" placeholder="Todos"></div>
       <div class="field"><label for="bqMarca">Marca</label><input id="bqMarca" autocomplete="off" placeholder="Todas"></div>
       <div class="field"><label for="bqCorrelativo">Correlativo</label><input id="bqCorrelativo" autocomplete="off" placeholder="Todos"></div>
     </div>
-    <div class="add"><button type="button" id="bqLimpiar">Limpiar</button><button type="button" id="bqBuscar">Buscar</button></div>
+    <div class="add"><button type="button" id="bqLimpiar">Limpiar filtros</button></div>
   </section>
   <section class="card">
+    <div class="count" id="bqUpdated" style="margin-bottom:4px"></div>
     <div class="count" id="bqCount"></div>
     <div id="bqList"></div>
+    <div class="add" id="bqMoreWrap" hidden style="margin-top:10px"><button type="button" id="bqMore">Mostrar más</button></div>
   </section>
 </section>
+<div id="projOverlay" hidden></div>
+<div class="card" id="projModal" hidden>
+  <div class="cfgHead"><h2 id="projModalTitle">Proyecto</h2><button type="button" id="projModalClose" aria-label="Cerrar">✕</button></div>
+  <div class="count" id="projModalSub"></div>
+  <div id="projModalBody" style="margin-top:10px"></div>
+  <div class="add" style="margin-top:12px"><button type="button" id="projModalSeg">Ver pendientes en Seguimiento</button></div>
+</div>
+<div id="bqOverlay" hidden></div>
+<div class="card" id="bqModal" hidden>
+  <div class="cfgHead"><h2 id="bqModalTitle">Elemento</h2><button type="button" id="bqModalClose" aria-label="Cerrar">✕</button></div>
+  <div id="bqModalBody"></div>
+  <div class="add" style="margin-top:12px"><button type="button" id="bqModalHist">Ver todo el historial de esta marca</button></div>
+</div>
 
 <section id="informesScreen" hidden>
   <section class="card">
@@ -697,7 +770,7 @@ function timeAgo(ms){
 try { const c = JSON.parse(localStorage.getItem(CKEY) || 'null'); if (c && c.cfg) { CFG = normCfg(c.cfg); COND = normCond(c.cond); cfgRev = String(c.rev || ''); } } catch (e) {}
 function cacheCfg(){ try { localStorage.setItem(CKEY, JSON.stringify({ cfg: CFG, cond: COND, rev: cfgRev })); } catch (e) {} }
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
-const S = {area:'',resultado:'',reparado:'',armador:new Set(),soldador:new Set(),defectos:new Set()};
+const S = {area:'',resultado:'',reparado:'',criticidad:'',armador:new Set(),soldador:new Set(),defectos:new Set()};
 const OTHER='__otro__';
 
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -757,7 +830,7 @@ function toast(m,err){const t=$('#toast'); t.textContent=m; t.className='show'+(
 
 function payloadInsp(){return {fecha:$('#fecha').value,inspector:(SESSION&&SESSION.nombre)||'',proyecto:val('proyecto'),marca:$('#marca').value.trim(),
   cantidad:$('#cantidad').value,correlativos:$('#correlativos').value.trim(),area:S.area,etapa:val('etapa'),armador:[...S.armador],
-  soldador:[...S.soldador],responsable:$('#responsable').value.trim(),resultado:S.resultado,reparado:S.reparado,areaNC:val('areaNC'),
+  soldador:[...S.soldador],responsable:$('#responsable').value.trim(),resultado:S.resultado,reparado:S.reparado,criticidad:S.criticidad,areaNC:val('areaNC'),
   defectos:[...S.defectos],detalle:$('#detalle').value.trim()};}
 
 function validateInsp(p){
@@ -768,13 +841,15 @@ function validateInsp(p){
   marcaMsg.textContent = marcaBlocked ? 'Esta marca está detenida: libérala en "Seguimiento" antes de registrarla.' : 'Escribe la marca.';
   chk(!!p.marca && !marcaBlocked,'#marca');
   chk(Number(p.cantidad)>0,'#cantidad'); chk(!!p.area,'.seg[data-k="area"]'); chk(!!p.resultado,'.seg[data-k="resultado"]');
+  if(norm_(p.resultado)==='rechazado') chk(!!p.criticidad,'.seg[data-k="criticidad"]');
   if(bad.length){bad[0].scrollIntoView({behavior:'smooth',block:'center'}); toast('Revisa los campos marcados',true);} return !bad.length;
 }
 
 function resetInsp(keep){
   ['marca','correlativos','detalle'].forEach(i=>$('#'+i).value=''); $('#cantidad').value=1;
-  S.resultado=S.reparado=''; S.defectos.clear(); $('#areaNC').value=''; $('#areaNC_o').style.display='none';
-  $$('.seg[data-k="resultado"] button,.seg[data-k="reparado"] button').forEach(b=>b.classList.remove('on'));
+  S.resultado=S.reparado=S.criticidad=''; S.defectos.clear(); $('#areaNC').value=''; $('#areaNC_o').style.display='none';
+  $$('.seg[data-k="resultado"] button,.seg[data-k="reparado"] button,.seg[data-k="criticidad"] button').forEach(b=>b.classList.remove('on'));
+  applyCond();
   if(!keep){$('#fecha').value=today(); ['proyecto','etapa'].forEach(i=>{$('#'+i).value='';$('#'+i+'_o').style.display='none';});
     $('#responsable').value=''; S.area=''; S.armador.clear(); S.soldador.clear(); $$('.seg[data-k="area"] button').forEach(b=>b.classList.remove('on'));}
   sync(); $$('.invalid').forEach(x=>x.classList.remove('invalid')); window.scrollTo({top:0,behavior:'smooth'});
@@ -839,6 +914,7 @@ function switchForm(name){
   if(name==='seg') loadSeguimiento();
   if(name==='home') loadHome();
   if(name==='personas') loadPersonas();
+  if(name==='buscar') loadBusqueda();
   if(name==='recepcion') cargarProveedores();
 }
 
@@ -930,7 +1006,7 @@ $('#save').onclick=()=>{
   Q.push({uid:newUid(),p:p,action:(ACTIVE_FORM==='vigas'?'saveVigas':'saveInspeccion'),t:Date.now(),tries:0,err:''}); qSave();
   showBigCheck();
   toast(navigator.onLine?'Registro guardado. Enviando a la hoja…':'Sin conexión: registro guardado en este dispositivo. Se enviará al volver internet.');
-  reset($('#keep').checked); renderPend(); syncNow(); homeLoaded=false; segLoaded=false; rechItems=null; personasLoaded=false; refreshSegBadge();
+  reset($('#keep').checked); renderPend(); syncNow(); homeLoaded=false; segLoaded=false; rechItems=null; personasLoaded=false; bqLoaded=false; projDetCache={}; refreshSegBadge();
 };
 $('#clear').onclick=()=>{if(confirm('¿Limpiar todo el formulario?'))reset(false);};
 
@@ -1057,11 +1133,18 @@ function applyCond(){
     el.hidden = oculto;
     if(oculto) clearGoverned(k); // si se oculta, se borra su valor para que no se envíe con el registro
   });
+  // Criticidad del error: aparece SOLO cuando el resultado es Rechazado (no con Avance aprobado).
+  const critEl=document.getElementById('fld-criticidad');
+  if(critEl){
+    const esRech = norm_(S.resultado)==='rechazado';
+    critEl.hidden = !esRech;
+    if(!esRech && S.criticidad){ S.criticidad=''; critEl.querySelectorAll('.seg button').forEach(b=>b.classList.remove('on')); critEl.classList.remove('invalid'); }
+  }
 }
 function renderForm(){
   fillSelect('proyecto',CFG.proyectos,'Selecciona…');
   fillSelect('etapa',CFG.etapas,'Sin etapa'); fillSelect('areaNC',CFG.areasNC,'Sin definir');
-  seg('area',CFG.areas); seg('resultado',CFG.resultados); seg('reparado',CFG.reparado);
+  seg('area',CFG.areas); seg('resultado',CFG.resultados); seg('reparado',CFG.reparado); seg('criticidad',['Alta','Baja']);
   multi('armador',CFG.armadores); multi('soldador',CFG.soldadores); defectos(); sync(); applyCond();
   fillSelect('v_proyecto',CFG.proyectos,'Selecciona…'); seg('v_resultado',CFG.resultados); seg('v_reparado',CFG.reparado);
   defectosVigas(); syncVigas(); applyCondVigas();
@@ -1191,21 +1274,66 @@ function renderHomeCharts(d){
   html+='</div>';
   $('#homeCharts').innerHTML=html;
 }
+function stackBarHtml(t,a,v,r,h){
+  if(!t) return '<div class="stackBar"'+(h?' style="height:'+h+'px"':'')+'></div>';
+  return '<div class="stackBar"'+(h?' style="height:'+h+'px"':'')+'><i style="background:var(--ok)" data-w="'+(a/t*100)+'%"></i><i style="background:var(--adv)" data-w="'+(v/t*100)+'%"></i><i style="background:var(--bad)" data-w="'+(r/t*100)+'%"></i></div>';
+}
 function projRowHtml(p){
   const c=pctColor(p.pctAprobacion);
   return '<div class="projRow" data-proyecto="'+esc(p.proyecto)+'"><div class="top"><b>'+esc(p.proyecto)+'</b><span class="pct" style="background:'+c+'22;color:'+c+';border:1px solid '+c+'">'+p.pctAprobacion+'% aprob.</span></div>'+
+    stackBarHtml(p.total,p.aprobados,p.avanceAprobado,p.rechazados,6)+
     '<small>'+p.total+' registro'+(p.total===1?'':'s')+' — Aprobados: '+p.aprobados+' · Rechazados: '+p.rechazados+' · Avance aprobado: '+p.avanceAprobado+'</small></div>';
+}
+// Hace "crecer" las barras y cuenta los números hacia arriba, para que el panel se sienta vivo.
+function animarHome(){
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    document.querySelectorAll('#homeScreen [data-w]').forEach(el=>el.style.width=el.dataset.w);
+    document.querySelectorAll('#homeScreen [data-h]').forEach(el=>el.style.height=el.dataset.h);
+  }));
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
+  document.querySelectorAll('#homeScreen [data-count]').forEach(el=>{
+    const fin=+el.dataset.count, suf=el.dataset.suf||'';
+    if(reduce||!isFinite(fin)){ el.textContent=fin+suf; return; }
+    const t0=performance.now(), dur=750;
+    const paso=t=>{ const p=Math.min(1,(t-t0)/dur), e=1-Math.pow(1-p,3); el.textContent=Math.round(fin*e)+suf; if(p<1) requestAnimationFrame(paso); };
+    requestAnimationFrame(paso);
+  });
+}
+function renderHomeExtras(d){
+  // Resultados por área
+  $('#homeAreas').innerHTML=(d.areasSemana||[]).map(a=>{
+    const c=pctColor(a.pctAprobacion);
+    return '<div class="areaTile"><div class="top"><b>'+esc(a.area)+'</b><span class="tot" data-count="'+a.total+'">'+a.total+'</span></div>'+
+      stackBarHtml(a.total,a.aprobados,a.avanceAprobado,a.rechazados)+
+      (a.total?'<div class="areaStats"><span style="color:var(--ok)"><b>'+a.aprobados+'</b> aprobadas</span><span style="color:var(--bad)"><b>'+a.rechazados+'</b> rechazadas</span><span style="color:var(--adv)"><b>'+a.avanceAprobado+'</b> avance</span><span style="color:'+c+'"><b>'+a.pctAprobacion+'%</b> aprob.</span></div>':'<small>Sin registros esta semana</small>')+'</div>';
+  }).join('');
+  // Actividad día por día (barras apiladas)
+  const dias=d.diasSemana||[], maxT=Math.max(1,...dias.map(x=>x.total));
+  $('#homeDias').innerHTML=dias.map(x=>{
+    const h=x.total?Math.max(5,Math.round(x.total/maxT*104)):0;
+    const seg=(n,col)=>x.total&&n?'<i style="background:'+col+';height:'+(n/x.total*100)+'%"></i>':'';
+    return '<div class="diaCol"><div class="v">'+x.total+'</div><div class="stack" data-h="'+h+'px">'+seg(x.aprobados,'var(--ok)')+seg(x.avanceAprobado,'var(--adv)')+seg(x.rechazados,'var(--bad)')+'</div><div class="l">'+esc(x.etiqueta)+'</div></div>';
+  }).join('');
+  // Criticidad y defectos de los rechazos
+  const cr=d.criticidadSemana||{alta:0,baja:0,sinDato:0};
+  $('#homeCrit').innerHTML=
+    '<span class="critChip" style="border-color:var(--bad);color:#ffb3b3"><b>'+cr.alta+'</b> criticidad alta</span>'+
+    '<span class="critChip" style="border-color:var(--adv);color:#ffd98a"><b>'+cr.baja+'</b> criticidad baja</span>'+
+    (cr.sinDato?'<span class="critChip"><b>'+cr.sinDato+'</b> sin criticidad</span>':'');
+  const defs=d.topDefectos||[], maxD=Math.max(1,...defs.map(x=>x.cantidad));
+  $('#homeDefectos').innerHTML=defs.length?defs.map(x=>'<div class="defRow"><div class="t"><span>'+esc(x.defecto)+'</span><b>'+x.cantidad+'</b></div><div class="bar2"><i data-w="'+(x.cantidad/maxD*100)+'%"></i></div></div>').join(''):'<div class="count">Sin rechazos con defectos registrados esta semana.</div>';
 }
 function renderHome(){
   const d=homeData; if(!d)return;
   $('#homeRango').textContent = 'Del '+d.rango.desde+' al '+d.rango.hasta+' · Actualizado '+timeAgo(homeSavedAt);
   const r=d.resumenSemana;
   $('#homeKpis').innerHTML =
-    '<div class="kpiCard"><div class="num">'+r.total+'</div><div class="lbl3">Registros (7 días)</div></div>'+
-    '<div class="kpiCard"><div class="num" style="color:'+pctColor(r.pctAprobacion)+'">'+r.pctAprobacion+'%</div><div class="lbl3">% de aprobación</div></div>'+
-    '<div class="kpiCard" id="kpiRechazados" style="cursor:pointer"><div class="num" style="color:var(--bad)">'+r.rechazados+'</div><div class="lbl3">Rechazados ↗</div></div>'+
-    '<div class="kpiCard"><div class="num" style="color:var(--adv)">'+r.avanceAprobado+'</div><div class="lbl3">Avance aprobado</div></div>';
+    '<div class="kpiCard"><div class="num" data-count="'+r.total+'">'+r.total+'</div><div class="lbl3">Registros (7 días)</div></div>'+
+    '<div class="kpiCard"><div class="num" data-count="'+r.pctAprobacion+'" data-suf="%" style="color:'+pctColor(r.pctAprobacion)+'">'+r.pctAprobacion+'%</div><div class="lbl3">% de aprobación</div></div>'+
+    '<div class="kpiCard" id="kpiRechazados" style="cursor:pointer"><div class="num" data-count="'+r.rechazados+'" style="color:var(--bad)">'+r.rechazados+'</div><div class="lbl3">Rechazados ↗</div></div>'+
+    '<div class="kpiCard"><div class="num" data-count="'+r.avanceAprobado+'" style="color:var(--adv)">'+r.avanceAprobado+'</div><div class="lbl3">Avance aprobado</div></div>';
   renderHomeCharts(d);
+  renderHomeExtras(d);
   $('#homeActCount').textContent = d.proyectosActivos.length + (d.proyectosActivos.length===1?' proyecto con movimiento esta semana':' proyectos con movimiento esta semana');
   $('#homeActivos').innerHTML = d.proyectosActivos.length ? d.proyectosActivos.map(projRowHtml).join('') : '<div class="count">Ningún proyecto tiene registros en los últimos 7 días.</div>';
   $('#homeGenCount').textContent = d.proyectosGeneral.length + (d.proyectosGeneral.length===1?' proyecto en la hoja':' proyectos en la hoja');
@@ -1215,6 +1343,7 @@ function renderHome(){
     $('#homeGenMoreWrap').hidden=false;
     $('#homeGenMore').textContent = homeGenExpanded ? 'Ver menos' : 'Ver todos ('+d.proyectosGeneral.length+')';
   } else { $('#homeGenMoreWrap').hidden=true; }
+  animarHome();
 }
 async function loadHome(force){
   if(homeLoaded && !force){ renderHome(); return; }
@@ -1232,7 +1361,7 @@ async function loadHome(force){
   }
   try{
     const r=await api('getDashboard');
-    if(r&&r.ok){homeLoaded=true;homeData=r;homeSavedAt=Date.now();cacheHome(r);renderHome();}
+    if(r&&r.ok){homeLoaded=true;homeData=r;homeSavedAt=Date.now();cacheHome(r);projDetCache={};renderHome();}
     else if(!homeData){$('#homeRango').textContent='No se pudo cargar: '+(r&&r.error||'error desconocido');}
   }catch(e){ if(!homeData) $('#homeRango').textContent='No se pudo cargar (sin conexión o error de red).'; }
 }
@@ -1240,11 +1369,55 @@ function goToProjectSeguimiento(proyecto){
   $('#segSearch').value=proyecto;
   switchForm('seg');
 }
+/* ----- Detalle de un proyecto (al tocarlo en Inicio): desglose por área ----- */
+let projDetCache={}, projModalNombre=null;
+function areaDetalleHtml(nombre,a){
+  const t=a.registros;
+  return '<div class="areaTile" style="margin-top:10px"><div class="top"><b>'+esc(nombre)+'</b><span class="tot">'+t+'<span style="font-family:Inter;font-size:.7rem;color:var(--mut);font-weight:400"> registros</span></span></div>'+
+    stackBarHtml(t,a.aprobados,a.avanceAprobado,a.rechazados)+
+    '<small>'+a.elementos+' elementos revisados</small>'+
+    (t?'<div class="areaStats"><span style="color:var(--ok)"><b>'+a.aprobados+'</b> aprobadas</span><span style="color:var(--bad)"><b>'+a.rechazados+'</b> rechazadas</span><span style="color:var(--adv)"><b>'+a.avanceAprobado+'</b> avance aprobado</span></div>':'')+'</div>';
+}
+function renderDetalleProyecto(d){
+  const t=d.total, pct=t.registros?Math.round(t.aprobados/t.registros*100):0, c=pctColor(pct);
+  $('#projModalSub').textContent = t.registros ? ('Primer registro: '+(d.primeraFecha||'—')+' · Último registro: '+(d.ultimaFecha||'—')) : 'Este proyecto todavía no tiene registros.';
+  const a=d.areas;
+  $('#projModalBody').innerHTML =
+    '<div class="kpiGrid" style="grid-template-columns:repeat(3,1fr)">'+
+      '<div class="kpiCard"><div class="num">'+t.registros+'</div><div class="lbl3">Registros</div></div>'+
+      '<div class="kpiCard"><div class="num">'+t.elementos+'</div><div class="lbl3">Elementos</div></div>'+
+      '<div class="kpiCard"><div class="num" style="color:'+c+'">'+pct+'%</div><div class="lbl3">Aprobación</div></div>'+
+    '</div>'+
+    areaDetalleHtml('PREMAT',a.premat)+areaDetalleHtml('Armado',a.armado)+areaDetalleHtml('Soldadura',a.soldadura)+
+    (a.otras.registros?areaDetalleHtml('Otras áreas',a.otras):'');
+  animarProyectoModal();
+}
+function animarProyectoModal(){
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ document.querySelectorAll('#projModalBody [data-w]').forEach(el=>el.style.width=el.dataset.w); }));
+}
+async function abrirDetalleProyecto(proyecto){
+  projModalNombre=proyecto;
+  $('#projModalTitle').textContent=proyecto;
+  $('#projModalSub').textContent='';
+  $('#projOverlay').hidden=false; $('#projModal').hidden=false;
+  if(projDetCache[proyecto]){ renderDetalleProyecto(projDetCache[proyecto]); return; }
+  $('#projModalBody').innerHTML=skeletonRows(4);
+  if(!navigator.onLine){ $('#projModalBody').innerHTML='<div class="count">Sin conexión: conéctate para ver el detalle del proyecto.</div>'; return; }
+  try{
+    const r=await api('getProyectoDetalle',{proyecto:proyecto});
+    if(r&&r.ok){ projDetCache[proyecto]=r; if(projModalNombre===proyecto) renderDetalleProyecto(r); }
+    else $('#projModalBody').innerHTML='<div class="count">No se pudo cargar: '+esc(r&&r.error||'error desconocido')+'</div>';
+  }catch(e){ $('#projModalBody').innerHTML='<div class="count">No se pudo cargar (sin conexión o error de red).</div>'; }
+}
+function cerrarDetalleProyecto(){ $('#projOverlay').hidden=true; $('#projModal').hidden=true; projModalNombre=null; }
 function initHome(){
   $('#homeRefresh').onclick=()=>loadHome(true);
   $('#homeGenMore').onclick=()=>{homeGenExpanded=!homeGenExpanded;renderHome();};
-  $('#homeActivos').addEventListener('click',e=>{const r=e.target.closest('[data-proyecto]');if(r)goToProjectSeguimiento(r.dataset.proyecto);});
-  $('#homeGeneral').addEventListener('click',e=>{const r=e.target.closest('[data-proyecto]');if(r)goToProjectSeguimiento(r.dataset.proyecto);});
+  $('#homeActivos').addEventListener('click',e=>{const r=e.target.closest('[data-proyecto]');if(r)abrirDetalleProyecto(r.dataset.proyecto);});
+  $('#homeGeneral').addEventListener('click',e=>{const r=e.target.closest('[data-proyecto]');if(r)abrirDetalleProyecto(r.dataset.proyecto);});
+  $('#projModalClose').onclick=cerrarDetalleProyecto;
+  $('#projOverlay').onclick=cerrarDetalleProyecto;
+  $('#projModalSeg').onclick=()=>{ const p=projModalNombre; cerrarDetalleProyecto(); if(p) goToProjectSeguimiento(p); };
 }
 function showBigCheck(){const el=$('#bigCheck');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),650);}
 
@@ -1604,35 +1777,84 @@ function initInformes(){
   $('#infGenerar').onclick=generarInforme;
 }
 
-/* ===== Búsqueda de Elementos: filtro libre por inspector/proyecto/marca/correlativo ===== */
+/* ===== Búsqueda de Elementos: se carga todo una vez y se filtra al instante en el celular ===== */
+const BQKEY='qaqc_busqueda_v1', BQ_PAGE=150;
+let bqData=null, bqSavedAt=0, bqLoaded=false, bqShown=BQ_PAGE, bqMatches=[], bqTimer=null, bqModalItem=null;
+function cacheBq(){ try{ localStorage.setItem(BQKEY,JSON.stringify({data:bqData,savedAt:bqSavedAt})); }catch(e){} }
+function loadCachedBq(){ try{ const o=JSON.parse(localStorage.getItem(BQKEY)); return (o&&o.data)?o:null; }catch(e){ return null; } }
+// Se precalculan los textos normalizados una sola vez, para que filtrar sea instantáneo.
+function bqPrep(){ (bqData.items||[]).forEach((it,x)=>{ it._x=x; it._i=norm_(it.inspector); it._p=norm_(it.proyecto); it._m=norm_(it.marca); it._c=norm_(it.correlativos); }); }
 function bqRowClass(resultado){
   const r=norm_(resultado);
   return r==='rechazado'?'bad':r==='avance aprobado'?'adv':r==='aprobado'?'ok':'';
 }
-function bqRowHtml(it){
+function bqRowHtml(it,idx){
   const cls=bqRowClass(it.resultado);
-  return '<div class="row'+(cls?' '+cls:'')+'"><div><b>'+esc(it.marca)+'</b> · '+esc(it.resultado||'—')+'<br>'+
+  return '<div class="row'+(cls?' '+cls:'')+'" data-bq="'+idx+'" style="cursor:pointer"><div><b>'+esc(it.marca)+'</b> · '+esc(it.resultado||'—')+'<br>'+
     '<small>'+esc(it.proyecto)+' — '+esc(it.fecha)+' — '+esc(it.inspector)+(it.correlativos?' — Corr: '+esc(it.correlativos):'')+' — '+esc(it.area)+'</small>'+
-    (it.detalle?'<br><small>'+esc(it.detalle)+'</small>':'')+
     '</div></div>';
 }
-async function buscarElementosRun(){
-  const filtros={inspector:$('#bqInspector').value.trim(),proyecto:$('#bqProyecto').value.trim(),marca:$('#bqMarca').value.trim(),correlativo:$('#bqCorrelativo').value.trim()};
-  $('#bqCount').textContent=''; $('#bqList').innerHTML=skeletonRows(4);
-  if(!navigator.onLine){$('#bqCount').textContent='Sin conexión: conéctate para buscar.';$('#bqList').innerHTML='';return;}
-  try{
-    const r=await api('buscarElementos',filtros);
-    if(r&&r.ok){
-      const items=r.items||[];
-      $('#bqCount').textContent=items.length+(items.length===1?' resultado':' resultados')+(r.limitado?' (hay más; usa los filtros para acotar)':'');
-      $('#bqList').innerHTML=items.length?'<div class="pend">'+items.map(bqRowHtml).join('')+'</div>':'<div class="count">No se encontraron registros con esos filtros.</div>';
-    }else{ $('#bqCount').textContent='No se pudo buscar: '+(r&&r.error||'error desconocido'); $('#bqList').innerHTML=''; }
-  }catch(e){ $('#bqCount').textContent='No se pudo buscar (sin conexión o error de red).'; $('#bqList').innerHTML=''; }
+function bqFiltrar(){
+  const qi=norm_($('#bqInspector').value), qp=norm_($('#bqProyecto').value), qm=norm_($('#bqMarca').value), qc=norm_($('#bqCorrelativo').value);
+  const items=(bqData&&bqData.items)||[];
+  bqMatches=items.filter(it=>(!qi||it._i.includes(qi))&&(!qp||it._p.includes(qp))&&(!qm||it._m.includes(qm))&&(!qc||it._c.includes(qc)));
 }
+function bqRender(reset){
+  if(!bqData)return;
+  if(reset) bqShown=BQ_PAGE;
+  bqFiltrar();
+  $('#bqUpdated').textContent = bqSavedAt ? 'Actualizado '+timeAgo(bqSavedAt)+(bqData.limitado?' · se muestran los 5000 registros más recientes':'') : '';
+  const total=bqMatches.length;
+  $('#bqCount').textContent = total+(total===1?' resultado':' resultados')+(total?' · del más antiguo al más reciente':'');
+  const visibles=bqMatches.slice(0,bqShown);
+  $('#bqList').innerHTML = visibles.length ? '<div class="pend">'+visibles.map(it=>bqRowHtml(it,it._x)).join('')+'</div>' : '<div class="count">No se encontraron registros con esos filtros.</div>';
+  $('#bqMoreWrap').hidden = total<=bqShown;
+  if(total>bqShown) $('#bqMore').textContent='Mostrar más ('+(total-bqShown)+' restantes)';
+}
+async function loadBusqueda(force){
+  if(bqLoaded && !force){ bqRender(); return; }
+  if(!bqData){
+    const c=loadCachedBq();
+    if(c){ bqData=c.data; bqSavedAt=c.savedAt; bqPrep(); bqRender(true); }
+    else { $('#bqCount').textContent=''; $('#bqList').innerHTML=skeletonRows(5); }
+  }
+  if(!navigator.onLine){
+    if(!bqData) $('#bqCount').textContent='Sin conexión: conéctate para cargar los registros.';
+    else $('#bqUpdated').textContent='Sin conexión, mostrando datos '+timeAgo(bqSavedAt);
+    return;
+  }
+  try{
+    const r=await api('buscarElementos',{});
+    if(r&&r.ok){ bqData={items:r.items||[],limitado:!!r.limitado}; bqSavedAt=Date.now(); bqPrep(); bqLoaded=true; cacheBq(); bqRender(true); }
+    else if(!bqData){ $('#bqCount').textContent='No se pudo cargar: '+(r&&r.error||'error desconocido'); $('#bqList').innerHTML=''; }
+  }catch(e){ if(!bqData){ $('#bqCount').textContent='No se pudo cargar (sin conexión o error de red).'; $('#bqList').innerHTML=''; } }
+}
+function bqKV(label,valor){ return valor||valor===0 ? '<div class="bqKV"><span>'+esc(label)+'</span><b>'+esc(valor)+'</b></div>' : ''; }
+function abrirDetalleElemento(idx){
+  const it=(bqData&&bqData.items||[])[idx]; if(!it)return;
+  bqModalItem=it;
+  $('#bqModalTitle').textContent=it.marca||'Elemento';
+  const cls=bqRowClass(it.resultado), colorRes=cls==='bad'?'var(--bad)':cls==='adv'?'var(--adv)':cls==='ok'?'var(--ok)':'var(--txt)';
+  $('#bqModalBody').innerHTML =
+    '<div class="bqKV"><span>Resultado</span><b style="color:'+colorRes+'">'+esc(it.resultado||'—')+'</b></div>'+
+    bqKV('Criticidad',it.criticidad)+bqKV('Proyecto',it.proyecto)+bqKV('Fecha',it.fecha)+bqKV('Inspector',it.inspector)+
+    bqKV('Cantidad revisada',it.cantidad)+bqKV('Correlativos',it.correlativos)+bqKV('Área',it.area)+
+    bqKV('Etapa',it.etapa)+bqKV('Armador',it.armador)+bqKV('Soldador',it.soldador)+
+    bqKV('Reparado o terminado',it.reparado)+bqKV('Área donde se detecta NC',it.areaNC)+
+    bqKV('Defectos detectados',it.defectos)+bqKV('Detalle de defectos',it.detalle);
+  $('#bqOverlay').hidden=false; $('#bqModal').hidden=false;
+}
+function cerrarDetalleElemento(){ $('#bqOverlay').hidden=true; $('#bqModal').hidden=true; bqModalItem=null; }
 function initBusqueda(){
-  $('#bqBuscar').onclick=buscarElementosRun;
-  $('#bqLimpiar').onclick=()=>{$('#bqInspector').value='';$('#bqProyecto').value='';$('#bqMarca').value='';$('#bqCorrelativo').value='';$('#bqCount').textContent='';$('#bqList').innerHTML='';};
-  ['bqInspector','bqProyecto','bqMarca','bqCorrelativo'].forEach(id=>{$('#'+id).addEventListener('keydown',e=>{if(e.key==='Enter')buscarElementosRun();});});
+  const ids=['bqInspector','bqProyecto','bqMarca','bqCorrelativo'];
+  ids.forEach(id=>{ $('#'+id).addEventListener('input',()=>{ clearTimeout(bqTimer); bqTimer=setTimeout(()=>bqRender(true),120); }); });
+  $('#bqLimpiar').onclick=()=>{ ids.forEach(id=>$('#'+id).value=''); bqRender(true); };
+  $('#bqRefresh').onclick=()=>loadBusqueda(true);
+  $('#bqMore').onclick=()=>{ bqShown+=BQ_PAGE; bqRender(); };
+  $('#bqList').addEventListener('click',e=>{ const r=e.target.closest('[data-bq]'); if(r) abrirDetalleElemento(+r.dataset.bq); });
+  $('#bqModalClose').onclick=cerrarDetalleElemento;
+  $('#bqOverlay').onclick=cerrarDetalleElemento;
+  $('#bqModalHist').onclick=()=>{ if(!bqModalItem)return; $('#bqMarca').value=bqModalItem.marca; $('#bqProyecto').value=bqModalItem.proyecto; $('#bqInspector').value=''; $('#bqCorrelativo').value=''; cerrarDetalleElemento(); bqRender(true); };
 }
 
 /* ===== Armadores y Soldadores: lista + detalle por persona ===== */
