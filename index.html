@@ -193,6 +193,9 @@ header{position:relative}
 #bqModal[hidden]{display:block!important;opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.94)}
 #bqModal:not([hidden]){opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
 @media(prefers-reduced-motion:reduce){#bqModal,#bqOverlay{transition:none}}
+.bqGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:900px){.bqGrid{grid-template-columns:repeat(4,1fr)}}
+.bqGrid .field{min-width:0}
 .bqKV{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--line);font-size:.9rem}
 .bqKV span{color:var(--mut);flex:none}
 .bqKV b{text-align:right;font-weight:600;word-break:break-word}
@@ -498,11 +501,15 @@ input[type="date"],input[type="time"]{color-scheme:dark}
   <section class="card">
     <div class="cardHead"><h2>Búsqueda de Elementos</h2><button type="button" class="mini" id="bqRefresh">🔄 Actualizar</button></div>
     <div class="count">Escribe en cualquier campo y la lista se filtra al instante. Deja en blanco lo que no quieras filtrar. Toca un elemento para ver su información completa.</div>
-    <div class="grid" style="margin-top:12px">
-      <div class="field"><label for="bqInspector">Inspector</label><input id="bqInspector" autocomplete="off" placeholder="Todos"></div>
-      <div class="field"><label for="bqProyecto">Proyecto</label><input id="bqProyecto" autocomplete="off" placeholder="Todos"></div>
-      <div class="field"><label for="bqMarca">Marca</label><input id="bqMarca" autocomplete="off" placeholder="Todas"></div>
-      <div class="field"><label for="bqCorrelativo">Correlativo</label><input id="bqCorrelativo" autocomplete="off" placeholder="Todos"></div>
+    <div class="bqGrid" style="margin-top:12px">
+      <div class="field"><label for="bqFecha">Fecha</label><input type="date" id="bqFecha"></div>
+      <div class="field"><label for="bqProyecto">Proyecto</label><input id="bqProyecto" autocomplete="off" placeholder="Buscar…"></div>
+      <div class="field"><label for="bqMarca">Marca</label><input id="bqMarca" autocomplete="off" placeholder="Buscar…"></div>
+      <div class="field"><label for="bqCorrelativo">Correlativo</label><input id="bqCorrelativo" autocomplete="off" placeholder="Buscar…"></div>
+      <div class="field"><label for="bqArea">Área</label><input id="bqArea" autocomplete="off" placeholder="Buscar…"></div>
+      <div class="field"><label for="bqInspector">Inspector</label><input id="bqInspector" autocomplete="off" placeholder="Buscar…"></div>
+      <div class="field"><label for="bqEtapa">Etapa / Armador / Soldador</label><input id="bqEtapa" autocomplete="off" placeholder="Buscar…"></div>
+      <div class="field"><label for="bqEstado">Estado</label><select id="bqEstado"></select></div>
     </div>
     <div class="add"><button type="button" id="bqLimpiar">Limpiar filtros</button></div>
   </section>
@@ -1783,7 +1790,7 @@ let bqData=null, bqSavedAt=0, bqLoaded=false, bqShown=BQ_PAGE, bqMatches=[], bqT
 function cacheBq(){ try{ localStorage.setItem(BQKEY,JSON.stringify({data:bqData,savedAt:bqSavedAt})); }catch(e){} }
 function loadCachedBq(){ try{ const o=JSON.parse(localStorage.getItem(BQKEY)); return (o&&o.data)?o:null; }catch(e){ return null; } }
 // Se precalculan los textos normalizados una sola vez, para que filtrar sea instantáneo.
-function bqPrep(){ (bqData.items||[]).forEach((it,x)=>{ it._x=x; it._i=norm_(it.inspector); it._p=norm_(it.proyecto); it._m=norm_(it.marca); it._c=norm_(it.correlativos); }); }
+function bqPrep(){ (bqData.items||[]).forEach((it,x)=>{ it._x=x; it._i=norm_(it.inspector); it._p=norm_(it.proyecto); it._m=norm_(it.marca); it._c=norm_(it.correlativos); it._a=norm_(it.area); it._e=norm_([it.etapa,it.armador,it.soldador].join(' ')); it._r=norm_(it.resultado); }); }
 function bqRowClass(resultado){
   const r=norm_(resultado);
   return r==='rechazado'?'bad':r==='avance aprobado'?'adv':r==='aprobado'?'ok':'';
@@ -1795,9 +1802,18 @@ function bqRowHtml(it,idx){
     '</div></div>';
 }
 function bqFiltrar(){
-  const qi=norm_($('#bqInspector').value), qp=norm_($('#bqProyecto').value), qm=norm_($('#bqMarca').value), qc=norm_($('#bqCorrelativo').value);
+  const qi=norm_($('#bqInspector').value), qp=norm_($('#bqProyecto').value), qm=norm_($('#bqMarca').value), qc=norm_($('#bqCorrelativo').value),
+        qa=norm_($('#bqArea').value), qe=norm_($('#bqEtapa').value), qs=norm_($('#bqEstado').value);
+  const f=$('#bqFecha').value, qf=f?f.split('-').reverse().join('/'):''; // aaaa-mm-dd -> dd/mm/aaaa
   const items=(bqData&&bqData.items)||[];
-  bqMatches=items.filter(it=>(!qi||it._i.includes(qi))&&(!qp||it._p.includes(qp))&&(!qm||it._m.includes(qm))&&(!qc||it._c.includes(qc)));
+  bqMatches=items.filter(it=>(!qf||it.fecha===qf)&&(!qp||it._p.includes(qp))&&(!qm||it._m.includes(qm))&&(!qc||it._c.includes(qc))&&
+    (!qa||it._a.includes(qa))&&(!qi||it._i.includes(qi))&&(!qe||it._e.includes(qe))&&(!qs||it._r===qs));
+}
+// El desplegable "Estado" usa los mismos resultados configurados en Opciones (Aprobado, Rechazado, Avance aprobado…).
+function bqFillEstado(){
+  const el=$('#bqEstado'), prev=el.value;
+  fillPlainSelect('bqEstado',CFG.resultados,'Todos');
+  if(prev&&[...el.options].some(o=>o.value===prev)) el.value=prev;
 }
 function bqRender(reset){
   if(!bqData)return;
@@ -1812,6 +1828,7 @@ function bqRender(reset){
   if(total>bqShown) $('#bqMore').textContent='Mostrar más ('+(total-bqShown)+' restantes)';
 }
 async function loadBusqueda(force){
+  bqFillEstado();
   if(bqLoaded && !force){ bqRender(); return; }
   if(!bqData){
     const c=loadCachedBq();
@@ -1846,15 +1863,16 @@ function abrirDetalleElemento(idx){
 }
 function cerrarDetalleElemento(){ $('#bqOverlay').hidden=true; $('#bqModal').hidden=true; bqModalItem=null; }
 function initBusqueda(){
-  const ids=['bqInspector','bqProyecto','bqMarca','bqCorrelativo'];
-  ids.forEach(id=>{ $('#'+id).addEventListener('input',()=>{ clearTimeout(bqTimer); bqTimer=setTimeout(()=>bqRender(true),120); }); });
+  const ids=['bqFecha','bqProyecto','bqMarca','bqCorrelativo','bqArea','bqInspector','bqEtapa','bqEstado'];
+  bqFillEstado();
+  ids.forEach(id=>{ ['input','change'].forEach(ev=>$('#'+id).addEventListener(ev,()=>{ clearTimeout(bqTimer); bqTimer=setTimeout(()=>bqRender(true),120); })); });
   $('#bqLimpiar').onclick=()=>{ ids.forEach(id=>$('#'+id).value=''); bqRender(true); };
   $('#bqRefresh').onclick=()=>loadBusqueda(true);
   $('#bqMore').onclick=()=>{ bqShown+=BQ_PAGE; bqRender(); };
   $('#bqList').addEventListener('click',e=>{ const r=e.target.closest('[data-bq]'); if(r) abrirDetalleElemento(+r.dataset.bq); });
   $('#bqModalClose').onclick=cerrarDetalleElemento;
   $('#bqOverlay').onclick=cerrarDetalleElemento;
-  $('#bqModalHist').onclick=()=>{ if(!bqModalItem)return; $('#bqMarca').value=bqModalItem.marca; $('#bqProyecto').value=bqModalItem.proyecto; $('#bqInspector').value=''; $('#bqCorrelativo').value=''; cerrarDetalleElemento(); bqRender(true); };
+  $('#bqModalHist').onclick=()=>{ if(!bqModalItem)return; ids.forEach(id=>$('#'+id).value=''); $('#bqMarca').value=bqModalItem.marca; $('#bqProyecto').value=bqModalItem.proyecto; cerrarDetalleElemento(); bqRender(true); };
 }
 
 /* ===== Armadores y Soldadores: lista + detalle por persona ===== */
