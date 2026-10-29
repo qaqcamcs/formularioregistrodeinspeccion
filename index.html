@@ -243,7 +243,12 @@ header{position:relative}
 #formTabs{flex-wrap:nowrap!important;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;cursor:grab}
 #formTabs.dragging{cursor:grabbing;user-select:none}
 #formTabs::-webkit-scrollbar{display:none}
-#formTabs button{flex:0 0 auto;white-space:nowrap}
+#formTabs button{flex:0 0 auto;white-space:nowrap;font-weight:600}
+.subTabs{max-width:980px;margin:8px auto 0;padding:2px 16px}
+.subGrp{display:flex;gap:8px;flex-wrap:wrap;border-left:2px solid var(--pri);padding-left:10px}
+.subGrp[hidden]{display:none}
+.subTabs .mini{min-height:32px;font-size:.8rem;white-space:nowrap}
+.subTabs .mini.on{background:rgba(255,106,26,.16);border-color:var(--pri);color:#ffb27a;font-weight:700}
 input[type="date"],input[type="time"]{color-scheme:dark}
 .cardHead h2{margin:0}
 /* ---- Gráficos de torta (dona), sin librerías ---- */
@@ -316,13 +321,24 @@ input[type="date"],input[type="time"]{color-scheme:dark}
 <div class="tabsWrap" id="tabsWrap">
   <div class="add" id="formTabs" style="margin:0;padding:0 16px">
     <button type="button" class="mini on" id="tabFormHome">Inicio</button>
+    <button type="button" class="mini" id="grpRegistrar">Registrar</button>
+    <button type="button" class="mini" id="grpConsultar">Consultar</button>
+    <button type="button" class="mini" id="grpHerramientas">Herramientas</button>
+  </div>
+</div>
+<div id="subTabs" class="subTabs" hidden>
+  <div class="subGrp" data-sub="registrar" hidden>
     <button type="button" class="mini" id="tabFormInsp">Registro de inspección</button>
     <button type="button" class="mini" id="tabFormVigas">Vigas Tarea 0</button>
     <button type="button" class="mini" id="tabFormRecepcion">Recepción de materiales</button>
+  </div>
+  <div class="subGrp" data-sub="consultar" hidden>
     <button type="button" class="mini" id="tabFormSeg">Seguimiento</button>
-    <button type="button" class="mini" id="tabFormPersonas">Armadores y Soldadores</button>
-    <button type="button" class="mini" id="tabFormCalc">Calculadora de filete</button>
     <button type="button" class="mini" id="tabFormBuscar">Búsqueda de Elementos</button>
+    <button type="button" class="mini" id="tabFormPersonas">Armadores y Soldadores</button>
+  </div>
+  <div class="subGrp" data-sub="herramientas" hidden>
+    <button type="button" class="mini" id="tabFormCalc">Calculadora de filete</button>
     <button type="button" class="mini" id="tabFormInformes">Informes</button>
   </div>
 </div>
@@ -913,8 +929,26 @@ let ACTIVE_FORM='insp';
 function payload(){ return ACTIVE_FORM==='vigas' ? payloadVigas() : payloadInsp(); }
 function validate(p){ return ACTIVE_FORM==='vigas' ? validateVigas(p) : validateInsp(p); }
 function reset(keep){ return ACTIVE_FORM==='vigas' ? resetVigas(keep) : resetInsp(keep); }
+// Navegación en dos niveles: 4 botones arriba (Inicio + 3 grupos) y las pestañas del grupo debajo.
+const NAV_GROUP={home:'home',insp:'registrar',vigas:'registrar',recepcion:'registrar',seg:'consultar',buscar:'consultar',personas:'consultar',calc:'herramientas',informes:'herramientas'};
+const NAV_LAST={registrar:'insp',consultar:'seg',herramientas:'calc'}; // última pestaña visitada de cada grupo
+function updateNav(name){
+  const g=NAV_GROUP[name]||'home';
+  if(g!=='home') NAV_LAST[g]=name;
+  $('#grpRegistrar').classList.toggle('on',g==='registrar');
+  $('#grpConsultar').classList.toggle('on',g==='consultar');
+  $('#grpHerramientas').classList.toggle('on',g==='herramientas');
+  const sub=$('#subTabs'); sub.hidden=(g==='home');
+  sub.querySelectorAll('.subGrp').forEach(el=>{ el.hidden=(el.dataset.sub!==g); });
+  if(typeof updateTabsFade==='function') updateTabsFade();
+}
+function initNavGroups(){
+  $('#grpRegistrar').onclick=()=>switchForm(NAV_LAST.registrar);
+  $('#grpConsultar').onclick=()=>switchForm(NAV_LAST.consultar);
+  $('#grpHerramientas').onclick=()=>switchForm(NAV_LAST.herramientas);
+}
 function switchForm(name){
-  ACTIVE_FORM=name;
+  ACTIVE_FORM=name; updateNav(name);
   $('#homeScreen').hidden = name!=='home'; $('#f').hidden = name!=='insp'; $('#fVigas').hidden = name!=='vigas'; $('#recepcionScreen').hidden = name!=='recepcion'; $('#segScreen').hidden = name!=='seg'; $('#personasScreen').hidden = name!=='personas'; $('#calcScreen').hidden = name!=='calc'; $('#buscarScreen').hidden = name!=='buscar'; $('#informesScreen').hidden = name!=='informes';
   $('#tabFormHome').classList.toggle('on',name==='home'); $('#tabFormInsp').classList.toggle('on',name==='insp'); $('#tabFormVigas').classList.toggle('on',name==='vigas'); $('#tabFormRecepcion').classList.toggle('on',name==='recepcion'); $('#tabFormSeg').classList.toggle('on',name==='seg'); $('#tabFormPersonas').classList.toggle('on',name==='personas'); $('#tabFormCalc').classList.toggle('on',name==='calc'); $('#tabFormBuscar').classList.toggle('on',name==='buscar'); $('#tabFormInformes').classList.toggle('on',name==='informes');
   $('.bar').style.display = (name==='seg'||name==='home'||name==='calc'||name==='personas'||name==='buscar'||name==='informes'||name==='recepcion') ? 'none' : '';
@@ -2066,7 +2100,9 @@ function renderSegList(){
 function norm_(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();}
 function setSegBadge(n){
   const b=$('#tabFormSeg');
-  b.innerHTML = 'Seguimiento' + (n>0 ? ' <span class="tabBadge">'+(n>99?'99+':n)+'</span>' : '');
+  const badge = n>0 ? ' <span class="tabBadge">'+(n>99?'99+':n)+'</span>' : '';
+  b.innerHTML = 'Seguimiento' + badge;
+  $('#grpConsultar').innerHTML = 'Consultar' + badge; // el aviso se ve también en el botón del grupo
   if(typeof updateTabsFade==='function') updateTabsFade();
 }
 async function refreshSegBadge(){
@@ -2223,7 +2259,7 @@ function initMenu(){
   $('#menuOverlay').onclick=()=>setMenuOpen(false);
   window.closeMenu=()=>setMenuOpen(false);
 }
-renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); initHome(); initRechModal(); initCalc(); initPersonas(); initBusqueda(); initInformes(); initRecepcion(); initTabsFade(); initTabsDrag(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg(); refreshSegBadge();
+renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); initHome(); initRechModal(); initCalc(); initPersonas(); initBusqueda(); initInformes(); initRecepcion(); initNavGroups(); initTabsFade(); initTabsDrag(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg(); refreshSegBadge();
 </script>
 </body>
 </html>
