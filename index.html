@@ -176,6 +176,10 @@ header{position:relative}
 .defRow .t{display:flex;justify-content:space-between;font-size:.86rem;gap:8px}
 .defRow .bar2{height:7px;border-radius:999px;background:#12305c;margin-top:4px;overflow:hidden}
 .defRow .bar2 i{display:block;height:100%;width:0;background:var(--bad);transition:width .8s cubic-bezier(.2,.7,.2,1)}
+.critHead{display:flex;justify-content:space-between;align-items:center;margin:18px 0 0;padding-bottom:6px;border-bottom:1px solid var(--line);font-weight:700;font-size:.92rem}
+.critHead b{color:var(--txt);font-weight:600;font-size:.82rem}
+.defRow.baja .bar2 i{background:var(--adv)}
+.defRow.sin .bar2 i{background:#6b7c99}
 .critChips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 2px}
 .critChip{border:1px solid var(--line);background:#0a2244;border-radius:999px;padding:5px 13px;font-size:.84rem}
 @media(prefers-reduced-motion:reduce){.stackBar i,.diaCol .stack,.defRow .bar2 i{transition:none}}
@@ -408,7 +412,6 @@ input[type="date"],input[type="time"]{color-scheme:dark}
   <section class="card">
     <h2>Rechazos de la semana</h2>
     <div class="critChips" id="homeCrit"></div>
-    <div class="count" style="margin-top:8px">Defectos más frecuentes en los rechazos</div>
     <div id="homeDefectos"></div>
   </section>
   <section class="card">
@@ -1361,8 +1364,18 @@ function renderHomeExtras(d){
     '<span class="critChip" style="border-color:var(--bad);color:#ffb3b3"><b>'+cr.alta+'</b> criticidad alta</span>'+
     '<span class="critChip" style="border-color:var(--adv);color:#ffd98a"><b>'+cr.baja+'</b> criticidad baja</span>'+
     (cr.sinDato?'<span class="critChip"><b>'+cr.sinDato+'</b> sin criticidad</span>':'');
-  const defs=d.topDefectos||[], maxD=Math.max(1,...defs.map(x=>x.cantidad));
-  $('#homeDefectos').innerHTML=defs.length?defs.map(x=>'<div class="defRow"><div class="t"><span>'+esc(x.defecto)+'</span><b>'+x.cantidad+'</b></div><div class="bar2"><i data-w="'+(x.cantidad/maxD*100)+'%"></i></div></div>').join(''):'<div class="count">Sin rechazos con defectos registrados esta semana.</div>';
+  // Defectos de los rechazos, un gráfico por criticidad (todos con la misma escala para poder compararlos).
+  const filas=(lista,max,cls)=>lista.length?lista.map(x=>'<div class="defRow '+cls+'"><div class="t"><span>'+esc(x.defecto)+'</span><b>'+x.cantidad+'</b></div><div class="bar2"><i data-w="'+(x.cantidad/max*100)+'%"></i></div></div>').join(''):'<div class="count" style="margin-top:8px">Sin defectos registrados en estos rechazos.</div>';
+  const porCrit=d.topDefectosCrit;
+  if(porCrit){
+    const grupos=[['alta','Criticidad alta','var(--bad)','alta',cr.alta],['baja','Criticidad baja','var(--adv)','baja',cr.baja]];
+    if(cr.sinDato) grupos.push(['sinDato','Sin criticidad registrada','#8294b3','sin',cr.sinDato]);
+    const max=Math.max(1,...grupos.flatMap(g=>(porCrit[g[0]]||[]).map(x=>x.cantidad)));
+    $('#homeDefectos').innerHTML=grupos.map(g=>'<div class="critHead" style="color:'+g[2]+'"><span>● '+g[1]+'</span><b>'+g[4]+(g[4]===1?' rechazo':' rechazos')+'</b></div>'+filas(porCrit[g[0]]||[],max,g[3])).join('');
+  }else{ // respaldo: si el servidor todavía no está actualizado, se muestra la lista combinada de antes
+    const defs=d.topDefectos||[], max=Math.max(1,...defs.map(x=>x.cantidad));
+    $('#homeDefectos').innerHTML='<div class="count" style="margin-top:8px">Defectos más frecuentes en los rechazos</div>'+filas(defs,max,'');
+  }
 }
 function renderHome(){
   const d=homeData; if(!d)return;
