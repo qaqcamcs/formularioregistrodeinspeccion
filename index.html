@@ -156,6 +156,25 @@ header{position:relative}
 #infoModal:not([hidden]){opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
 @media(prefers-reduced-motion:reduce){#infoModal,#infoOverlay{transition:none}}
 #infGenerar:disabled{opacity:.6}
+.bigOverlay{position:fixed;inset:0;background:rgba(4,11,24,.6);z-index:18;opacity:0;transition:opacity .25s;pointer-events:none}
+.bigOverlay[hidden]{display:block!important;opacity:0;pointer-events:none}
+.bigOverlay:not([hidden]){opacity:1;pointer-events:auto}
+.bigModal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.96);width:min(680px,94vw);max-height:92vh;overflow-y:auto;overflow-x:hidden;z-index:19;margin:0;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s}
+.bigModal[hidden]{display:block!important;opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.96)}
+.bigModal:not([hidden]){opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+@media(prefers-reduced-motion:reduce){.bigModal,.bigOverlay{transition:none}}
+.secT{font-weight:700;color:#dce8fa;margin:18px 0 8px;font-size:.95rem;display:flex;align-items:center;gap:10px}
+.secT::before{content:"";width:3px;height:16px;background:var(--pri);border-radius:2px;flex:none}
+.rmsCard{border:1px solid var(--line);background:#0a2244;border-radius:10px;margin-top:8px}
+.rmsCard summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;cursor:pointer;list-style:none}
+.rmsCard summary::-webkit-details-marker{display:none}
+.rmsN{background:var(--card2);border-radius:999px;min-width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;flex:none}
+.rmsSerie{color:var(--mut);font-size:.82rem}
+.rmsTag{margin-left:auto;border-radius:999px;padding:2px 10px;font-size:.72rem;border:1px solid var(--line);color:var(--mut)}
+.rmsTag.ok{color:var(--ok);border-color:var(--ok)}
+.rmsTag.nc{color:#ff8f8f;border-color:var(--bad)}
+.rmsBody{padding:0 12px 12px}
+#pinGenerar:disabled,#rmsGenerar:disabled{opacity:.6}
 .areaGrid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px}
 @media(min-width:600px){.areaGrid{grid-template-columns:repeat(2,1fr)}}
 .areaTile{background:#0a2244;border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}
@@ -562,9 +581,88 @@ input[type="date"],input[type="time"]{color-scheme:dark}
         <div class="top"><b>Informe de Inspección en Terreno</b></div>
         <small>Datos de la visita, observaciones y evidencia fotográfica. Se descarga como PDF al celular.</small>
       </div>
+      <div class="projRow" id="infoAbrirPintura">
+        <div class="top"><b>Informe de Rechazo de Pintura</b></div>
+        <small>CC-IRP-001 Rev. 00 · Observaciones y motivos de rechazo del área de pintura, con fotos. PDF vertical.</small>
+      </div>
+      <div class="projRow" id="infoAbrirSemanal">
+        <div class="top"><b>Informe Semanal de Revisiones por Inspector</b></div>
+        <small>RG-CC-001 · Resumen general de la semana por inspector, área y proyecto, con rechazos y errores más comunes. Se descarga como Word (.docx) al dispositivo.</small>
+      </div>
+      <div class="projRow" id="infoAbrirAmperaje">
+        <div class="top"><b>Registro de Medición de Amperaje / Voltaje</b></div>
+        <small>R-MS-01 Rev. 0 · Máquinas de soldar en carga (ya vienen cargadas las máquinas 6 a 14). PDF horizontal.</small>
+      </div>
     </div>
   </section>
 </section>
+<div id="isemOverlay" class="bigOverlay" hidden></div>
+<div class="card bigModal" id="isemModal" hidden>
+  <div class="cfgHead"><h2>Informe Semanal por Inspector</h2><button type="button" id="isemClose" aria-label="Cerrar">✕</button></div>
+  <div class="count">RG-CC-001 · Elabora: <b id="isemFirmante" style="color:var(--txt)"></b></div>
+  <div class="grid" style="margin-top:12px">
+    <div class="field"><label for="isemInicio">Semana desde (lunes)</label><input id="isemInicio" type="date"></div>
+    <div class="field"><label>Hasta (domingo)</label><div id="isemFin" class="count" style="min-height:48px;display:flex;align-items:center">—</div></div>
+  </div>
+  <div class="count">Se leen las revisiones directamente de la planilla y el Word se arma y descarga en este dispositivo. No se guarda nada en Drive.</div>
+  <div class="add" style="margin-top:14px"><button type="button" id="isemCancelar">Cancelar</button><button type="button" id="isemGenerar">Generar Word</button></div>
+</div>
+<div id="pinOverlay" class="bigOverlay" hidden></div>
+<div class="card bigModal" id="pinModal" hidden>
+  <div class="cfgHead"><h2>Informe de Rechazo de Pintura</h2><button type="button" id="pinClose" aria-label="Cerrar">✕</button></div>
+  <div class="count">CC-IRP-001 Rev. 00 · Firma como Control de Calidad: <b id="pinFirmante" style="color:var(--txt)"></b></div>
+  <div class="grid" style="margin-top:12px">
+    <div class="field full"><label class="req" for="pinProyecto">Proyecto / Cliente</label><select id="pinProyecto"></select><span class="msg">Elige el proyecto.</span></div>
+    <div class="field"><label for="pinFecha">Fecha de inspección</label><input type="date" id="pinFecha"></div>
+    <div class="field"><label for="pinOT">N° de OT</label><input id="pinOT" autocomplete="off"></div>
+    <div class="field"><label for="pinSupervisor">Supervisor / Jefe de Área</label><input id="pinSupervisor" autocomplete="off"></div>
+    <div class="field"><label for="pinRecubrimiento">Nombre del recubrimiento</label><input id="pinRecubrimiento" autocomplete="off"></div>
+    <div class="field full"><label for="pinEspesor">Espesor mín / máx. recomendado por fabricante</label><input id="pinEspesor" autocomplete="off" placeholder="Ej: 200 – 300 µm"></div>
+  </div>
+  <div class="secT">Fase involucrada</div>
+  <div class="chips" id="pinFases"></div>
+  <input class="other" id="pinFaseOtra" placeholder="¿Cuál otra fase?" autocomplete="off">
+  <div class="secT">Observaciones y motivo de rechazo</div>
+  <div class="grid">
+    <div class="field"><label class="req" for="pinObsEstructura">Estructura / pieza</label><input id="pinObsEstructura" autocomplete="off"><span class="msg">Indica la estructura o pieza.</span></div>
+    <div class="field"><label for="pinObsCapa">Capa afectada</label><input id="pinObsCapa" list="pinCapas" autocomplete="off"><datalist id="pinCapas"><option value="Preparación de superficie"><option value="Imprimante"><option value="Capa intermedia"><option value="Capa de acabado"></datalist></div>
+    <div class="field"><label for="pinObsEPS">EPS medido (µm)</label><input id="pinObsEPS" inputmode="decimal" autocomplete="off"></div>
+    <div class="field"><label for="pinObsFoto">Foto N°</label><input id="pinObsFoto" autocomplete="off" placeholder="Ej: 1, 2"></div>
+    <div class="field full"><label class="req" for="pinObsMotivo">Motivo del rechazo</label><textarea id="pinObsMotivo" style="min-height:70px"></textarea><span class="msg">Describe el motivo del rechazo.</span></div>
+  </div>
+  <div class="add"><button type="button" id="pinObsAdd">+ Agregar observación</button></div>
+  <div id="pinObsList" style="margin-top:8px"></div>
+  <div class="secT">Resolución de la no conformidad (opcional)</div>
+  <div class="field"><label for="pinDetSup">Detalle — Supervisor / Jefe de Área</label><textarea id="pinDetSup" style="min-height:70px"></textarea></div>
+  <div class="field"><label for="pinDetInsp">Detalle — Inspector de calidad</label><textarea id="pinDetInsp" style="min-height:70px"></textarea></div>
+  <div class="field"><label for="pinFotos">Fotos (se numeran Foto 1, Foto 2… en el orden en que las elijas)</label><input id="pinFotos" type="file" accept="image/*" multiple><div class="count" id="pinFotosCount"></div></div>
+  <div class="add" style="margin-top:14px"><button type="button" id="pinCancelar">Cancelar</button><button type="button" id="pinGenerar">Generar documento</button></div>
+</div>
+
+<div id="rmsOverlay" class="bigOverlay" hidden></div>
+<div class="card bigModal" id="rmsModal" hidden>
+  <div class="cfgHead"><h2>Registro de Medición de Amperaje / Voltaje</h2><button type="button" id="rmsClose" aria-label="Cerrar">✕</button></div>
+  <div class="count">R-MS-01 Rev. 0 · Elabora (Control de Calidad): <b id="rmsFirmante" style="color:var(--txt)"></b></div>
+  <div class="grid" style="margin-top:12px">
+    <div class="field full"><label class="req" for="rmsProyecto">Proyecto</label><select id="rmsProyecto"></select><span class="msg">Elige el proyecto.</span></div>
+    <div class="field"><label for="rmsFecha">Fecha</label><input type="date" id="rmsFecha"></div>
+    <div class="field"><label for="rmsWPS">WPS de referencia</label><input id="rmsWPS" autocomplete="off"></div>
+    <div class="field"><label for="rmsInstr">Instrumento de medición</label><input id="rmsInstr" autocomplete="off"></div>
+    <div class="field"><label for="rmsMarca">Marca / Modelo</label><input id="rmsMarca" autocomplete="off"></div>
+    <div class="field"><label for="rmsSerieInstr">N° Serie instrumento</label><input id="rmsSerieInstr" autocomplete="off"></div>
+    <div class="field"><label for="rmsCalib">Calibración vigente (R-CAL-01)</label><input id="rmsCalib" autocomplete="off" placeholder="Ej: vigente hasta 12/2026"></div>
+    <div class="field full"><label for="rmsSupervisor">Supervisor de Área (Vº Bº)</label><input id="rmsSupervisor" autocomplete="off"></div>
+  </div>
+  <div class="secT">Parámetros por máquina (en carga)</div>
+  <div class="count">Toca una máquina para ingresar sus mediciones. Las que no midas quedan en blanco en el documento.</div>
+  <div id="rmsMaquinas" style="margin-top:8px"></div>
+  <div class="grid" style="margin-top:10px">
+    <div class="field"><label for="rmsNuevaId">Agregar otra máquina — identificación</label><input id="rmsNuevaId" autocomplete="off"></div>
+    <div class="field"><label for="rmsNuevaSerie">N° Serie</label><input id="rmsNuevaSerie" autocomplete="off"></div>
+  </div>
+  <div class="add"><button type="button" id="rmsAddMaq">+ Agregar máquina</button></div>
+  <div class="add" style="margin-top:14px"><button type="button" id="rmsCancelar">Cancelar</button><button type="button" id="rmsGenerar">Generar documento</button></div>
+</div>
 <div id="infoOverlay" hidden></div>
 <div class="card" id="infoModal" hidden>
   <div class="cfgHead"><h2>Informe de Inspección en Terreno</h2><button type="button" id="infoClose" aria-label="Cerrar">✕</button></div>
@@ -1814,6 +1912,684 @@ async function enviarBorrador(i){
     else toast(r&&r.error||'No se pudo enviar',true);
   }catch(e){ toast('No se pudo enviar (sin conexión o error de red)',true); }
 }
+/* ===== Informes nuevos: Rechazo de Pintura (CC-IRP-001) y Registro de Medición de Amperaje/Voltaje (R-MS-01) ===== */
+const LOGO_DOC_B64='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAR0AAABdCAMAAACvm0KRAAAAkFBMVEWVoLG80d9gbovBzuE7UYGHm8EWJD1iangfQGkBIGD9/v0AGlQDIVsCHmG8y9xzh5xTZYgyR2+VpLjZ5vJneJWHmLHL2Oipt8smO2VHWHh2h6bj6/QACzgbMVmYqMM6UXdJXIJdc48jN1saM2QADUMBEzy7y+F8kq/Cy9rG09xRY3vd8PtpfKQwQ1ucs8uircOtixWcAAAAMHRSTlP///////////////////////////////////////////////////////////////9Ppz/1AAATrUlEQVR42u1dZ5ekOLKlx+wuhCARCJuu0pXpavP//90qIoSRQEDNO+d9yeV0d9UkQokuETesmCD63+E/At+JMnnVx3vybIdeNP2DP7zo5A2IZz+avQ+dUsDTH8orOwVo2QljgHkRGk+yNkD8owH/r98w+ZR+ZF50UhwgQuc2n+AQsT5o1cLLO7lkdMIQ/z7ZEaNQhCBzHzqJgBBAoxiGT4oOwMVr0TMUMpSxp7NciI7WLM24Jy86CkivnhEdjQyhIz586GjaiYl14Ku4d8f8p5Pz1kDf2HBphsWb+T+AhLTjQUfTzjD9FxQ27u/cWgZPZNhufNckxNbgbgoxQND/HNGg8yhG38OTxGE8BvFLmKNQaJukvJFExnr1VZM1KwFAK455caSt5rCW5sjD+IOQbeyCoJq5xGhSgQpCV4ZfRQdvVaNz8qKj0EFaNFhiCR0YXwqMh7lJWix0+PCDmsM3ds2IOQULSthD3t9F/GWr27uEt1cfOnsJNPvSJHOfQmwcTx9BEB7mueJiUETt+4+Z7GakPYapwo2Vh7H4Zxzm3q1exXnvQ4doR8CqehqcoBupJ6XFem6NmcecJojoa8B5/CxnzhTkXcD8A+vRMTft4iO+TA8heTsedIqpAMyTl2PToJf8sUBR2EKL5gXG+iroKdmKchBeRsvMQTIWik47GQJwdJe/0CivFjHRTzFzO6uWRZCzo4MsHzoK2PKvoROPeWAEkXUhQ9G7lsALNE6XYO/CCgE7M8V6BkbARpEQ2OCMeBBx4wgSlbz//Ut2N2ShLn3o5BLWVJfO0Y26UargQG48dCbU69SKRWtysjPeccjiOBlia0vc27bpbPEXNSsmAgC596GDQVa4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';
+// Herramientas de dibujo de PDF (tablas con alto automático, saltos de página y encabezado repetido).
+const PK={
+  NAVY:[31,56,100], NAVY2:[27,58,92], TEAL:[42,127,127], LABEL:[220,227,239], LINE:[150,160,175], TXT:[30,30,30], PAD:1.6,
+  start(orient){
+    const {jsPDF}=window.jspdf, land=orient==='l';
+    const doc=new jsPDF({unit:'mm',format:'a4',orientation:orient});
+    const pw=land?297:210, ph=land?210:297, M=land?12:15;
+    return {doc:doc,pw:pw,ph:ph,M:M,W:pw-2*M,y:0,bottom:ph-(land?12:18),header:null};
+  },
+  newPage(c){ c.doc.addPage(); c.y=c.header(c); },
+  ensure(c,h){ if(c.y+h>c.bottom){ PK.newPage(c); return true; } return false; },
+  lh(fs){ return fs*0.3528*1.22; },
+  font(d,k){ d.setFont(undefined,k.bold?'bold':(k.italic?'italic':'normal')); d.setFontSize(k.fs||8.5); },
+  measure(c,cells,minH){
+    let h=minH||6;
+    cells.forEach(k=>{
+      PK.font(c.doc,k);
+      k._lines=(k.text===undefined||k.text===null||k.text==='')?[]:c.doc.splitTextToSize(String(k.text),k.w-2*PK.PAD);
+      h=Math.max(h,k._lines.length*PK.lh(k.fs||8.5)+2*PK.PAD);
+    });
+    return h;
+  },
+  drawRow(c,cells,h){
+    const d=c.doc; let x=c.M;
+    cells.forEach(k=>{
+      if(k.fill){ d.setFillColor(k.fill[0],k.fill[1],k.fill[2]); d.rect(x,c.y,k.w,h,'F'); }
+      d.setDrawColor(PK.LINE[0],PK.LINE[1],PK.LINE[2]); d.setLineWidth(.2); d.rect(x,c.y,k.w,h);
+      const L=k._lines||[];
+      if(L.length){
+        const fs=k.fs||8.5, lh=PK.lh(fs), block=L.length*lh, col=k.color||PK.TXT;
+        PK.font(d,k); d.setTextColor(col[0],col[1],col[2]);
+        const top=(k.mid?c.y+(h-block)/2:c.y+PK.PAD)+fs*0.3528*0.85;
+        L.forEach((ln,i)=>{ if(k.align==='center') d.text(ln,x+k.w/2,top+i*lh,{align:'center'}); else d.text(ln,x+PK.PAD,top+i*lh); });
+      }
+      x+=k.w;
+    });
+    c.y+=h; d.setTextColor(30,30,30);
+  },
+  row(c,cells,minH){ const h=PK.measure(c,cells,minH); PK.ensure(c,h); PK.drawRow(c,cells,h); },
+  bar(c,title,fill){
+    PK.ensure(c,20); const d=c.doc;
+    d.setFillColor(fill[0],fill[1],fill[2]); d.rect(c.M,c.y,c.W,6,'F');
+    d.setTextColor(255,255,255); d.setFont(undefined,'bold'); d.setFontSize(8.5); d.text(title,c.M+2,c.y+4.2);
+    d.setTextColor(30,30,30); c.y+=6;
+  },
+  table(c,o){
+    const head=()=>{
+      const cells=o.cols.map(col=>({w:col.w,text:col.label,bold:true,fs:o.headFs||7.5,align:'center',mid:true,fill:o.fill,color:[255,255,255]}));
+      const h=PK.measure(c,cells,6.5);
+      if(c.y+h+(o.minH||6.5)>c.bottom) PK.newPage(c);
+      PK.drawRow(c,cells,h);
+    };
+    head();
+    o.rows.forEach(r=>{
+      const cells=o.cols.map((col,i)=>({w:col.w,text:r[i],fs:o.fs||8,align:col.align||'left',mid:col.mid,color:o.colorFn?o.colorFn(r,i):null}));
+      const h=PK.measure(c,cells,o.minH||6.5);
+      if(c.y+h>c.bottom){ PK.newPage(c); head(); }
+      PK.drawRow(c,cells,h);
+    });
+  },
+  para(c,text,opts){
+    const d=c.doc, fs=(opts&&opts.fs)||8.5, col=(opts&&opts.color)||PK.TXT;
+    d.setFont(undefined,(opts&&opts.italic)?'italic':'normal'); d.setFontSize(fs); d.setTextColor(col[0],col[1],col[2]);
+    const L=d.splitTextToSize(text,c.W), lh=PK.lh(fs);
+    PK.ensure(c,L.length*lh+2);
+    L.forEach((ln,i)=>d.text(ln,c.M,c.y+fs*0.3528*0.9+i*lh)); c.y+=L.length*lh+2; d.setTextColor(30,30,30);
+  },
+  stamp(c,fn){ const n=c.doc.internal.getNumberOfPages(); for(let p=1;p<=n;p++){ c.doc.setPage(p); fn(c.doc,p,n,c); } },
+  // ---- Encabezados y pies de cada documento ----
+  headerPintura(c){
+    const d=c.doc, x=c.M, y=10, h=19, wL=42, wR=48, wM=c.W-wL-wR;
+    d.setDrawColor(PK.LINE[0],PK.LINE[1],PK.LINE[2]); d.setLineWidth(.2);
+    d.rect(x,y,wL,h); d.rect(x+wL,y,wM,h); d.rect(x+wL+wM,y,wR,h);
+    try{ d.addImage(LOGO_DOC_B64,'PNG',x+3.5,y+(h-11.4)/2,35,11.4); }catch(e){}
+    d.setTextColor(30,30,30); d.setFont(undefined,'bold'); d.setFontSize(11); d.text('INFORME DE RECHAZO DE PINTURA',x+wL+wM/2,y+8.3,{align:'center'});
+    d.setFontSize(7.5); d.text('CONTROL DE CALIDAD – ÁREA DE PINTURA',x+wL+wM/2,y+13.6,{align:'center'});
+    d.setFont(undefined,'normal'); d.setFontSize(7); d.text('Código: CC-IRP-001',x+wL+wM+3,y+8); d.text('Revisión: 00',x+wL+wM+3,y+12);
+    return y+h+5;
+  },
+  footerPintura(d,p,n,c){
+    d.setDrawColor(190,195,205); d.setLineWidth(.2); d.line(c.M,c.ph-13,c.pw-c.M,c.ph-13);
+    d.setFont(undefined,'normal'); d.setFontSize(7.5); d.setTextColor(110,115,125);
+    d.text('Registro de calidad – conservar en el dossier del proyecto.',c.M,c.ph-9);
+    d.text('Página '+p+' de '+n,c.pw-c.M,c.ph-9,{align:'right'}); d.setTextColor(30,30,30);
+  },
+  headerRMS(c){
+    const d=c.doc, x=c.M, y=8, h=24, wL=48, wR=76, wM=c.W-wL-wR, rx=x+wL+wM;
+    d.setDrawColor(PK.LINE[0],PK.LINE[1],PK.LINE[2]); d.setLineWidth(.2);
+    d.rect(x,y,wL,h); d.rect(x+wL,y,wM,h); d.rect(rx,y,wR,h); d.line(x+wL,y+15,rx,y+15);
+    for(let i=1;i<5;i++) d.line(rx,y+i*4.8,rx+wR,y+i*4.8);
+    try{ d.addImage(LOGO_DOC_B64,'PNG',x+5,y+(h-12.4)/2,38,12.4); }catch(e){}
+    d.setTextColor(30,30,30); d.setFont(undefined,'bold'); d.setFontSize(11.5);
+    d.text('REGISTRO DE MEDICIÓN DE AMPERAJE / VOLTAJE',x+wL+wM/2,y+6.4,{align:'center'});
+    d.text('DE MÁQUINAS DE SOLDAR',x+wL+wM/2,y+11.8,{align:'center'});
+    d.setFont(undefined,'italic'); d.setFontSize(8); d.setTextColor(110,115,125); d.text('Sistema de Gestion de Calidad - AMCS',x+wL+wM/2,y+15+5.8,{align:'center'});
+    d.setTextColor(30,30,30); d.setFontSize(7.5);
+    [['Codigo: R-MS-01',1],['Revision: 0  (06/2026)',0],['Seccion: C.C. (Maestranza)',0],['Proc. de Ref.: P-MS-01 Rev.0',0]].forEach((r,i)=>{ d.setFont(undefined,r[1]?'bold':'normal'); d.text(r[0],rx+2,y+i*4.8+3.4); });
+    return y+h+5;
+  },
+  stampRMS(d,p,n,c){ const rx=c.M+c.W-76; d.setFont(undefined,'normal'); d.setFontSize(7.5); d.setTextColor(30,30,30); d.text('Pagina: '+p+' de '+n,rx+2,8+4.8*4+3.4); },
+  // Filas "etiqueta: valor" en dos columnas, con línea inferior (R-MS-01)
+  infoRows(c,rows){
+    const d=c.doc, half=(c.W-6)/2, lh=PK.lh(8.5);
+    rows.forEach(r=>{
+      const calc=(lab,val)=>{ d.setFont(undefined,'bold'); d.setFontSize(8.5); const lw=d.getTextWidth(lab)+2; d.setFont(undefined,'normal'); return {lab:lab,lw:lw,L:d.splitTextToSize(String(val||''),half-lw-1)}; };
+      const a=calc(r[0],r[1]), b=calc(r[2],r[3]);
+      const h=Math.max(7,Math.max(a.L.length,b.L.length)*lh+3);
+      PK.ensure(c,h);
+      [[a,c.M],[b,c.M+half+6]].forEach(pair=>{
+        const k=pair[0], x=pair[1];
+        d.setFont(undefined,'bold'); d.setFontSize(8.5); d.setTextColor(30,30,30); d.text(k.lab,x,c.y+4.6);
+        d.setFont(undefined,'normal'); k.L.forEach((ln,i)=>d.text(ln,x+k.lw,c.y+4.6+i*lh));
+        d.setDrawColor(190,196,206); d.setLineWidth(.2); d.line(x,c.y+h,x+half,c.y+h);
+      });
+      c.y+=h;
+    });
+  },
+  // Fila "Fase involucrada" con casillas dibujadas (los tipos de letra del PDF no traen ☐)
+  fasesRow(c,sel,otra){
+    const d=c.doc, h=13, x0=c.M, lw=38; PK.ensure(c,h); const y0=c.y;
+    d.setFillColor(PK.LABEL[0],PK.LABEL[1],PK.LABEL[2]); d.rect(x0,y0,lw,h,'F');
+    d.setDrawColor(PK.LINE[0],PK.LINE[1],PK.LINE[2]); d.setLineWidth(.2); d.rect(x0,y0,lw,h); d.rect(x0+lw,y0,c.W-lw,h);
+    d.setFont(undefined,'bold'); d.setFontSize(8); d.setTextColor(30,30,30); d.text('Fase involucrada',x0+PK.PAD,y0+h/2+1);
+    const opts=['Preparación de superficie','Imprimante','Capa intermedia','Capa de acabado','Otra'];
+    [opts.slice(0,3),opts.slice(3)].forEach((ro,ri)=>{
+      let x=x0+lw+4; const by=y0+4.8+ri*5.2;
+      ro.forEach(o=>{
+        const on=sel.has(o);
+        d.setDrawColor(60,60,60); d.setLineWidth(.25); d.rect(x,by-2.6,3,3);
+        if(on){ d.setLineWidth(.45); d.line(x+.4,by-2.2,x+2.6,by-.2); d.line(x+2.6,by-2.2,x+.4,by-.2); }
+        d.setFont(undefined,'normal'); d.setFontSize(8); d.setTextColor(30,30,30);
+        const t=(o==='Otra')?('Otra: '+((on&&otra)?otra:'____________________')):o;
+        d.text(t,x+4.3,by); x+=4.3+d.getTextWidth(t)+8;
+      });
+    });
+    c.y+=h;
+  },
+  // Cuadrícula de fotos: 6 por página (2 columnas x 3 filas), cada una escalada sin deformarse
+  fotos(c,imgs,titulo){
+    PK.newPage(c); PK.bar(c,titulo,PK.NAVY); c.y+=4;
+    const boxW=(c.W-8)/2, boxH=66, gap=9; let base=c.y;
+    imgs.forEach((img,i)=>{
+      if(i>0&&i%6===0){ PK.newPage(c); PK.bar(c,titulo+' (cont.)',PK.NAVY); c.y+=4; base=c.y; }
+      const k=i%6, col=k%2, rw=Math.floor(k/2), x=c.M+col*(boxW+8), y=base+rw*(boxH+gap);
+      const ratio=Math.min(boxW/img.width,boxH/img.height), w=img.width*ratio, h=img.height*ratio;
+      c.doc.setDrawColor(PK.LINE[0],PK.LINE[1],PK.LINE[2]); c.doc.setLineWidth(.2); c.doc.rect(x,y,boxW,boxH);
+      c.doc.addImage(img.dataUrl,'JPEG',x+(boxW-w)/2,y+(boxH-h)/2,w,h);
+      c.doc.setFont(undefined,'normal'); c.doc.setFontSize(7.5); c.doc.setTextColor(90,95,105); c.doc.text('Foto N° '+(i+1),x+boxW/2,y+boxH+4.5,{align:'center'}); c.doc.setTextColor(30,30,30);
+    });
+  }
+};
+function nombreArchivoPdf(prefijo,proyecto,fecha){ return prefijo+'_'+String(proyecto||'proyecto').replace(/[^\w\-]+/g,'_')+'_'+(fecha||today())+'.pdf'; }
+
+/* ----- Informe de Rechazo de Pintura (CC-IRP-001 Rev. 00) ----- */
+const PIN_FASES_LIST=['Preparación de superficie','Imprimante','Capa intermedia','Capa de acabado','Otra'];
+let PIN_OBS=[], PIN_FASES=new Set(), PIN_FOTOS=[];
+function renderPinFases(){
+  $('#pinFases').innerHTML=PIN_FASES_LIST.map(f=>'<button type="button" class="chip'+(PIN_FASES.has(f)?' on':'')+'" data-f="'+esc(f)+'">'+esc(f)+'</button>').join('');
+  $('#pinFaseOtra').style.display=PIN_FASES.has('Otra')?'block':'none';
+}
+function renderPinObs(){
+  $('#pinObsList').innerHTML=PIN_OBS.length?PIN_OBS.map((o,i)=>
+    '<div class="projRow" style="cursor:default"><div class="top"><b>'+(i+1)+'. '+esc(o.estructura)+'</b><button type="button" class="mini" data-del="'+i+'" style="flex:none">Quitar</button></div>'+
+    '<small>'+(o.capa?esc(o.capa)+' · ':'')+(o.eps?'EPS '+esc(o.eps)+' µm · ':'')+(o.foto?'Foto N° '+esc(o.foto)+' · ':'')+esc(o.motivo)+'</small></div>'
+  ).join(''):'<div class="count">Todavía no agregas ninguna observación.</div>';
+}
+function addPinObs(){
+  const est=$('#pinObsEstructura').value.trim(), mot=$('#pinObsMotivo').value.trim();
+  $('#pinObsEstructura').closest('.field').classList.toggle('invalid',!est);
+  $('#pinObsMotivo').closest('.field').classList.toggle('invalid',!mot);
+  if(!est||!mot){ toast('Indica la estructura / pieza y el motivo del rechazo',true); return false; }
+  PIN_OBS.push({estructura:est,capa:$('#pinObsCapa').value.trim(),eps:$('#pinObsEPS').value.trim(),motivo:mot,foto:$('#pinObsFoto').value.trim()});
+  ['pinObsEstructura','pinObsCapa','pinObsEPS','pinObsMotivo','pinObsFoto'].forEach(id=>$('#'+id).value='');
+  renderPinObs(); return true;
+}
+function openPintura(){
+  $('#pinFirmante').textContent=(SESSION&&SESSION.nombre)||'(sin sesión)';
+  fillPlainSelect('pinProyecto',CFG.proyectos,'Selecciona…');
+  ['pinOT','pinSupervisor','pinRecubrimiento','pinEspesor','pinFaseOtra','pinObsEstructura','pinObsCapa','pinObsEPS','pinObsMotivo','pinObsFoto','pinDetSup','pinDetInsp'].forEach(id=>$('#'+id).value='');
+  $('#pinFecha').value=today(); PIN_OBS=[]; PIN_FASES=new Set(); PIN_FOTOS=[]; $('#pinFotos').value=''; $('#pinFotosCount').textContent='';
+  $('#pinModal').querySelectorAll('.field.invalid').forEach(f=>f.classList.remove('invalid'));
+  renderPinFases(); renderPinObs();
+  $('#pinOverlay').hidden=false; $('#pinModal').hidden=false;
+}
+function closePintura(){ $('#pinOverlay').hidden=true; $('#pinModal').hidden=true; }
+async function generarPintura(){
+  if(!$('#pinProyecto').value){ $('#pinProyecto').closest('.field').classList.add('invalid'); toast('Selecciona el proyecto',true); return; }
+  if(($('#pinObsEstructura').value.trim()||$('#pinObsMotivo').value.trim())&&!addPinObs()) return;
+  if(!PIN_OBS.length){ toast('Agrega al menos una observación de rechazo',true); return; }
+  if(!window.jspdf){ toast('No se pudo cargar el generador de PDF (revisa tu conexión)',true); return; }
+  if(!navigator.onLine){ toast('Necesitas conexión a internet para asignar el N° de informe',true); return; }
+  const btn=$('#pinGenerar'); btn.disabled=true; btn.textContent='Reservando N° de informe…';
+  try{
+    const proyecto=$('#pinProyecto').value;
+    const rn=await api('siguienteNumeroInforme',{proyecto:proyecto,tipo:'pintura'});
+    if(!rn||!rn.ok) throw new Error(rn&&rn.error||'No se pudo asignar el N° de informe');
+    const num=String(rn.numero).padStart(3,'0');
+    btn.textContent='Generando…';
+    const fecha=$('#pinFecha').value, insp=(SESSION&&SESSION.nombre)||'', sup=$('#pinSupervisor').value.trim();
+    const imgs=PIN_FOTOS.length?await Promise.all(PIN_FOTOS.map(fileToCanvasImg)):[];
+    const c=PK.start('p'); c.header=PK.headerPintura; c.y=c.header(c);
+    PK.bar(c,'1. IDENTIFICACIÓN DE LA REVISIÓN',PK.NAVY);
+    const L=t=>({w:38,text:t,bold:true,fill:PK.LABEL,mid:true,fs:8}), V=t=>({w:52,text:t,mid:true});
+    PK.row(c,[L('N° de informe'),V(num),L('Fecha de inspección'),V(fDate(fecha))],8);
+    PK.row(c,[L('Proyecto / Cliente'),V(proyecto),L('N° de OT'),V($('#pinOT').value.trim())],8);
+    PK.row(c,[L('Inspector de Control de Calidad'),V(insp),L('Firma del inspector'),V('')],12);
+    PK.row(c,[L('Supervisor / Jefe de Área'),V(sup),L('Firma supervisor o jefe de área'),V('')],12);
+    PK.row(c,[L('Nombre del recubrimiento'),V($('#pinRecubrimiento').value.trim()),L('Espesor mín / máx. recomendado por fabricante'),V($('#pinEspesor').value.trim())],10);
+    PK.fasesRow(c,PIN_FASES,$('#pinFaseOtra').value.trim());
+    c.y+=5;
+    PK.bar(c,'2. OBSERVACIONES Y MOTIVO DE RECHAZO',PK.NAVY);
+    c.y+=2; PK.para(c,'Control de Calidad revisó las estructuras disponibles en patio de pintura y emite el siguiente resultado:');
+    const filas=PIN_OBS.map((o,i)=>[String(i+1),o.estructura,o.capa,o.eps,o.motivo,o.foto]);
+    for(let i=filas.length;i<8;i++) filas.push([String(i+1),'','','','','']);
+    PK.table(c,{cols:[{w:12,label:'N° Obs.',align:'center'},{w:44,label:'Estructura / pieza'},{w:24,label:'Capa afectada',align:'center'},{w:22,label:'EPS medido (µm)',align:'center'},{w:50,label:'Motivo del rechazo'},{w:28,label:'Foto N°',align:'center'}],rows:filas,fill:PK.NAVY,fs:8,minH:7.5});
+    c.y+=5; PK.ensure(c,52);
+    PK.bar(c,'3. RESOLUCIÓN DE LA NO CONFORMIDAD',PK.NAVY);
+    PK.table(c,{cols:[{w:40,label:''},{w:45,label:'Nombre',align:'center'},{w:45,label:'Firma',align:'center'},{w:50,label:'Detalle',align:'center'}],
+      rows:[['Supervisor / Jefe de Área',sup,'',$('#pinDetSup').value.trim()],['Inspector de calidad',insp,'',$('#pinDetInsp').value.trim()]],fill:PK.NAVY,fs:8,minH:14,headFs:7});
+    if(imgs.length) PK.fotos(c,imgs,'REGISTRO FOTOGRÁFICO');
+    PK.stamp(c,PK.footerPintura);
+    c.doc.save(nombreArchivoPdf('CC-IRP-001_'+num,proyecto,fecha));
+    toast('Informe de rechazo N° '+num+' generado y descargado');
+    closePintura();
+  }catch(e){ toast('No se pudo generar el PDF: '+(e&&e.message||'error desconocido'),true); }
+  btn.disabled=false; btn.textContent='Generar documento';
+}
+
+/* ----- Registro de Medición de Amperaje / Voltaje (R-MS-01 Rev. 0) ----- */
+// Máquinas de soldar (identificación, N° de serie) tomadas de la tabla "Medición de parámetros por máquina".
+const RMS_MAQUINAS_BASE=[['6','P117030144'],['7','P1170109115'],['8','P1150202654'],['9','P1120101692'],['10','P1150302777'],['11','P1150306423'],['12','P1151008107'],['13','P1170204377'],['14','P1100600003']];
+const RMS_INSTR_KEY='qaqc_rms_instr_v1';
+let RMS_MAQ=[];
+function rmsListaBase(){ RMS_MAQ=RMS_MAQUINAS_BASE.map(m=>({id:m[0],serie:m[1],vM:'',vL:'',aM:'',aL:'',estado:'',obs:''})); }
+function rmsTag(m){
+  if(m.estado==='No conforme') return {cls:'nc',txt:'No conforme'};
+  if(m.vM||m.vL||m.aM||m.aL||m.estado) return {cls:'ok',txt:m.estado||'Medida'};
+  return {cls:'',txt:'Pendiente'};
+}
+function renderRmsMaquinas(){
+  $('#rmsMaquinas').innerHTML=RMS_MAQ.map((m,i)=>{
+    const t=rmsTag(m), inp=(f,lab,ph)=>'<div class="field"><label>'+lab+'</label><input data-i="'+i+'" data-f="'+f+'" value="'+esc(m[f])+'" autocomplete="off" placeholder="'+(ph||'')+'"></div>';
+    return '<details class="rmsCard"><summary><span class="rmsN">'+(i+1)+'</span><b>Máquina '+esc(m.id)+'</b><span class="rmsSerie">'+esc(m.serie)+'</span><span class="rmsTag '+t.cls+'" id="rmsTag'+i+'">'+t.txt+'</span></summary>'+
+      '<div class="rmsBody"><div class="grid">'+inp('vM','Rango V mostrado')+inp('vL','Lectura V instrumento (mín–máx)','Ej: 24 – 26')+inp('aM','Rango A mostrado')+inp('aL','Lectura A instrumento (mín–máx)','Ej: 195 – 205')+
+      '<div class="field"><label>Estado</label><select data-i="'+i+'" data-f="estado"><option value="">—</option><option'+(m.estado==='Conforme'?' selected':'')+'>Conforme</option><option'+(m.estado==='No conforme'?' selected':'')+'>No conforme</option></select></div>'+
+      inp('obs','Observación')+'</div><div class="add"><button type="button" class="mini" data-del="'+i+'">Quitar esta máquina</button></div></div></details>';
+  }).join('');
+}
+function openAmperaje(){
+  $('#rmsFirmante').textContent=(SESSION&&SESSION.nombre)||'(sin sesión)';
+  fillPlainSelect('rmsProyecto',CFG.proyectos,'Selecciona…');
+  $('#rmsFecha').value=today(); $('#rmsWPS').value=''; $('#rmsSupervisor').value=''; $('#rmsNuevaId').value=''; $('#rmsNuevaSerie').value='';
+  let g={}; try{ g=JSON.parse(localStorage.getItem(RMS_INSTR_KEY)||'{}'); }catch(e){}
+  $('#rmsInstr').value=g.instr||'Pinza amperimétrica'; $('#rmsMarca').value=g.marca||''; $('#rmsSerieInstr').value=g.serie||''; $('#rmsCalib').value=g.calib||'';
+  $('#rmsModal').querySelectorAll('.field.invalid').forEach(f=>f.classList.remove('invalid'));
+  rmsListaBase(); renderRmsMaquinas();
+  $('#rmsOverlay').hidden=false; $('#rmsModal').hidden=false;
+}
+function closeAmperaje(){ $('#rmsOverlay').hidden=true; $('#rmsModal').hidden=true; }
+async function generarAmperaje(){
+  if(!$('#rmsProyecto').value){ $('#rmsProyecto').closest('.field').classList.add('invalid'); toast('Selecciona el proyecto',true); return; }
+  if(!window.jspdf){ toast('No se pudo cargar el generador de PDF (revisa tu conexión)',true); return; }
+  const btn=$('#rmsGenerar'); btn.disabled=true; btn.textContent='Generando…';
+  try{
+    const proyecto=$('#rmsProyecto').value, fecha=$('#rmsFecha').value, insp=(SESSION&&SESSION.nombre)||'', sup=$('#rmsSupervisor').value.trim();
+    const c=PK.start('l'); c.header=PK.headerRMS; c.y=c.header(c);
+    PK.infoRows(c,[['Proyecto:',proyecto,'Fecha:',fDate(fecha)],['Instrumento de medición:',$('#rmsInstr').value.trim(),'Marca / Modelo:',$('#rmsMarca').value.trim()],
+      ['N° Serie instrumento:',$('#rmsSerieInstr').value.trim(),'Calibración vigente (R-CAL-01):',$('#rmsCalib').value.trim()],['WPS de referencia:',$('#rmsWPS').value.trim(),'Inspector CC:',insp]]);
+    c.y+=4;
+    PK.bar(c,'MEDICIÓN DE PARÁMETROS POR MÁQUINA (EN CARGA)',PK.TEAL);
+    const filas=RMS_MAQ.map((m,i)=>[String(i+1),m.id,m.serie,m.vM,m.vL,m.aM,m.aL,m.estado,m.obs]);
+    for(let i=filas.length;i<10;i++) filas.push([String(i+1),'','','','','','','','']);
+    PK.table(c,{cols:[{w:9,label:'N°',align:'center'},{w:40,label:'Identificación máquina',align:'center'},{w:32,label:'N° Serie',align:'center'},{w:28,label:'Rango V mostrado',align:'center'},{w:38,label:'Lectura V instrumento (mín–máx)',align:'center'},{w:28,label:'Rango A mostrado',align:'center'},{w:38,label:'Lectura A instrumento (mín–máx)',align:'center'},{w:24,label:'Estado',align:'center'},{w:36,label:'Observación'}].map(k=>Object.assign(k,{})),
+      rows:filas,fill:PK.NAVY2,fs:8,minH:6.5,headFs:7.5,colorFn:(r,i)=>(i===7&&r[7]==='No conforme')?[190,30,30]:null});
+    c.y+=3;
+    PK.para(c,'Medición en condiciones reales de operación (máquina en carga). Instrumento: pinza amperimétrica calibrada (R-CAL-01).',{italic:true,fs:7.5,color:[110,115,125]});
+    PK.para(c,'Criterio: lecturas dentro del rango del WPS aplicable; diferencia con lo mostrado dentro de la tolerancia de las EETT/ficha (referencial ±10%, a confirmar con Jefatura).',{italic:true,fs:7.5,color:[110,115,125]});
+    c.y+=4; PK.ensure(c,34);
+    const w2=c.W/2, H=t=>({w:w2,text:t,bold:true,align:'center',mid:true,fill:PK.NAVY2,color:[255,255,255],fs:8.5});
+    PK.row(c,[H('ELABORÓ  -  Control de Calidad'),H('Vº Bº  -  Supervisor de Área')],6.5);
+    PK.row(c,[{w:w2,text:'Nombre: '+insp},{w:w2,text:'Nombre: '+sup}],6.5);
+    PK.row(c,[{w:w2,text:'Firma:'},{w:w2,text:'Firma:'}],11);
+    PK.row(c,[{w:w2,text:'Fecha: '+fDate(fecha)},{w:w2,text:'Fecha:'}],6.5);
+    PK.stamp(c,PK.stampRMS);
+    try{ localStorage.setItem(RMS_INSTR_KEY,JSON.stringify({instr:$('#rmsInstr').value.trim(),marca:$('#rmsMarca').value.trim(),serie:$('#rmsSerieInstr').value.trim(),calib:$('#rmsCalib').value.trim()})); }catch(e){}
+    c.doc.save(nombreArchivoPdf('R-MS-01',proyecto,fecha));
+    toast('Registro R-MS-01 generado y descargado');
+    closeAmperaje();
+  }catch(e){ toast('No se pudo generar el PDF: '+(e&&e.message||'error desconocido'),true); }
+  btn.disabled=false; btn.textContent='Generar documento';
+}
+function initInformesNuevos(){
+  // Rechazo de pintura
+  $('#infoAbrirPintura').onclick=openPintura;
+  $('#pinClose').onclick=closePintura; $('#pinOverlay').onclick=closePintura; $('#pinCancelar').onclick=closePintura;
+  $('#pinFases').addEventListener('click',e=>{ const b=e.target.closest('[data-f]'); if(!b)return; const f=b.dataset.f; PIN_FASES.has(f)?PIN_FASES.delete(f):PIN_FASES.add(f); renderPinFases(); if(f==='Otra'&&PIN_FASES.has('Otra')) $('#pinFaseOtra').focus(); });
+  $('#pinObsAdd').onclick=addPinObs;
+  $('#pinObsList').addEventListener('click',e=>{ const b=e.target.closest('[data-del]'); if(b){ PIN_OBS.splice(+b.dataset.del,1); renderPinObs(); } });
+  $('#pinFotos').onchange=()=>{ PIN_FOTOS=[...$('#pinFotos').files]; $('#pinFotosCount').textContent=PIN_FOTOS.length?PIN_FOTOS.length+(PIN_FOTOS.length===1?' foto seleccionada (Foto 1)':' fotos seleccionadas (Foto 1 a Foto '+PIN_FOTOS.length+')'):''; };
+  $('#pinGenerar').onclick=generarPintura;
+  // Amperaje / voltaje
+  $('#infoAbrirAmperaje').onclick=openAmperaje;
+  $('#rmsClose').onclick=closeAmperaje; $('#rmsOverlay').onclick=closeAmperaje; $('#rmsCancelar').onclick=closeAmperaje;
+  const upd=e=>{ const el=e.target; if(el.dataset&&el.dataset.f!==undefined&&el.dataset.i!==undefined){ const m=RMS_MAQ[+el.dataset.i]; if(!m)return; m[el.dataset.f]=el.value; const t=rmsTag(m), tg=document.getElementById('rmsTag'+el.dataset.i); if(tg){ tg.className='rmsTag '+t.cls; tg.textContent=t.txt; } } };
+  $('#rmsMaquinas').addEventListener('input',upd); $('#rmsMaquinas').addEventListener('change',upd);
+  $('#rmsMaquinas').addEventListener('click',e=>{ const b=e.target.closest('[data-del]'); if(b){ RMS_MAQ.splice(+b.dataset.del,1); renderRmsMaquinas(); } });
+  $('#rmsAddMaq').onclick=()=>{ const id=$('#rmsNuevaId').value.trim(); if(!id){ toast('Escribe la identificación de la máquina',true); return; } RMS_MAQ.push({id:id,serie:$('#rmsNuevaSerie').value.trim(),vM:'',vL:'',aM:'',aL:'',estado:'',obs:''}); $('#rmsNuevaId').value=''; $('#rmsNuevaSerie').value=''; renderRmsMaquinas(); };
+  $('#rmsGenerar').onclick=generarAmperaje;
+}
+
+/* ===== Informe semanal de revisiones por inspector (Word .docx generado y descargado en el dispositivo) =====
+   El servidor solo entrega las filas de la semana; el documento se arma aquí y NO se guarda en Drive. */
+const ISEM={codigo:'RG-CC-001',version:'01',titulo:'Registro Semanal de Revisiones por Inspector',seccion:'C. C. (Maestranza)',fuente:'Arial'};
+const ISEM_NOTA={
+  GENERAL:'Avance aprobado: pieza aprobada en lo ejecutado a la fecha, pero que aún está incompleta. En ARMADO le faltan piezas por colocar; en SOLDADURA le falta soldar piezas que no estaban colocadas al momento de la inspección.',
+  ARMADO:'Avance aprobado (ARMADO): pieza aprobada, pero a la que aún le faltan piezas por colocar.',
+  SOLDADURA:'Avance aprobado (SOLDADURA): pieza aprobada, pero a la que aún le falta soldar piezas que no estaban colocadas al momento de la inspección.',
+  PREMAT:'Avance aprobado (PREMAT): pieza aprobada en lo ejecutado a la fecha, pero que aún no está completa.'
+};
+const ISEM_C={titulo:'#1F3864',insp:'#2F5597',total:'#FFF2CC'};
+const ISEM_DIAS=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+
+/* ---- Utilidades ---- */
+const isNorm=t=>String(t==null?'':t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+const isFec=iso=>{const p=String(iso).split('-');return p[2]+'-'+p[1]+'-'+p[0];};
+const isPct=(a,b)=>(b>0?a/b*100:0).toFixed(1).replace('.',',')+'%';
+const isAc=()=>({n:0,cant:0,ap:0,av:0,re:0,sin:0});
+const isEs=(a,b)=>String(a).localeCompare(String(b),'es');
+function isSum(o,c,cl){o.n++;o.cant+=c;if(cl)o[cl]+=c;else o.sin+=c;}
+function isCat(a){a=String(a).toUpperCase();return a.indexOf('ARMADO')>=0?'ARMADO':a.indexOf('SOLDADURA')>=0?'SOLDADURA':a.indexOf('PREMAT')>=0?'PREMAT':'';}
+function isClase(v){const r=isNorm(v);return r.includes('rechaz')?'re':r.includes('avance')?'av':r.includes('aprob')?'ap':null;}
+function isCrit(v){const c=isNorm(v);if(!c)return 'Sin criticidad';if(c.indexOf('alt')===0||c.indexOf('crit')===0)return 'Alta';if(c.indexOf('baj')===0)return 'Baja';if(c.indexOf('med')===0)return 'Media';return 'Sin criticidad';}
+function isEst(o,cl,rep,c){if(cl==='ap')o.ap+=c;else if(cl==='av'){if(rep)o.avSi+=c;else o.avNo+=c;}else if(cl==='re'){if(rep)o.reSi+=c;else o.reNo+=c;}}
+function isDias(a,b){const x=a.split('-').map(Number),y=b.split('-').map(Number);return Math.round((Date.UTC(y[0],y[1]-1,y[2])-Date.UTC(x[0],x[1]-1,x[2]))/864e5);}
+function isSumaDias(iso,n){const p=iso.split('-').map(Number);const d=new Date(Date.UTC(p[0],p[1]-1,p[2]+n));return d.toISOString().slice(0,10);}
+function isTop(dic,k){return Object.keys(dic).sort((a,b)=>dic[b]-dic[a]||isEs(a,b)).slice(0,k);}
+
+/* ---- Recopilación: fila = [fecha,inspector,proyecto,marca,cantidad,area,etapa,armador,soldador,resultado,reparado,defecto,detalle,criticidad] ---- */
+function isRecopilar(rows,ini){
+  const fin=isSumaDias(ini,6);
+  const res={inicio:ini,fin:fin,registros:0,total:isAc(),inspectores:{},areas:{},proyectos:{},defectos:{},
+    areaProy:{ARMADO:{},SOLDADURA:{},PREMAT:{}},premat:{},errores:{},criticos:{ARMADO:{},SOLDADURA:{},PREMAT:{}}};
+  rows.forEach(f=>{
+    const fecha=f[0], insp=String(f[1]||'').trim();
+    if(!fecha||!insp||fecha<ini||fecha>fin)return;
+    const area=String(f[5]||'').replace(/\s+/g,' ').trim()||'Sin área';
+    const cat=isCat(area);
+    const proyNombre=String(f[2]||'').replace(/\s+/g,' ').trim()||'Sin proyecto';
+    const pk=isNorm(proyNombre);
+    const cant=Number(f[4])||1;
+    const clase=isClase(f[9]);
+    const marca=String(f[3]||'').trim()||'Sin marca';
+    const etapa=String(f[6]||'').trim()||'Sin etapa';
+    const armador=String(f[7]||'').trim()||'Sin responsable';
+    const soldador=String(f[8]||'').trim()||'Sin responsable';
+    const reparado=isNorm(f[10])==='si';
+    const defecto=String(f[11]||'').trim(), detalle=String(f[12]||'').trim();
+    const crit=isCrit(f[13]);
+    const resp=cat==='ARMADO'?armador:cat==='SOLDADURA'?soldador:cat==='PREMAT'?etapa:'—';
+
+    res.registros++; isSum(res.total,cant,clase);
+    const ins=res.inspectores[insp]=res.inspectores[insp]||Object.assign(isAc(),{dias:[0,0,0,0,0,0,0],areas:{},proyectos:{},defectos:{},rechazos:[]});
+    isSum(ins,cant,clase);
+    ins.dias[Math.min(6,Math.max(0,isDias(ini,fecha)))]++;
+    ins.proyectos[pk]=true;
+    ins.areas[area]=ins.areas[area]||{};
+    const p=ins.areas[area][pk]=ins.areas[area][pk]||Object.assign(isAc(),{nombre:proyNombre,primera:fecha,ultima:fecha});
+    if(fecha<p.primera)p.primera=fecha; if(fecha>p.ultima)p.ultima=fecha;
+    isSum(p,cant,clase);
+    const a=res.areas[area]=res.areas[area]||isAc(); isSum(a,cant,clase);
+    const g=res.proyectos[pk]=res.proyectos[pk]||Object.assign(isAc(),{nombre:proyNombre}); isSum(g,cant,clase);
+
+    if(cat){
+      const q=res.areaProy[cat][pk]=res.areaProy[cat][pk]||{nombre:proyNombre,ap:0,reSi:0,reNo:0,avSi:0,avNo:0};
+      isEst(q,clase,reparado,cant);
+      if(cat==='PREMAT'){const e=res.premat[etapa]=res.premat[etapa]||{ap:0,reSi:0,reNo:0,avSi:0,avNo:0}; isEst(e,clase,reparado,cant);}
+    }
+    if(clase==='re'){
+      ins.rechazos.push({fecha:fecha,marca:marca,proyecto:proyNombre,area:area,responsable:resp,defecto:defecto,detalle:detalle,criticidad:crit,reparado:reparado?'SI':'NO',cant:cant});
+      if(defecto&&defecto!=='-'&&defecto!=='.'){res.defectos[defecto]=(res.defectos[defecto]||0)+cant; ins.defectos[defecto]=(ins.defectos[defecto]||0)+cant;}
+      const dN=isNorm(defecto);
+      if(dN!=='ninguno'&&dN!=='ok'){
+        const nivel=res.errores[crit]=res.errores[crit]||{};
+        const et=defecto||'No especificado';
+        const er=nivel[et]=nivel[et]||{n:0,cant:0}; er.n++; er.cant+=cant;
+      }
+      if(cat){
+        const refab=[defecto,detalle,proyNombre].some(x=>isNorm(x).indexOf('refabricaci')>=0);
+        if(cat==='PREMAT'||!refab)res.criticos[cat][resp]=(res.criticos[cat][resp]||0)+1;
+      }
+    }
+  });
+  return res;
+}
+
+/* ---- Bloques XML de Word ---- */
+const IS_NS='xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
+const xEsc=s=>String(s==null?'':s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const xHex=c=>String(c).replace('#','').toUpperCase();
+function xRuns(t,o){
+  const f=ISEM.fuente;
+  const rpr='<w:rPr><w:rFonts w:ascii="'+f+'" w:hAnsi="'+f+'" w:cs="'+f+'"/>'+(o.negrita?'<w:b/>':'')+(o.cursiva?'<w:i/>':'')+'<w:color w:val="'+xHex(o.color)+'"/><w:sz w:val="'+o.tam+'"/><w:szCs w:val="'+o.tam+'"/></w:rPr>';
+  return String(t).split(/\r?\n/).map((s,i)=>'<w:r>'+rpr+(i>0?'<w:br/>':'')+'<w:t xml:space="preserve">'+xEsc(s)+'</w:t></w:r>').join('');
+}
+function xPar(t,o,jc,ppr,a,d){return '<w:p><w:pPr>'+(ppr||'')+'<w:spacing w:before="'+(a||0)+'" w:after="'+(d||0)+'"/><w:jc w:val="'+jc+'"/></w:pPr>'+xRuns(t,o)+'</w:p>';}
+function xCelRaw(c,w,bg,vm){return '<w:tc><w:tcPr><w:tcW w:w="'+w+'" w:type="dxa"/>'+(vm||'')+'<w:shd w:val="clear" w:color="auto" w:fill="'+xHex(bg)+'"/><w:vAlign w:val="center"/></w:tcPr>'+c+'</w:tc>';}
+function xCel(t,w,o,bg,jc){return xCelRaw(xPar(t,o,jc),w,bg,'');}
+function xFila(cs,enc){return '<w:tr><w:trPr><w:cantSplit/>'+(enc?'<w:tblHeader/>':'')+'</w:trPr>'+cs.join('')+'</w:tr>';}
+function xTabla(an,fs){
+  const tot=an.reduce((s,x)=>s+x,0);
+  const b=l=>'<w:'+l+' w:val="single" w:sz="4" w:space="0" w:color="000000"/>';
+  return '<w:tbl><w:tblPr><w:tblW w:w="'+tot+'" w:type="dxa"/><w:tblBorders>'+['top','left','bottom','right','insideH','insideV'].map(b).join('')+'</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="30" w:type="dxa"/><w:left w:w="60" w:type="dxa"/><w:bottom w:w="30" w:type="dxa"/><w:right w:w="60" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>'+an.map(a=>'<w:gridCol w:w="'+a+'"/>').join('')+'</w:tblGrid>'+fs.join('')+'</w:tbl>';
+}
+const xVacio='<w:p><w:pPr><w:spacing w:before="0" w:after="0"/><w:rPr><w:sz w:val="4"/><w:szCs w:val="4"/></w:rPr></w:pPr></w:p>';
+const xSec=(t,salto)=>xPar(t,{negrita:true,color:ISEM_C.titulo,tam:26},'left','<w:keepNext/>'+(salto?'<w:pageBreakBefore/>':'')+'<w:pBdr><w:bottom w:val="single" w:sz="8" w:space="1" w:color="'+xHex(ISEM_C.titulo)+'"/></w:pBdr>',240,100);
+const xSub=(t,salto)=>xPar(t,{negrita:true,color:ISEM_C.insp,tam:22},'left','<w:keepNext/>'+(salto?'<w:pageBreakBefore/>':''),160,60);
+const xTxt=t=>xPar(t,{color:'#000000',tam:20},'both','',60,60);
+const xNota=t=>xPar(t,{cursiva:true,color:'#595959',tam:15},'left','',40,100);
+function xTablaDatos(cab,an,filas,al,conTotal,tam){
+  tam=tam||16;
+  const oE={negrita:true,color:'#FFFFFF',tam:tam};
+  const rows=[xFila(cab.map((t,j)=>xCelRaw(xPar(t,oE,'center','<w:keepNext/>',0,0),an[j],ISEM_C.insp,'')),true)];
+  filas.forEach((r,i)=>{
+    const esT=conTotal&&i===filas.length-1;
+    const bg=esT?ISEM_C.total:(i%2===1?'#F7F7F7':'#FFFFFF');
+    rows.push(xFila(r.map((v,j)=>xCel(v,an[j],{negrita:esT,color:'#000000',tam:tam},bg,al[j])),false));
+  });
+  return xTabla(an,rows);
+}
+
+/* ---- Contenido del documento ---- */
+function isCuerpo(res,emision,elabora){
+  const t=res.total, insps=Object.keys(res.inspectores).sort(isEs);
+  const periodo=isFec(res.inicio)+' al '+isFec(res.fin);
+  const CATS=['ARMADO','SOLDADURA','PREMAT'];
+  const ali=k=>['left'].concat(new Array(k-1).fill('center'));
+  const porNombre=(a,b)=>isEs(a.nombre,b.nombre);
+  let c='', n=1;
+  const sec=(txt,salto)=>xSec((n++)+'. '+txt,salto);
+
+  // 1. Resumen por inspector
+  c+=sec('Resumen por inspector');
+  let filas=insps.map(nm=>{const i=res.inspectores[nm];return [nm,i.n,i.cant,Object.keys(i.proyectos).length,i.ap,i.av,i.re,isPct(i.re,i.cant)];});
+  filas.push(['TOTAL',t.n,t.cant,Object.keys(res.proyectos).length,t.ap,t.av,t.re,isPct(t.re,t.cant)]);
+  c+=xTablaDatos(['Inspector','Revisiones','Piezas revisadas','Proyectos','Aprobadas','Avance aprobado','Rechazadas','% Rechazo'],[3800,1500,1700,1400,1400,1700,1400,1500],filas,ali(8),true,17);
+  c+=xNota(ISEM_NOTA.GENERAL);
+  if(t.sin>0)c+=xNota('Nota: '+t.sin+' pieza(s) pertenecen a registros sin resultado reconocido (Aprobado, Avance aprobado o Rechazado), por lo que no se incluyen en esas tres columnas.');
+
+  // 2. Actividad diaria
+  c+=sec('Actividad diaria (revisiones por día)');
+  const cabD=['Inspector'];
+  for(let d=0;d<7;d++){const iso=isSumaDias(res.inicio,d);cabD.push(ISEM_DIAS[d]+' '+iso.slice(8,10)+'-'+iso.slice(5,7));}
+  cabD.push('Total');
+  const totD=[0,0,0,0,0,0,0];
+  filas=insps.map(nm=>{const i=res.inspectores[nm];i.dias.forEach((v,k)=>totD[k]+=v);return [nm].concat(i.dias,[i.n]);});
+  filas.push(['TOTAL'].concat(totD,[t.n]));
+  c+=xTablaDatos(cabD,[3600,1300,1300,1300,1300,1300,1300,1300,1500],filas,ali(9),true,17)+xVacio;
+
+  // 3. Resumen por área
+  c+=sec('Resumen por área');
+  filas=Object.keys(res.areas).sort(isEs).map(a=>{const x=res.areas[a];return [a,x.n,x.cant,x.ap,x.av,x.re,isPct(x.re,x.cant)];});
+  filas.push(['TOTAL',t.n,t.cant,t.ap,t.av,t.re,isPct(t.re,t.cant)]);
+  c+=xTablaDatos(['Área','Revisiones','Piezas revisadas','Aprobadas','Avance aprobado','Rechazadas','% Rechazo'],[3800,1700,1900,1700,1900,1700,1700],filas,ali(7),true,17);
+  c+=xNota(ISEM_NOTA.GENERAL);
+
+  // 4. Área y proyecto (estado de reparaciones)
+  c+=sec('Resumen por área y proyecto (estado de reparaciones)');
+  CATS.forEach(cat=>{
+    const proys=Object.values(res.areaProy[cat]).sort(porNombre);
+    c+=xSub('Área: '+cat,false);
+    if(!proys.length){c+=xTxt('Sin registros en el periodo.');return;}
+    const tot={ap:0,reSi:0,reNo:0,avSi:0,avNo:0,g:0};
+    const f2=proys.map(p=>{const g=p.ap+p.reSi+p.reNo+p.avSi+p.avNo;tot.ap+=p.ap;tot.reSi+=p.reSi;tot.reNo+=p.reNo;tot.avSi+=p.avSi;tot.avNo+=p.avNo;tot.g+=g;return [p.nombre,p.ap,p.reSi,p.reNo,p.avSi,p.avNo,g];});
+    f2.push(['TOTAL GENERAL '+cat,tot.ap,tot.reSi,tot.reNo,tot.avSi,tot.avNo,tot.g]);
+    c+=xTablaDatos(['Proyecto','Aprobadas','Rechazo reparado (SI)','Rechazo pendiente (NO)','Avance reparado (SI)','Avance pendiente (NO)','Total'],[4400,1500,1900,1900,1700,1700,1300],f2,ali(7),true,16);
+    c+=xNota(ISEM_NOTA[cat]);
+  });
+
+  // 5. PREMAT por etapas
+  c+=sec('Desglose de PREMAT por etapas');
+  const etapas=Object.keys(res.premat).sort(isEs);
+  if(!etapas.length)c+=xTxt('Sin registros de PREMAT en el periodo.');
+  else{
+    const te={ap:0,av:0,reSi:0,reNo:0,g:0};
+    const f3=etapas.map(et=>{const e=res.premat[et];const av=e.avSi+e.avNo;const g=e.ap+av+e.reSi+e.reNo;te.ap+=e.ap;te.av+=av;te.reSi+=e.reSi;te.reNo+=e.reNo;te.g+=g;return [et,e.ap,av,e.reSi,e.reNo,g];});
+    f3.push(['TOTAL ETAPAS PREMAT',te.ap,te.av,te.reSi,te.reNo,te.g]);
+    c+=xTablaDatos(['Etapa','Aprobadas','Avance aprobado','Rechazo reparado (SI)','Rechazo pendiente (NO)','Total procesado'],[4400,1900,1900,2000,2200,2000],f3,ali(6),true,16);
+    c+=xNota(ISEM_NOTA.PREMAT);
+  }
+
+  // 6. Detalle por inspector, área y proyecto
+  c+=sec('Detalle por inspector, área y proyecto',true);
+  insps.forEach((nm,idx)=>{
+    const ins=res.inspectores[nm];
+    c+=xSub('Inspector: '+nm,idx>0);
+    c+=xTxt('Revisiones: '+ins.n+'   |   Piezas revisadas: '+ins.cant+'   |   Piezas aprobadas: '+ins.ap+'   |   Avance aprobado: '+ins.av+'   |   Piezas rechazadas: '+ins.re+' ('+isPct(ins.re,ins.cant)+')');
+    const top=isTop(ins.defectos,3);
+    if(top.length)c+=xTxt('Defectos más frecuentes en sus rechazos: '+top.map(d=>d+' ('+ins.defectos[d]+')').join('; ')+'.');
+    Object.keys(ins.areas).sort(isEs).forEach(area=>{
+      const prs=Object.values(ins.areas[area]).sort((a,b)=>isEs(a.primera,b.primera)||isEs(a.nombre,b.nombre));
+      const tot=isAc();
+      const f2=prs.map(p=>{tot.n+=p.n;tot.cant+=p.cant;tot.ap+=p.ap;tot.av+=p.av;tot.re+=p.re;return [p.nombre,isFec(p.primera),isFec(p.ultima),p.n,p.cant,p.ap,p.av,p.re,isPct(p.re,p.cant)];});
+      f2.push(['TOTAL','','',tot.n,tot.cant,tot.ap,tot.av,tot.re,isPct(tot.re,tot.cant)]);
+      c+=xPar('Área: '+area.toUpperCase(),{negrita:true,color:ISEM_C.titulo,tam:19},'left','<w:keepNext/>',100,40);
+      c+=xTablaDatos(['Proyecto','1ª revisión','Última revisión','N° revisiones','Piezas revisadas','Aprobadas','Avance aprobado','Rechazadas','% Rechazo'],[4200,1300,1400,1200,1300,1200,1400,1200,1200],f2,ali(9),true,16);
+      c+=xNota(ISEM_NOTA[isCat(area)]||ISEM_NOTA.GENERAL);
+    });
+  });
+
+  // 7. Piezas rechazadas por inspector
+  c+=sec('Piezas rechazadas por inspector',true);
+  c+=xNota('Responsable: armador (Armado), soldador (Soldadura) o etapa (PREMAT). Ordenadas desde la fecha más antigua a la más reciente.');
+  insps.forEach(nm=>{
+    const lista=res.inspectores[nm].rechazos.slice().sort((a,b)=>isEs(a.fecha,b.fecha)||isEs(a.marca,b.marca));
+    const piezas=lista.reduce((s,r)=>s+r.cant,0);
+    c+=xSub('Inspector: '+nm+'   |   Rechazos: '+lista.length+'   |   Piezas rechazadas: '+piezas,false);
+    if(!lista.length){c+=xTxt('Sin piezas rechazadas en el periodo.');return;}
+    c+=xTablaDatos(['Fecha','Marca','Proyecto','Área','Responsable','Defecto','Detalle','Criticidad','Reparado','Cant.'],[1100,1500,2600,1100,1700,1900,2000,900,1000,600],
+      lista.map(r=>[isFec(r.fecha),r.marca,r.proyecto,r.area.toUpperCase(),r.responsable,r.defecto||'—',r.detalle||'—',r.criticidad==='Sin criticidad'?'—':r.criticidad,r.reparado,r.cant]),
+      ['center','left','left','center','left','left','left','center','center','center'],false,15)+xVacio;
+  });
+
+  // 8. Errores más comunes por criticidad
+  c+=sec('Resumen de errores más comunes por criticidad');
+  let hay=false;
+  ['Alta','Media','Baja','Sin criticidad'].forEach(nv=>{
+    const dic=res.errores[nv]; if(!dic)return; hay=true;
+    const claves=Object.keys(dic).sort((a,b)=>dic[b].n-dic[a].n||dic[b].cant-dic[a].cant||isEs(a,b)).slice(0,10);
+    c+=xSub(nv==='Sin criticidad'?'Sin criticidad informada':'Criticidad '+nv.toLowerCase(),false);
+    c+=xTablaDatos(['Defecto / error','N° de rechazos','Piezas rechazadas'],[9000,2700,2700],claves.map(k=>[k,dic[k].n,dic[k].cant]),['left','center','center'],false,17)+xVacio;
+  });
+  if(!hay)c+=xTxt('No se registraron rechazos durante el periodo.');
+  const fr=[];
+  CATS.forEach(cat=>{const dic=res.criticos[cat];Object.keys(dic).sort((a,b)=>dic[b]-dic[a]||isEs(a,b)).slice(0,3).forEach((nm,i)=>fr.push([i===0?cat:'',nm,dic[nm]]));});
+  if(fr.length){
+    c+=xSub('Responsables con más rechazos',false);
+    c+=xTablaDatos(['Área','Responsable (armador / soldador / etapa)','N° de rechazos'],[3000,8400,3000],fr,['left','left','center'],false,17);
+    c+=xNota('En Armado y Soldadura se excluyen las refabricaciones de este conteo.');
+  }
+
+  // 9. Observaciones
+  c+=sec('Observaciones');
+  c+=xTabla([14400],[xFila([xCel('\n\n\n\n\n',14400,{color:'#000000',tam:18},'#FFFFFF','left')],false)])+xVacio;
+
+  // 10. Aprobaciones y versiones
+  c+=sec('Aprobaciones y control de versiones');
+  const oAp={negrita:true,color:'#FFFFFF',tam:18}, oTx={color:'#000000',tam:18};
+  const caja=nm=>xCel('\nNombre: '+nm+'\nCargo:\n\nFirma:\n\nFecha:',4800,oTx,'#FFFFFF','left');
+  c+=xTabla([4800,4800,4800],[
+    xFila(['Elaborado por','Revisado por','Aprobado por'].map(tt=>xCelRaw(xPar(tt,oAp,'center','<w:keepNext/>',0,0),4800,ISEM_C.insp,'')),false),
+    xFila([caja(elabora||''),caja(''),caja('')],false)])+xVacio;
+  c+=xTablaDatos(['Versión','Fecha','Descripción del cambio'],[2000,2600,9800],[[ISEM.version,emision,'Emisión del registro semanal ('+periodo+')']],['center','center','left'],false,17);
+  return c;
+}
+
+function isEncabezado(emision,periodo,logo){
+  const f=ISEM.fuente, W=[3000,6900,1900,2600];
+  const trPr='<w:trPr><w:cantSplit/><w:trHeight w:val="400" w:hRule="atLeast"/></w:trPr>';
+  const sp0='<w:spacing w:before="0" w:after="0"/>';
+  let logoC,logoBg;
+  if(logo){
+    logoBg='#FFFFFF';
+    logoC='<w:p><w:pPr>'+sp0+'<w:jc w:val="center"/></w:pPr><w:r><w:drawing><wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" distT="0" distB="0" distL="0" distR="0"><wp:extent cx="'+logo.cx+'" cy="'+logo.cy+'"/><wp:docPr id="1" name="Logo"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="0" name="logo"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rId1"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="'+logo.cx+'" cy="'+logo.cy+'"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>';
+  }else{
+    logoBg=ISEM_C.titulo;
+    logoC=xPar('AMCS',{negrita:true,color:'#FFFFFF',tam:44},'center','',0,0)+xPar('SOLUCIONES EN ACERO',{color:'#FFFFFF',tam:12},'center','',0,0);
+  }
+  const tituloC=xPar(ISEM.titulo,{negrita:true,color:'#000000',tam:34},'center','',40,40)+xPar('Periodo: '+periodo,{color:'#000000',tam:18},'center','',0,40);
+  const rpp='<w:rPr><w:rFonts w:ascii="'+f+'" w:hAnsi="'+f+'" w:cs="'+f+'"/><w:color w:val="000000"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr>';
+  const pagC='<w:p><w:pPr>'+sp0+'<w:jc w:val="center"/></w:pPr><w:fldSimple w:instr=" PAGE "><w:r>'+rpp+'<w:t>1</w:t></w:r></w:fldSimple><w:r>'+rpp+'<w:t xml:space="preserve"> de </w:t></w:r><w:fldSimple w:instr=" NUMPAGES "><w:r>'+rpp+'<w:t>1</w:t></w:r></w:fldSimple></w:p>';
+  const oL={color:'#000000',tam:18};
+  const datos=[['Código:',ISEM.codigo],['Revisión:',ISEM.version+' ('+emision+')'],['Sección:',ISEM.seccion],['PÁG.:',null]];
+  const filas=datos.map((d,i)=>{
+    const c1=xCelRaw(i===0?logoC:'<w:p/>',W[0],logoBg,i===0?'<w:vMerge w:val="restart"/>':'<w:vMerge/>');
+    const c2=xCelRaw(i===0?tituloC:'<w:p/>',W[1],'#FFFFFF',i===0?'<w:vMerge w:val="restart"/>':'<w:vMerge/>');
+    const c3=xCel(d[0],W[2],oL,'#FFFFFF','left');
+    const c4=d[1]===null?xCelRaw(pagC,W[3],'#FFFFFF',''):xCel(d[1],W[3],oL,'#FFFFFF','center');
+    return '<w:tr>'+trPr+c1+c2+c3+c4+'</w:tr>';
+  });
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:hdr '+IS_NS+'>'+xTabla(W,filas)+'<w:p><w:pPr>'+sp0+'</w:pPr></w:p></w:hdr>';
+}
+
+/* ---- Logo (el mismo que usan los PDF de la app) ---- */
+function isLogo(){
+  try{
+    const m=String(LOGO_PDF_B64||'').match(/^data:image\/png;base64,(.+)$/); if(!m)return null;
+    const bin=atob(m[1]), b=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);
+    const w=((b[16]<<24)|(b[17]<<16)|(b[18]<<8)|b[19])>>>0, h=((b[20]<<24)|(b[21]<<16)|(b[22]<<8)|b[23])>>>0;
+    if(!w||!h)return null;
+    const esc=Math.min(1691640/w,777240/h);
+    return {bytes:b,cx:Math.round(w*esc),cy:Math.round(h*esc)};
+  }catch(e){return null;}
+}
+
+/* ---- ZIP sin compresión (un .docx es un ZIP) ---- */
+const IS_CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function isCrc(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=IS_CRC[(c^b[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+function isZip(files){
+  const enc=new TextEncoder(), parts=[], central=[]; let off=0;
+  const u16=v=>[v&255,(v>>>8)&255], u32=v=>[v&255,(v>>>8)&255,(v>>>16)&255,(v>>>24)&255];
+  files.forEach(f=>{
+    const name=enc.encode(f.name), data=f.data instanceof Uint8Array?f.data:enc.encode(f.data), crc=isCrc(data);
+    const head=new Uint8Array([0x50,0x4B,3,4,20,0,0,8,0,0,0,0,0x21,0].concat(u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0)));
+    parts.push(head,name,data);
+    central.push(new Uint8Array([0x50,0x4B,1,2,20,0,20,0,0,8,0,0,0,0,0x21,0].concat(u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(off))),name);
+    off+=head.length+name.length+data.length;
+  });
+  let cs=0; central.forEach(c=>cs+=c.length);
+  const end=new Uint8Array([0x50,0x4B,5,6,0,0,0,0].concat(u16(files.length),u16(files.length),u32(cs),u32(off),u16(0)));
+  return new Blob(parts.concat(central,[end]),{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+}
+
+function isDocx(res,elabora){
+  const T='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>', R='http://schemas.openxmlformats.org/officeDocument/2006/relationships', f=ISEM.fuente;
+  const emision=isFec(today()), periodo=isFec(res.inicio)+' al '+isFec(res.fin), logo=isLogo();
+  const documento=T+'<w:document '+IS_NS+'><w:body>'+isCuerpo(res,emision,elabora)+'<w:sectPr><w:headerReference w:type="default" r:id="rId2"/><w:pgSz w:w="15840" w:h="12240" w:orient="landscape"/><w:pgMar w:top="2000" w:right="720" w:bottom="720" w:left="720" w:header="360" w:footer="360" w:gutter="0"/></w:sectPr></w:body></w:document>';
+  const estilos=T+'<w:styles '+IS_NS+'><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="'+f+'" w:hAnsi="'+f+'" w:cs="'+f+'"/><w:sz w:val="16"/><w:szCs w:val="16"/><w:lang w:val="es-CL"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style></w:styles>';
+  const tipos=T+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>'+(logo?'<Default Extension="png" ContentType="image/png"/>':'')+'<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/></Types>';
+  const rels='http://schemas.openxmlformats.org/package/2006/relationships';
+  const files=[
+    {name:'[Content_Types].xml',data:tipos},
+    {name:'_rels/.rels',data:T+'<Relationships xmlns="'+rels+'"><Relationship Id="rId1" Type="'+R+'/officeDocument" Target="word/document.xml"/></Relationships>'},
+    {name:'word/document.xml',data:documento},
+    {name:'word/styles.xml',data:estilos},
+    {name:'word/header1.xml',data:isEncabezado(emision,periodo,logo)},
+    {name:'word/_rels/document.xml.rels',data:T+'<Relationships xmlns="'+rels+'"><Relationship Id="rId1" Type="'+R+'/styles" Target="styles.xml"/><Relationship Id="rId2" Type="'+R+'/header" Target="header1.xml"/></Relationships>'}
+  ];
+  if(logo){
+    files.push({name:'word/_rels/header1.xml.rels',data:T+'<Relationships xmlns="'+rels+'"><Relationship Id="rId1" Type="'+R+'/image" Target="media/logo.png"/></Relationships>'});
+    files.push({name:'word/media/logo.png',data:logo.bytes});
+  }
+  return isZip(files);
+}
+
+/* ---- Interfaz ---- */
+function isLunesDeEstaSemana(){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());const dow=d.getUTCDay();d.setUTCDate(d.getUTCDate()-((dow+6)%7));return d.toISOString().slice(0,10);}
+function isActualizaFin(){
+  const ini=$('#isemInicio').value; const fin=$('#isemFin');
+  if(!ini){fin.textContent='—';return;}
+  const dow=new Date(ini+'T00:00:00Z').getUTCDay();
+  fin.textContent=isFec(isSumaDias(ini,6))+(dow!==1?'  ·  ⚠ la fecha elegida no es lunes; se usarán 7 días desde ella':'');
+}
+function openInformeSemanal(){
+  $('#isemFirmante').textContent=(SESSION&&SESSION.nombre)||'(sin sesión)';
+  $('#isemInicio').value=isLunesDeEstaSemana(); isActualizaFin();
+  $('#isemOverlay').hidden=false; $('#isemModal').hidden=false;
+}
+function closeInformeSemanal(){$('#isemOverlay').hidden=true;$('#isemModal').hidden=true;}
+async function generarInformeSemanal(){
+  if(!apiOK()||!navigator.onLine){toast('Necesitas conexión a internet para leer las revisiones',true);return;}
+  const ini=$('#isemInicio').value;
+  if(!ini){toast('Elige la fecha de inicio (lunes)',true);return;}
+  const btn=$('#isemGenerar'); btn.disabled=true; btn.textContent='Leyendo revisiones…';
+  try{
+    const r=await api('getInformeSemanal',{inicio:ini});
+    if(!r||!r.ok)throw new Error(r&&r.error||'No se pudo leer las revisiones');
+    const res=isRecopilar(r.rows||[],ini);
+    if(!res.registros){toast('No hay revisiones entre '+isFec(res.inicio)+' y '+isFec(res.fin),true);return;}
+    btn.textContent='Armando documento…';
+    const blob=isDocx(res,(SESSION&&SESSION.nombre)||'');
+    const nombre='Informe_semanal_revisiones_inspector_'+isFec(res.inicio)+'_al_'+isFec(res.fin)+'.docx';
+    const url=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=url; a.download=nombre; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+    toast('Informe Word descargado ('+res.registros+' revisiones)');
+    closeInformeSemanal();
+  }catch(e){toast('Error: '+e.message,true);}
+  finally{btn.disabled=false;btn.textContent='Generar Word';}
+}
+function initInformeSemanal(){
+  $('#infoAbrirSemanal').onclick=openInformeSemanal;
+  $('#isemClose').onclick=closeInformeSemanal; $('#isemOverlay').onclick=closeInformeSemanal; $('#isemCancelar').onclick=closeInformeSemanal;
+  $('#isemInicio').onchange=isActualizaFin;
+  $('#isemGenerar').onclick=generarInformeSemanal;
+}
+
 function initInformes(){
   $('#infoAbrirTerreno').onclick=openInformeModal;
   $('#infoClose').onclick=closeInformeModal;
@@ -2272,7 +3048,7 @@ function initMenu(){
   $('#menuOverlay').onclick=()=>setMenuOpen(false);
   window.closeMenu=()=>setMenuOpen(false);
 }
-renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); initHome(); initRechModal(); initCalc(); initPersonas(); initBusqueda(); initInformes(); initRecepcion(); initNavGroups(); initTabsFade(); initTabsDrag(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg(); refreshSegBadge();
+renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); initHome(); initRechModal(); initCalc(); initPersonas(); initBusqueda(); initInformes(); initInformesNuevos(); initInformeSemanal(); initRecepcion(); initNavGroups(); initTabsFade(); initTabsDrag(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg(); refreshSegBadge();
 </script>
 </body>
 </html>
