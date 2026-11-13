@@ -47,6 +47,10 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .seg.res button{min-height:56px;font-size:1.05rem}
 .seg[data-k="criticidad"] button.on[data-v="Alta"]{background:var(--bad);border-color:var(--bad);color:#2b0505}
 .seg[data-k="criticidad"] button.on[data-v="Baja"]{background:var(--adv);border-color:var(--adv);color:#2b1f00}
+.critInfo{margin-top:10px;padding:10px 12px;border-radius:10px;border-left:4px solid var(--line);background:#08203f;font-size:.9rem;line-height:1.45;color:var(--txt)}
+.critInfo.alta{border-left-color:var(--bad)}
+.critInfo.baja{border-left-color:var(--adv)}
+.critInfo b{display:block;margin-bottom:2px}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{flex:0 0 auto;min-height:40px;border-radius:999px;padding:0 14px;font-size:.92rem}
 .chip.on{background:rgba(255,106,26,.16);border-color:var(--pri);color:#ffb27a;font-weight:600}
@@ -469,7 +473,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
 
   <section class="card"><h2>Resultado</h2><div class="grid">
     <div class="field full"><span class="lbl req">Resultado</span><div class="seg res" data-k="resultado"></div><span class="msg">Elige el resultado.</span></div>
-    <div class="field full" id="fld-criticidad" hidden><span class="lbl req">Criticidad del error</span><div class="seg" data-k="criticidad"></div><span class="msg">Elige la criticidad.</span></div>
+    <div class="field full" id="fld-criticidad" hidden><span class="lbl req">Criticidad del error</span><div class="seg" data-k="criticidad"></div><div class="critInfo" id="critInfo" hidden></div><span class="msg">Elige la criticidad.</span></div>
     <div class="field" id="fld-reparado"><span class="lbl">Reparado o terminado</span><div class="seg" data-k="reparado" data-toggle="1"></div></div>
     <div class="field" id="fld-areaNC"><label for="areaNC">Área donde se detecta NC</label><select id="areaNC" data-other></select><input class="other" id="areaNC_o" placeholder="Escribe el área"></div>
     <div class="field full" id="fld-defectos"><span class="lbl">Defectos detectados</span>
@@ -1284,8 +1288,19 @@ function applyCond(){
     const esRech = esRech_(S.resultado);
     critEl.hidden = !esRech;
     if(!esRech && S.criticidad){ S.criticidad=''; critEl.querySelectorAll('.seg button').forEach(b=>b.classList.remove('on')); critEl.classList.remove('invalid'); }
+    // Explicación de la criticidad elegida (Rechazado y Avance rechazado)
+    const info=document.getElementById('critInfo');
+    if(info){
+      const t=CRIT_TXT[S.criticidad];
+      info.hidden=!(esRech&&t);
+      if(esRech&&t){ info.className='critInfo '+(S.criticidad==='Alta'?'alta':'baja'); info.innerHTML='<b>'+t[0]+'</b>'+t[1]; }
+    }
   }
 }
+const CRIT_TXT={
+  Alta:['Criticidad alta:','Presenta defectos que pueden comprometer la integridad o seguridad del elemento. Ejemplos: desalineación importante en armado, grietas o falta de fusión en soldaduras, deformaciones o fisuras en estructuras.'],
+  Baja:['Criticidad baja:','Presenta defectos menores que no comprometen la integridad ni funcionalidad del elemento. Ejemplos: desajustes o terminaciones deficientes en armado, salpicaduras o irregularidades superficiales en soldaduras, pintura deteriorada o corrosión leve en estructuras.']
+};
 function renderForm(){
   fillSelect('proyecto',CFG.proyectos,'Selecciona…');
   multi('etapa',CFG.etapas); fillSelect('areaNC',CFG.areasNC,'Sin definir');
