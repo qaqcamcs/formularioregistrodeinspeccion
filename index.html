@@ -73,6 +73,7 @@ details .chips{padding:0 12px 12px}
 .clear{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
 #toast{position:fixed;left:50%;top:16px;transform:translate(-50%,-140%);transition:transform .25s;background:var(--ok);color:#03210f;padding:12px 18px;border-radius:12px;font-weight:600;z-index:9;max-width:92vw}
 #toast.show{transform:translate(-50%,0)}#toast.err{background:var(--bad);color:#fff}
+#toast:empty{display:none}
 @media(prefers-reduced-motion:reduce){#toast{transition:none}}
 header{position:relative}
 .hrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
@@ -279,6 +280,58 @@ header{position:relative}
 input[type="date"],input[type="time"]{color-scheme:dark}
 .cardHead h2{margin:0}
 /* ---- Gráficos de torta (dona), sin librerías ---- */
+/* ===== Análisis por proyecto y fase ===== */
+#anaCard{position:relative;overflow:hidden;border-color:rgba(255,106,26,.45);box-shadow:0 0 0 1px rgba(255,106,26,.12),0 10px 30px rgba(0,0,0,.35)}
+#anaCard::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,var(--pri),#a78bfa,#2dd4bf)}
+.anaSel{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:560px){.anaSel{grid-template-columns:1fr}}
+.anaHero{margin-top:14px;padding:14px;border-radius:14px;border:1px solid var(--line);background:linear-gradient(135deg,#12305c 0%,#0a2244 55%,rgba(255,106,26,.22) 100%)}
+.anaHero .t{font-family:'Oswald';font-size:1.25rem;line-height:1.15}
+.anaFase{display:inline-block;margin-top:6px;padding:3px 10px;border-radius:999px;background:rgba(255,106,26,.18);border:1px solid var(--pri);color:#ffb27a;font-size:.8rem;font-weight:600}
+.anaFechas{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-top:12px}
+.anaFechas small{display:block;color:var(--mut);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em}
+.anaFechas b{font-family:'Oswald';font-size:1.15rem}
+.anaFechas .sep{color:var(--pri);font-size:1.2rem}
+.anaSub{display:flex;align-items:center;gap:8px;margin:24px 0 6px;font-family:'Oswald';font-size:1.05rem;letter-spacing:.03em}
+.anaSub::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+.anaDonuts{display:flex;flex-wrap:wrap;gap:22px;justify-content:center;margin-top:12px}
+.anaDC{text-align:center;max-width:260px;flex:1 1 220px}
+.anaDC .cap{font-size:.82rem;color:var(--mut);margin-bottom:8px;font-weight:600}
+.anaDonutBox{position:relative;width:190px;height:190px;margin:0 auto}
+.anaDonutBox svg{width:100%;height:100%;overflow:visible}
+.aseg{cursor:pointer;transition:stroke-width .18s,opacity .18s;animation:anaIn .8s ease backwards}
+.anaDonutBox.hov .aseg{opacity:.3}
+.anaDonutBox.hov .aseg.hl{opacity:1;stroke-width:38}
+@keyframes anaIn{from{opacity:0;stroke-width:4}to{opacity:1;stroke-width:30}}
+.anaCenter{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;text-align:center;padding:0 40px}
+.anaCenter b{font-family:'Oswald';font-size:1.7rem;line-height:1}
+.anaCenter span{font-size:.7rem;color:var(--mut);margin-top:3px;line-height:1.2}
+.anaLeg{margin-top:8px;display:flex;flex-direction:column;gap:2px}
+.aleg{display:flex;align-items:center;justify-content:center;gap:6px;font-size:.8rem;cursor:pointer;padding:3px 8px;border-radius:8px}
+.aleg:hover,.aleg.hl{background:rgba(255,255,255,.09)}
+.anaTip{position:fixed;z-index:9999;pointer-events:none;background:#020b1c;border:1px solid var(--pri);border-radius:10px;padding:6px 10px;font-size:.82rem;box-shadow:0 6px 20px rgba(0,0,0,.5);max-width:240px;line-height:1.35}
+.anaTip b{color:#ffb27a}
+.adot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px;flex:none;vertical-align:middle}
+.anaAreas{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:10px}
+.anaPop{animation:anaPop .5s ease backwards}
+@keyframes anaPop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.anaErr{cursor:pointer;transition:transform .15s,box-shadow .15s}
+.anaErr:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.35)}
+.anaErr.on{outline:2px solid var(--pri)}
+.anaChips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 10px}
+.anaChip{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:#0a2244;color:var(--txt);font:inherit;font-size:.85rem;cursor:pointer}
+.anaChip.on{background:var(--pri);border-color:var(--pri);color:var(--pri-ink);font-weight:700}
+.anaTblW{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+.anaTbl{width:100%;border-collapse:collapse;font-size:.85rem;min-width:480px}
+.anaTbl th{background:#12305c;text-align:left;padding:9px 10px;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)}
+.anaTbl td{padding:8px 10px;border-top:1px solid var(--line);vertical-align:middle}
+.anaTbl tbody tr:nth-child(even) td{background:rgba(255,255,255,.03)}
+.acr{display:inline-block;padding:1px 8px;border-radius:999px;font-size:.72rem;font-weight:700;margin:1px 4px 1px 0}
+.acr.alta{background:rgba(239,68,68,.18);color:#ff8a8a;border:1px solid var(--bad)}
+.acr.baja{background:rgba(245,166,35,.16);color:#ffcb70;border:1px solid var(--adv)}
+.acr.sin{background:rgba(147,164,189,.15);color:var(--mut);border:1px solid var(--line)}
+.abar{height:6px;border-radius:999px;background:#08203f;margin-top:5px;overflow:hidden}
+.abar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--pri),var(--bad));transition:width .8s}
 .chartsRow{display:flex;gap:28px;flex-wrap:wrap;justify-content:center;margin-top:16px}
 .donutCard{text-align:center;max-width:220px}
 .donutCard .cap{font-size:.82rem;color:var(--mut);margin-bottom:10px;font-weight:600}
@@ -415,6 +468,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
   <div id="rechList"></div>
   <div class="add" style="margin-top:12px"><button type="button" id="rechToggle"></button></div>
 </div>
+<div class="anaTip" id="anaTip" hidden></div>
 <div id="bigCheck"><div class="circle">✓</div></div>
 <section id="homeScreen">
   <section class="card">
@@ -422,6 +476,14 @@ input[type="date"],input[type="time"]{color-scheme:dark}
     <div class="count" id="homeRango"></div>
     <div class="kpiGrid" id="homeKpis"></div>
     <div id="homeCharts"></div>
+  </section>
+  <section class="card" id="anaCard">
+    <div class="cardHead"><h2>📈 Análisis por proyecto y fase</h2><span class="count" id="anaStamp" style="margin:0"></span></div>
+    <div class="anaSel">
+      <div class="field"><label for="anaProy">Proyecto</label><select id="anaProy"></select></div>
+      <div class="field"><label for="anaFase">Fase</label><select id="anaFase"></select></div>
+    </div>
+    <div id="anaBody"></div>
   </section>
   <section class="card">
     <h2>Resultados por área (últimos 7 días)</h2>
@@ -443,7 +505,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
     <div id="homeActivos"></div>
   </section>
   <section class="card">
-    <h2>Todos los proyectos</h2>
+    <div class="cardHead"><h2>Todos los proyectos</h2><button type="button" class="mini" id="homeGenOrden"></button></div>
     <div class="count" id="homeGenCount"></div>
     <div id="homeGeneral"></div>
     <div class="add" id="homeGenMoreWrap" hidden><button type="button" id="homeGenMore"></button></div>
@@ -1442,16 +1504,17 @@ function projRowHtml(p){
   const c=pctColor(p.pctAprobacion);
   return '<div class="projRow" data-proyecto="'+esc(p.proyecto)+'"><div class="top"><b>'+esc(p.proyecto)+'</b><span class="pct" style="background:'+c+'22;color:'+c+';border:1px solid '+c+'">'+p.pctAprobacion+'% aprob.</span></div>'+
     stackBarHtml(p.total,p.aprobados,p.avanceAprobado,p.rechazados,6)+
-    '<small>'+p.total+' registro'+(p.total===1?'':'s')+' — Aprobados: '+p.aprobados+' · Rechazados: '+p.rechazados+' · Avance aprobado: '+p.avanceAprobado+'</small></div>';
+    '<small>'+p.total+' registro'+(p.total===1?'':'s')+' — Aprobados: '+p.aprobados+' · Rechazados: '+p.rechazados+' · Avance aprobado: '+p.avanceAprobado+'</small>'+(p.ultima?'<small>Última revisión: '+anaFec(p.ultima)+'</small>':'')+'</div>';
 }
 // Hace "crecer" las barras y cuenta los números hacia arriba, para que el panel se sienta vivo.
-function animarHome(){
+function animarHome(root){
+  root=root||'#homeScreen';
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    document.querySelectorAll('#homeScreen [data-w]').forEach(el=>el.style.width=el.dataset.w);
-    document.querySelectorAll('#homeScreen [data-h]').forEach(el=>el.style.height=el.dataset.h);
+    document.querySelectorAll(root+' [data-w]').forEach(el=>el.style.width=el.dataset.w);
+    document.querySelectorAll(root+' [data-h]').forEach(el=>el.style.height=el.dataset.h);
   }));
   const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
-  document.querySelectorAll('#homeScreen [data-count]').forEach(el=>{
+  document.querySelectorAll(root+' [data-count]').forEach(el=>{
     const fin=+el.dataset.count, suf=el.dataset.suf||'';
     if(reduce||!isFinite(fin)){ el.textContent=fin+suf; return; }
     const t0=performance.now(), dur=750;
@@ -1493,6 +1556,11 @@ function renderHomeExtras(d){
     $('#homeDefectos').innerHTML='<div class="count" style="margin-top:8px">Defectos más frecuentes en los rechazos</div>'+filas(defs,max,'');
   }
 }
+function genOrdenar(arr){
+  if(!arr.some(p=>p.ultima)) return arr;            // datos guardados antes de esta versión: sin fecha, se deja el orden original
+  const s=arr.slice().sort((a,b)=>(a.ultima||'').localeCompare(b.ultima||'')||String(a.proyecto).localeCompare(String(b.proyecto),'es'));
+  return genOrden==='nuevo'?s.reverse():s;
+}
 function renderHome(){
   const d=homeData; if(!d)return;
   $('#homeRango').textContent = 'Del '+d.rango.desde+' al '+d.rango.hasta+' · Actualizado '+timeAgo(homeSavedAt);
@@ -1507,15 +1575,19 @@ function renderHome(){
   $('#homeActCount').textContent = d.proyectosActivos.length + (d.proyectosActivos.length===1?' proyecto con movimiento esta semana':' proyectos con movimiento esta semana');
   $('#homeActivos').innerHTML = d.proyectosActivos.length ? d.proyectosActivos.map(projRowHtml).join('') : '<div class="count">Ningún proyecto tiene registros en los últimos 7 días.</div>';
   $('#homeGenCount').textContent = d.proyectosGeneral.length + (d.proyectosGeneral.length===1?' proyecto en la hoja':' proyectos en la hoja');
-  const shown = homeGenExpanded ? d.proyectosGeneral : d.proyectosGeneral.slice(0,GEN_LIMIT);
+  const ordenados = genOrdenar(d.proyectosGeneral);
+  $('#homeGenOrden').textContent = genOrden==='nuevo' ? '↓ Más nuevos primero' : '↑ Más antiguos primero';
+  const shown = homeGenExpanded ? ordenados : ordenados.slice(0,GEN_LIMIT);
   $('#homeGeneral').innerHTML = shown.length ? shown.map(projRowHtml).join('') : '<div class="count">Todavía no hay registros guardados.</div>';
   if(d.proyectosGeneral.length>GEN_LIMIT){
     $('#homeGenMoreWrap').hidden=false;
     $('#homeGenMore').textContent = homeGenExpanded ? 'Ver menos' : 'Ver todos ('+d.proyectosGeneral.length+')';
   } else { $('#homeGenMoreWrap').hidden=true; }
+  anaRender();
   animarHome();
 }
 async function loadHome(force){
+  loadAnalisis(force);
   if(homeLoaded && !force){ renderHome(); return; }
   if(!homeData){
     const cached=loadCachedHome();
@@ -1531,7 +1603,7 @@ async function loadHome(force){
   }
   try{
     const r=await api('getDashboard');
-    if(r&&r.ok){homeLoaded=true;homeData=r;homeSavedAt=Date.now();cacheHome(r);projDetCache={};renderHome();}
+    if(r&&r.ok){homeLoaded=true;homeData=r;homeSavedAt=Date.now();cacheHome(r);renderHome();}
     else if(!homeData){$('#homeRango').textContent='No se pudo cargar: '+(r&&r.error||'error desconocido');}
   }catch(e){ if(!homeData) $('#homeRango').textContent='No se pudo cargar (sin conexión o error de red).'; }
 }
@@ -1540,7 +1612,10 @@ function goToProjectSeguimiento(proyecto){
   switchForm('seg');
 }
 /* ----- Detalle de un proyecto (al tocarlo en Inicio): desglose por área ----- */
+const PDKEY='qaqc_projdet_v1';
 let projDetCache={}, projModalNombre=null;
+try{ projDetCache=JSON.parse(localStorage.getItem(PDKEY)||'{}')||{}; }catch(e){ projDetCache={}; }
+function guardarProjDet(){ try{ localStorage.setItem(PDKEY,JSON.stringify(projDetCache)); }catch(e){} }
 function areaDetalleHtml(nombre,a){
   const t=a.registros;
   return '<div class="areaTile" style="margin-top:10px"><div class="top"><b>'+esc(nombre)+'</b><span class="tot">'+t+'<span style="font-family:Inter;font-size:.7rem;color:var(--mut);font-weight:400"> registros</span></span></div>'+
@@ -1570,17 +1645,220 @@ async function abrirDetalleProyecto(proyecto){
   $('#projModalTitle').textContent=proyecto;
   $('#projModalSub').textContent='';
   $('#projOverlay').hidden=false; $('#projModal').hidden=false;
-  if(projDetCache[proyecto]){ renderDetalleProyecto(projDetCache[proyecto]); return; }
-  $('#projModalBody').innerHTML=skeletonRows(4);
-  if(!navigator.onLine){ $('#projModalBody').innerHTML='<div class="count">Sin conexión: conéctate para ver el detalle del proyecto.</div>'; return; }
+  const previo=projDetCache[proyecto];
+  if(previo) renderDetalleProyecto(previo); else $('#projModalBody').innerHTML=skeletonRows(4);
+  if(!navigator.onLine){ if(!previo) $('#projModalBody').innerHTML='<div class="count">Sin conexión: conéctate para ver el detalle del proyecto.</div>'; return; }
   try{
     const r=await api('getProyectoDetalle',{proyecto:proyecto});
-    if(r&&r.ok){ projDetCache[proyecto]=r; if(projModalNombre===proyecto) renderDetalleProyecto(r); }
-    else $('#projModalBody').innerHTML='<div class="count">No se pudo cargar: '+esc(r&&r.error||'error desconocido')+'</div>';
-  }catch(e){ $('#projModalBody').innerHTML='<div class="count">No se pudo cargar (sin conexión o error de red).</div>'; }
+    if(r&&r.ok){ projDetCache[proyecto]=r; guardarProjDet(); if(projModalNombre===proyecto) renderDetalleProyecto(r); }
+    else if(!previo) $('#projModalBody').innerHTML='<div class="count">No se pudo cargar: '+esc(r&&r.error||'error desconocido')+'</div>';
+  }catch(e){ if(!previo) $('#projModalBody').innerHTML='<div class="count">No se pudo cargar (sin conexión o error de red).</div>'; }
 }
 function cerrarDetalleProyecto(){ $('#projOverlay').hidden=true; $('#projModal').hidden=true; projModalNombre=null; }
+/* ===== Análisis por proyecto y fase (se guarda la última versión obtenida para abrir al instante) ===== */
+const AKEY='qaqc_ana_v1', ASEL='qaqc_ana_sel', GORD='qaqc_gen_orden';
+const ANA_COL=['#4aa3ff','#ff6a1a','#a78bfa','#2dd4bf','#5a6b8a'];
+let anaData=null, anaSavedAt=0, anaIdx=null, anaFresh=false, anaLoading=false;
+let anaSel={base:'',fase:''}, anaAreaF=-1, anaVerTodos=false, anaA=null, anaCharts={}, anaSticky={};
+try{ anaSel=Object.assign(anaSel,JSON.parse(localStorage.getItem(ASEL)||'{}')); }catch(e){}
+let genOrden=(function(){try{return localStorage.getItem(GORD)==='antiguo'?'antiguo':'nuevo';}catch(e){return 'nuevo';}})();
+
+const anaFec=iso=>{const p=String(iso||'').split('-');return p.length===3?p[2]+'-'+p[1]+'-'+p[0]:'—';};
+const anaNum=n=>Number(n||0).toLocaleString('es-CL');
+const anaPc=(a,b)=>b?Math.round(a/b*100):0;
+const anaPc1=(a,b)=>(b?a/b*100:0).toFixed(1).replace('.',',')+'%';
+function anaPartes(nombre){
+  const m=String(nombre).match(/^(.*?)\s*\(([^()]*)\)\s*$/);
+  return m?{base:m[1].trim()||String(nombre).trim(),fase:m[2].trim()||'Sin fase'}:{base:String(nombre).trim(),fase:'Sin fase'};
+}
+function anaIndexar(){
+  const m={};
+  anaData.proyectos.forEach(p=>{
+    const t=anaPartes(p.p), b=m[t.base]=m[t.base]||{base:t.base,fases:[],f2:''};
+    b.fases.push({fase:t.fase,rec:p}); if(p.f2&&p.f2>b.f2)b.f2=p.f2;
+  });
+  anaIdx=Object.values(m).sort((a,b)=>(b.f2||'').localeCompare(a.f2||'')||a.base.localeCompare(b.base,'es'));   // más nuevos primero
+  anaIdx.forEach(b=>b.fases.sort((a,c)=>(c.rec.f2||'').localeCompare(a.rec.f2||'')||a.fase.localeCompare(c.fase,'es')));
+}
+function anaAgregar(recs){
+  const o={f1:'',f2:'',r:[0,0,0,0,0,0],a:{},d:{}};
+  recs.forEach(p=>{
+    if(p.f1&&(!o.f1||p.f1<o.f1))o.f1=p.f1; if(p.f2&&(!o.f2||p.f2>o.f2))o.f2=p.f2;
+    for(let i=0;i<6;i++)o.r[i]+=p.r[i];
+    Object.keys(p.a).forEach(k=>{const t=o.a[k]=o.a[k]||[0,0,0,0,0,0]; for(let i=0;i<6;i++)t[i]+=p.a[k][i];});
+    p.d.forEach(x=>{const key=x[0]+'\u0001'+x[1]; const e=o.d[key]=o.d[key]||{def:x[0],ai:x[1],tot:0,alta:0,baja:0,sin:0};
+      e.tot+=x[3]; if(x[2]===1)e.alta+=x[3]; else if(x[2]===2)e.baja+=x[3]; else e.sin+=x[3];});
+  });
+  return o;
+}
+
+/* ---- Gráfico de torta (SVG) con tooltip y valores al centro ---- */
+function anaDonut(id,segs,centro,sub){
+  const act=segs.filter(s=>s.value>0), tot=act.reduce((a,s)=>a+s.value,0);
+  anaCharts[id]={segs:act,tot:tot,centro:centro,sub:sub}; delete anaSticky[id];
+  if(!tot) return '<div class="anaDonutBox"><div class="anaCenter"><b>—</b><span>Sin datos</span></div></div>';
+  const R=70, C=2*Math.PI*R; let off=0;
+  const arcs=act.map((s,i)=>{
+    const len=s.value/tot*C;
+    const el='<circle class="aseg" data-c="'+id+'" data-i="'+i+'" cx="100" cy="100" r="'+R+'" fill="none" stroke="'+s.color+'" stroke-width="30" stroke-dasharray="'+len.toFixed(2)+' '+(C-len).toFixed(2)+'" stroke-dashoffset="'+(-off).toFixed(2)+'" transform="rotate(-90 100 100)"></circle>';
+    off+=len; return el;
+  }).join('');
+  const leg=act.map((s,i)=>'<div class="aleg" data-c="'+id+'" data-i="'+i+'"><span class="adot" style="background:'+s.color+'"></span>'+esc(s.label)+' · <b>'+anaNum(s.value)+'</b></div>').join('');
+  return '<div class="anaDonutBox" id="'+id+'"><svg viewBox="0 0 200 200" role="img"><circle cx="100" cy="100" r="70" fill="none" stroke="#0a2244" stroke-width="30"></circle>'+arcs+'</svg>'+
+    '<div class="anaCenter"><b>'+esc(centro)+'</b><span>'+esc(sub)+'</span></div></div><div class="anaLeg">'+leg+'</div>';
+}
+function anaCentro(id,i){
+  const ch=anaCharts[id]; if(!ch)return; const box=document.getElementById(id); if(!box)return;
+  const c=box.querySelector('.anaCenter');
+  box.classList.toggle('hov',i!=null);
+  box.querySelectorAll('.aseg').forEach(el=>el.classList.toggle('hl',i!=null&&+el.dataset.i===i));
+  document.querySelectorAll('.aleg[data-c="'+id+'"]').forEach(el=>el.classList.toggle('hl',i!=null&&+el.dataset.i===i));
+  if(i==null){ c.innerHTML='<b>'+esc(ch.centro)+'</b><span>'+esc(ch.sub)+'</span>'; return; }
+  const s=ch.segs[i]; c.innerHTML='<b style="color:'+s.color+'">'+anaPc1(s.value,ch.tot)+'</b><span>'+esc(s.label)+'<br>'+anaNum(s.value)+' de '+anaNum(ch.tot)+'</span>';
+}
+function anaTip(ev,id,i){
+  const tip=$('#anaTip'), ch=anaCharts[id]; if(!tip||!ch||i==null){ if(tip)tip.hidden=true; return; }
+  const s=ch.segs[i];
+  tip.innerHTML='<span class="adot" style="background:'+s.color+'"></span><b>'+esc(s.label)+'</b><br>'+anaNum(s.value)+' · '+anaPc1(s.value,ch.tot);
+  tip.hidden=false;
+  const w=tip.offsetWidth, h=tip.offsetHeight;
+  tip.style.left=Math.max(6,Math.min(innerWidth-w-6,ev.clientX+14))+'px';
+  tip.style.top=Math.max(6,Math.min(innerHeight-h-6,ev.clientY-h-10))+'px';
+}
+function anaObj(e){const t=e.target.closest&&e.target.closest('.aseg,.aleg'); return t?{id:t.dataset.c,i:+t.dataset.i}:null;}
+
+/* ---- Selectores ---- */
+function anaLlenarSelects(){
+  const sp=$('#anaProy'), sf=$('#anaFase');
+  if(!anaIdx.some(b=>b.base===anaSel.base)) anaSel.base=anaIdx.length?anaIdx[0].base:'';
+  sp.innerHTML=anaIdx.map(b=>'<option value="'+esc(b.base)+'"'+(b.base===anaSel.base?' selected':'')+'>'+esc(b.base)+'</option>').join('');
+  const b=anaIdx.find(x=>x.base===anaSel.base);
+  const fases=b?b.fases:[];
+  if(anaSel.fase&&!fases.some(f=>f.fase===anaSel.fase)) anaSel.fase='';
+  sf.innerHTML='<option value="">Todas las fases ('+fases.length+')</option>'+fases.map(f=>'<option value="'+esc(f.fase)+'"'+(f.fase===anaSel.fase?' selected':'')+'>'+esc(f.fase)+'</option>').join('');
+}
+function anaGuardarSel(){ try{localStorage.setItem(ASEL,JSON.stringify(anaSel));}catch(e){} }
+
+/* ---- Render principal ---- */
+function anaRender(){
+  const body=$('#anaBody'); if(!body||!anaData||!anaIdx) return;
+  $('#anaStamp').textContent='Actualizado '+timeAgo(anaSavedAt);
+  anaLlenarSelects();
+  const b=anaIdx.find(x=>x.base===anaSel.base);
+  if(!b){ body.innerHTML='<div class="count" style="margin-top:12px">Todavía no hay proyectos con registros.</div>'; return; }
+  const fs=anaSel.fase?b.fases.filter(f=>f.fase===anaSel.fase):b.fases;
+  const A=anaA=anaAgregar(fs.map(f=>f.rec)), R=A.r, areas=anaData.areas;
+  anaCharts={}; anaSticky={};
+  const dias=(A.f1&&A.f2)?Math.round((Date.UTC.apply(null,A.f2.split('-').map((x,i)=>i===1?x-1:+x))-Date.UTC.apply(null,A.f1.split('-').map((x,i)=>i===1?x-1:+x)))/864e5):0;
+  const faseTxt=anaSel.fase?('Fase '+anaSel.fase):('Todas las fases ('+b.fases.length+')');
+  const pctAp=anaPc(R[2],R[0]);
+  const idxAreas=Object.keys(A.a).map(Number).filter(i=>A.a[i][0]>0).sort((x,y)=>x-y);
+
+  let h='';
+  h+='<div class="anaHero"><div class="t">'+esc(b.base)+'</div><span class="anaFase">'+esc(faseTxt)+'</span>'+
+    '<div class="anaFechas"><div><small>Primera revisión</small><b>'+anaFec(A.f1)+'</b></div><div class="sep">➜</div>'+
+    '<div><small>Última revisión</small><b>'+anaFec(A.f2)+'</b></div>'+
+    '<div><small>Período</small><b>'+anaNum(dias)+(dias===1?' día':' días')+'</b></div></div></div>';
+
+  h+='<div class="kpiGrid">'+
+    '<div class="kpiCard"><div class="num" data-count="'+R[0]+'">'+R[0]+'</div><div class="lbl3">Registros</div></div>'+
+    '<div class="kpiCard"><div class="num" data-count="'+R[1]+'">'+R[1]+'</div><div class="lbl3">Elementos revisados</div></div>'+
+    '<div class="kpiCard"><div class="num" data-count="'+pctAp+'" data-suf="%" style="color:'+pctColor(pctAp)+'">'+pctAp+'%</div><div class="lbl3">% de aprobación</div></div>'+
+    '<div class="kpiCard"><div class="num" data-count="'+R[4]+'" style="color:var(--adv)">'+R[4]+'</div><div class="lbl3">Avance aprobado</div></div></div>';
+
+  h+='<div class="anaSub">🥧 Resultados y áreas</div><div class="anaDonuts">'+
+    '<div class="anaDC"><div class="cap">Resultado de las revisiones</div>'+anaDonut('anaD1',[
+      {label:'Aprobado',value:R[2],color:'#34c77b'},{label:'Rechazado',value:R[3],color:'#ef4444'},{label:'Avance aprobado',value:R[4],color:'#f5a623'}],anaNum(R[0]),'registros')+'</div>'+
+    '<div class="anaDC"><div class="cap">Revisiones por área</div>'+anaDonut('anaD2',idxAreas.map(i=>({label:areas[i],value:A.a[i][0],color:ANA_COL[i]||'#5a6b8a'})),anaNum(idxAreas.length),idxAreas.length===1?'área':'áreas')+'</div></div>';
+
+  h+='<div class="anaSub">🛠️ Revisiones por área</div><div class="anaAreas">'+
+    (idxAreas.length?idxAreas.map(i=>{const a=A.a[i],c=ANA_COL[i]||'#5a6b8a';
+      return '<div class="areaTile anaPop" style="border-top:3px solid '+c+'"><div class="top"><b style="color:'+c+'">'+esc(areas[i])+'</b><span class="tot">'+anaNum(a[0])+'<span style="font-family:Inter;font-size:.7rem;color:var(--mut);font-weight:400"> registros</span></span></div>'+
+        stackBarHtml(a[0],a[2],a[4],a[3])+'<small>'+anaNum(a[1])+' elementos revisados</small>'+
+        '<div class="areaStats"><span style="color:var(--ok)"><b>'+a[2]+'</b> aprobadas</span><span style="color:var(--bad)"><b>'+a[3]+'</b> rechazadas</span><span style="color:var(--adv)"><b>'+a[4]+'</b> avance aprobado</span></div></div>';
+    }).join(''):'<div class="count">Sin revisiones registradas.</div>')+'</div>';
+
+  // Errores: KPI + por área + tabla
+  const filas=Object.values(A.d), totErr=filas.reduce((s,x)=>s+x.tot,0), alta=filas.reduce((s,x)=>s+x.alta,0);
+  const porDef={}; filas.forEach(x=>{porDef[x.def]=(porDef[x.def]||0)+x.tot;});
+  const topDef=Object.keys(porDef).sort((x,y)=>porDef[y]-porDef[x])[0];
+  const rep=R[3]?Math.round((R[3]-R[5])/R[3]*100):0;
+  h+='<div class="anaSub">⚠️ Errores detectados</div><div class="kpiGrid">'+
+    '<div class="kpiCard"><div class="num" data-count="'+R[3]+'" style="color:var(--bad)">'+R[3]+'</div><div class="lbl3">Rechazos</div></div>'+
+    '<div class="kpiCard"><div class="num" data-count="'+anaPc(R[3],R[0])+'" data-suf="%" style="color:var(--bad)">'+anaPc(R[3],R[0])+'%</div><div class="lbl3">% de rechazo</div></div>'+
+    '<div class="kpiCard"><div class="num" data-count="'+rep+'" data-suf="%" style="color:'+pctColor(R[3]?rep:100)+'">'+rep+'%</div><div class="lbl3">Rechazos reparados</div></div>'+
+    '<div class="kpiCard"><div class="num" data-count="'+R[5]+'" style="color:'+(R[5]?'var(--adv)':'var(--ok)')+'">'+R[5]+'</div><div class="lbl3">Pendientes de reparar</div></div>'+
+    '<div class="kpiCard"><div class="num" data-count="'+alta+'" style="color:var(--bad)">'+alta+'</div><div class="lbl3">Defectos criticidad alta</div></div>'+
+    '<div class="kpiCard"><div class="num" style="font-size:1rem;line-height:1.2">'+(topDef?esc(topDef):'—')+'</div><div class="lbl3">'+(topDef?'Defecto más frecuente ('+porDef[topDef]+')':'Sin defectos')+'</div></div></div>';
+  h+='<div class="count" style="margin-top:14px">Errores por área <span style="opacity:.8">(toca un área para filtrar la tabla)</span></div><div class="anaAreas">'+
+    (idxAreas.length?idxAreas.map(i=>{const a=A.a[i],c=ANA_COL[i]||'#5a6b8a',oc=filas.filter(x=>x.ai===i).reduce((s,x)=>s+x.tot,0);
+      return '<div class="areaTile anaErr anaPop" data-af="'+i+'" style="border-left:4px solid '+c+'"><div class="top"><b style="color:'+c+'">'+esc(areas[i])+'</b><span class="tot" style="color:'+(a[3]?'var(--bad)':'var(--ok)')+'">'+a[3]+'<span style="font-family:Inter;font-size:.7rem;color:var(--mut);font-weight:400"> rechazos</span></span></div>'+
+        '<small>'+anaPc1(a[3],a[0])+' de sus registros · '+oc+' defecto'+(oc===1?'':'s')+' anotado'+(oc===1?'':'s')+' · '+a[5]+' pendiente'+(a[5]===1?'':'s')+'</small></div>';
+    }).join(''):'<div class="count">Sin datos.</div>')+'</div>';
+  h+='<div id="anaTblBox"></div>';
+  body.innerHTML=h;
+  anaTabla();
+  animarHome('#anaCard');
+}
+function anaTabla(){
+  const box=$('#anaTblBox'); if(!box||!anaA) return;
+  const areas=anaData.areas, todas=Object.values(anaA.d);
+  const lista=todas.filter(x=>anaAreaF<0||x.ai===anaAreaF).sort((x,y)=>y.tot-x.tot||x.def.localeCompare(y.def,'es'));
+  const tot=lista.reduce((s,x)=>s+x.tot,0), max=lista.length?lista[0].tot:1;
+  const hay=[...new Set(todas.map(x=>x.ai))].sort((x,y)=>x-y);
+  const mostrar=anaVerTodos?lista:lista.slice(0,10);
+  let h='<div class="anaChips"><button type="button" class="anaChip'+(anaAreaF<0?' on':'')+'" data-af="-1">Todas</button>'+
+    hay.map(i=>'<button type="button" class="anaChip'+(anaAreaF===i?' on':'')+'" data-af="'+i+'"><span class="adot" style="background:'+(ANA_COL[i]||'#5a6b8a')+'"></span>'+esc(areas[i])+'</button>').join('')+'</div>';
+  if(!lista.length) h+='<div class="count">No hay defectos anotados en los rechazos'+(anaAreaF>=0?' de esta área':'')+'.</div>';
+  else{
+    h+='<div class="anaTblW"><table class="anaTbl"><thead><tr><th>Defecto / error</th><th>Área</th><th>Criticidad</th><th style="min-width:110px">Cantidad</th></tr></thead><tbody>'+
+      mostrar.map(x=>{
+        const c=ANA_COL[x.ai]||'#5a6b8a';
+        const cr=(x.alta?'<span class="acr alta">Alta '+x.alta+'</span>':'')+(x.baja?'<span class="acr baja">Baja '+x.baja+'</span>':'')+(x.sin?'<span class="acr sin">Sin dato '+x.sin+'</span>':'');
+        return '<tr><td>'+esc(x.def)+'</td><td><span class="adot" style="background:'+c+'"></span>'+esc(areas[x.ai])+'</td><td>'+cr+'</td><td><b>'+x.tot+'</b> <span style="color:var(--mut);font-size:.75rem">('+anaPc1(x.tot,tot)+')</span><div class="abar"><i data-w="'+(x.tot/max*100)+'%"></i></div></td></tr>';
+      }).join('')+'</tbody></table></div>';
+    if(lista.length>10) h+='<div class="add" style="margin-top:10px"><button type="button" id="anaMas">'+(anaVerTodos?'Ver menos':'Ver todos ('+lista.length+')')+'</button></div>';
+  }
+  box.innerHTML=h;
+  document.querySelectorAll('#anaCard .anaErr').forEach(t=>t.classList.toggle('on',+t.dataset.af===anaAreaF));
+  requestAnimationFrame(()=>requestAnimationFrame(()=>box.querySelectorAll('[data-w]').forEach(el=>el.style.width=el.dataset.w)));
+}
+
+/* ---- Carga con caché (se muestra lo último guardado y se actualiza en segundo plano) ---- */
+function anaCache(d){ try{localStorage.setItem(AKEY,JSON.stringify({data:d,savedAt:Date.now()}));}catch(e){} }
+function anaLeerCache(){ try{const o=JSON.parse(localStorage.getItem(AKEY)); return (o&&o.data&&o.data.proyectos)?o:null;}catch(e){return null;} }
+async function loadAnalisis(force){
+  if(!anaData){ const c=anaLeerCache(); if(c){anaData=c.data;anaSavedAt=c.savedAt;anaIndexar();anaRender();} }
+  if(!anaData) $('#anaBody').innerHTML=skeletonRows(3);
+  if(anaFresh&&!force){ if(anaData)anaRender(); return; }
+  if(!navigator.onLine||anaLoading){ if(!anaData)$('#anaBody').innerHTML='<div class="count" style="margin-top:12px">Sin conexión: conéctate para ver el análisis.</div>'; return; }
+  anaLoading=true;
+  try{
+    const r=await api('getAnalisisProyectos');
+    if(r&&r.ok&&r.proyectos){ anaData=r; anaSavedAt=Date.now(); anaFresh=true; anaCache(r); anaIndexar(); anaRender(); }
+    else if(!anaData) $('#anaBody').innerHTML='<div class="count" style="margin-top:12px">No se pudo cargar el análisis: '+esc(r&&r.error||'error desconocido')+'</div>';
+  }catch(e){ if(!anaData) $('#anaBody').innerHTML='<div class="count" style="margin-top:12px">No se pudo cargar el análisis (sin conexión o error de red).</div>'; }
+  finally{ anaLoading=false; }
+}
+function initAna(){
+  const card=$('#anaCard');
+  $('#anaProy').onchange=e=>{anaSel.base=e.target.value;anaSel.fase='';anaAreaF=-1;anaVerTodos=false;anaGuardarSel();anaRender();};
+  $('#anaFase').onchange=e=>{anaSel.fase=e.target.value;anaAreaF=-1;anaVerTodos=false;anaGuardarSel();anaRender();};
+  card.addEventListener('pointerover',e=>{const o=anaObj(e); if(!o)return; anaCentro(o.id,o.i); if(e.pointerType==='mouse')anaTip(e,o.id,o.i);});
+  card.addEventListener('pointermove',e=>{const o=anaObj(e); if(o&&e.pointerType==='mouse')anaTip(e,o.id,o.i);});
+  card.addEventListener('pointerout',e=>{const o=anaObj(e); if(!o)return; anaTip(e,null,null); anaCentro(o.id,anaSticky[o.id]!=null?anaSticky[o.id]:null);});
+  card.addEventListener('click',e=>{
+    const o=anaObj(e);
+    if(o){ anaSticky[o.id]=(anaSticky[o.id]===o.i)?null:o.i; anaCentro(o.id,anaSticky[o.id]); return; }
+    const f=e.target.closest('[data-af]');
+    if(f){ const v=+f.dataset.af; anaAreaF=(f.classList.contains('anaErr')&&anaAreaF===v)?-1:v; anaVerTodos=false; anaTabla(); return; }
+    if(e.target.closest('#anaMas')){ anaVerTodos=!anaVerTodos; anaTabla(); }
+  });
+}
+
 function initHome(){
+  initAna();
+  $('#homeGenOrden').onclick=()=>{genOrden=genOrden==='nuevo'?'antiguo':'nuevo';try{localStorage.setItem(GORD,genOrden);}catch(e){} renderHome();};
   $('#homeRefresh').onclick=()=>loadHome(true);
   $('#homeGenMore').onclick=()=>{homeGenExpanded=!homeGenExpanded;renderHome();};
   $('#homeActivos').addEventListener('click',e=>{const r=e.target.closest('[data-proyecto]');if(r)abrirDetalleProyecto(r.dataset.proyecto);});
