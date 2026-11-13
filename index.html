@@ -710,23 +710,23 @@ input[type="date"],input[type="time"]{color-scheme:dark}
   </div></section>
 
   <section class="card"><h2>Extremo 1</h2><div class="grid">
-    <div class="field"><label for="e1_altura">Altura h1-h2-h3</label><input type="text" inputmode="decimal" id="e1_altura"></div>
-    <div class="field"><label for="e1_ancho">Ancho ala bf-tf</label><input type="text" inputmode="decimal" id="e1_ancho"></div>
-    <div class="field"><label for="e1_cruzada">Cruzada c1-c2</label><input type="text" inputmode="decimal" id="e1_cruzada"></div>
+    <div class="field"><label for="e1_altura">Altura h1-h2-h3</label><input type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" id="e1_altura"></div>
+    <div class="field"><label for="e1_ancho">Ancho ala bf-tf</label><input type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" id="e1_ancho"></div>
+    <div class="field"><label for="e1_cruzada">Cruzada c1-c2</label><input type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" id="e1_cruzada"></div>
   </div></section>
 
   <section class="card"><h2>Extremo 2</h2><div class="grid">
-    <div class="field"><label for="e2_altura">Altura h1-h2-h3</label><input type="text" inputmode="decimal" id="e2_altura"></div>
-    <div class="field"><label for="e2_ancho">Ancho ala bf-tf</label><input type="text" inputmode="decimal" id="e2_ancho"></div>
-    <div class="field"><label for="e2_cruzada">Cruzada c1-c2</label><input type="text" inputmode="decimal" id="e2_cruzada"></div>
+    <div class="field"><label for="e2_altura">Altura h1-h2-h3</label><input type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" id="e2_altura"></div>
+    <div class="field"><label for="e2_ancho">Ancho ala bf-tf</label><input type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" id="e2_ancho"></div>
+    <div class="field"><label for="e2_cruzada">Cruzada c1-c2</label><input type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" id="e2_cruzada"></div>
   </div></section>
 
   <section class="card"><h2>Medidas generales</h2><div class="grid">
-    <div class="field"><label for="v_largo">Largo total de la viga (mm)</label><input type="text" inputmode="decimal" id="v_largo"></div>
-    <div class="field"><label for="v_espAla">Espesor ala bf-tf</label><input type="text" inputmode="decimal" id="v_espAla"></div>
-    <div class="field"><label for="v_espAlma">Espesor alma</label><input type="text" inputmode="decimal" id="v_espAlma"></div>
-    <div class="field"><label for="v_sweep">Curvatura a Sweep</label><input type="text" inputmode="decimal" id="v_sweep"></div>
-    <div class="field"><label for="v_camber">Curvatura Camber</label><input type="text" inputmode="decimal" id="v_camber"></div>
+    <div class="field"><label for="v_largo">Largo total de la viga (mm)</label><input type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" id="v_largo"></div>
+    <div class="field"><label for="v_espAla">Espesor ala bf-tf</label><input type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" id="v_espAla"></div>
+    <div class="field"><label for="v_espAlma">Espesor alma</label><input type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" id="v_espAlma"></div>
+    <div class="field"><label for="v_sweep">Curvatura a Sweep</label><input type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" id="v_sweep"></div>
+    <div class="field"><label for="v_camber">Curvatura Camber</label><input type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" id="v_camber"></div>
   </div></section>
 
   <section class="card"><h2>Resultado</h2><div class="grid">
@@ -907,9 +907,9 @@ function fillSelect(id, list, ph){
 }
 function val(id){const v=$('#'+id).value; return v===OTHER?$('#'+id+'_o').value.trim():v.trim();}
 
-function seg(k,list){
+function seg(k,list,labels){
   const box=$('.seg[data-k="'+k+'"]'); if(S[k]&&!list.includes(S[k]))S[k]='';
-  box.innerHTML=list.map(x=>'<button type="button" data-v="'+esc(x)+'">'+esc(x)+'</button>').join('');
+  box.innerHTML=list.map(x=>'<button type="button" data-v="'+esc(x)+'">'+esc((labels&&labels[x])||x)+'</button>').join('');
   box.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.v===S[k]));
   box.onclick=e=>{const b=e.target.closest('button'); if(!b)return;
     S[k]=(box.dataset.toggle&&S[k]===b.dataset.v)?'':b.dataset.v;
@@ -1288,7 +1288,7 @@ function renderForm(){
   fillSelect('etapa',CFG.etapas,'Sin etapa'); fillSelect('areaNC',CFG.areasNC,'Sin definir');
   seg('area',CFG.areas); seg('resultado',CFG.resultados); seg('reparado',CFG.reparado); seg('criticidad',['Alta','Baja']);
   multi('armador',CFG.armadores); multi('soldador',CFG.soldadores); defectos(); sync(); applyCond();
-  fillSelect('v_proyecto',CFG.proyectos,'Selecciona…'); seg('v_resultado',CFG.resultados); seg('v_reparado',CFG.reparado);
+  fillSelect('v_proyecto',CFG.proyectos,'Selecciona…'); seg('v_resultado',CFG.resultados,{'Aprobado':'Liberada','Rechazado':'Rechazada','Avance aprobado':'Avance liberado'}); seg('v_reparado',CFG.reparado);
   defectosVigas(); syncVigas(); applyCondVigas();
 }
 function setCfgOpen(v){$('#cfgCard').hidden=!v;$('#cfgOverlay').hidden=!v;}
