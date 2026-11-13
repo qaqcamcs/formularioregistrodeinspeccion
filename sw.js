@@ -1,6 +1,6 @@
 // Service worker: guarda la app en el dispositivo para abrirla sin internet.
 // Si cambias index.html o los iconos, sube el número de versión para forzar la actualización.
-const CACHE = 'qaqc-v55';
+const CACHE = 'qaqc-v57';
 const SHELL = ['./', './index.html', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png', './icons/amcs-logo.png'];
 
@@ -11,7 +11,7 @@ self.addEventListener('install', e => {
   // guarda por separado y si alguno falla, no arrastra a los demás.
   e.waitUntil(
     caches.open(CACHE).then(c => Promise.all(
-      SHELL.map(url => c.add(url).catch(err => console.warn('No se pudo precachear', url, err)))
+      SHELL.map(url => c.add(new Request(url, { cache: 'reload' })).catch(err => console.warn('No se pudo precachear', url, err)))
     )).then(() => self.skipWaiting())
   );
 });
@@ -30,9 +30,10 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+  if (url.pathname.endsWith('/version.json')) return;   // el aviso de versión siempre va a la red
 
   e.respondWith(caches.match(req, { ignoreSearch: true }).then(hit => {
-    const net = fetch(req).then(res => {
+    const net = fetch(req, { cache: 'no-cache' }).then(res => {
       if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
       return res;
     }).catch(() => null);
