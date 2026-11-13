@@ -74,6 +74,10 @@ details .chips{padding:0 12px 12px}
 #toast{position:fixed;left:50%;top:16px;transform:translate(-50%,-140%);transition:transform .25s;background:var(--ok);color:#03210f;padding:12px 18px;border-radius:12px;font-weight:600;z-index:9;max-width:92vw}
 #toast.show{transform:translate(-50%,0)}#toast.err{background:var(--bad);color:#fff}
 #toast:empty{display:none}
+#updOverlay{z-index:40}#updModal{z-index:41}
+#updAhora{background:var(--pri);border-color:var(--pri);color:var(--pri-ink);font-weight:700}
+.updList{margin:12px 0 0;padding-left:20px;max-height:46vh;overflow-y:auto;line-height:1.45;font-size:.92rem}
+.updList li{margin-bottom:7px}
 @media(prefers-reduced-motion:reduce){#toast{transition:none}}
 header{position:relative}
 .hrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
@@ -469,6 +473,14 @@ input[type="date"],input[type="time"]{color-scheme:dark}
   <div class="add" style="margin-top:12px"><button type="button" id="rechToggle"></button></div>
 </div>
 <div class="anaTip" id="anaTip" hidden></div>
+<div id="updOverlay" class="bigOverlay" hidden></div>
+<div class="card bigModal" id="updModal" hidden>
+  <div class="cfgHead"><h2 id="updTitulo"></h2></div>
+  <div class="count" id="updSub"></div>
+  <ul class="updList" id="updList"></ul>
+  <div class="count" id="updAviso" style="margin-top:10px">Al actualizar se recarga la app. Termina o guarda el registro que tengas abierto antes de continuar.</div>
+  <div class="add" style="margin-top:14px"><button type="button" id="updMas">Más tarde</button><button type="button" id="updAhora">Actualizar ahora</button></div>
+</div>
 <div id="bigCheck"><div class="circle">✓</div></div>
 <section id="homeScreen">
   <section class="card">
@@ -1856,6 +1868,59 @@ function initAna(){
   });
 }
 
+/* ===== Aviso de nueva versión (compara con version.json y muestra los cambios) ===== */
+const APP_VERSION='2026.11.13-1';
+const VER_SEEN='qaqc_ver_visto';
+let verModo='', verUltimaRev=0, verPosponer=0;
+function verAbrir(v,modo){
+  verModo=modo;
+  $('#updTitulo').textContent = modo==='nueva' ? '🔔 Nueva versión disponible' : '✅ App actualizada';
+  $('#updSub').textContent = (modo==='nueva' ? 'Usas la versión '+APP_VERSION+'. Disponible: ' : 'Versión ')+v.version+(v.fecha?' · '+v.fecha:'');
+  $('#updList').innerHTML=(v.cambios||[]).map(c=>'<li>'+esc(c)+'</li>').join('');
+  $('#updAviso').hidden = modo!=='nueva';
+  $('#updAhora').hidden = modo!=='nueva'; $('#updAhora').disabled=false; $('#updAhora').textContent='Actualizar ahora';
+  $('#updMas').textContent = modo==='nueva' ? 'Más tarde' : 'Entendido';
+  $('#updOverlay').hidden=false; $('#updModal').hidden=false;
+}
+function verCerrar(){
+  $('#updOverlay').hidden=true; $('#updModal').hidden=true;
+  if(verModo==='nueva') verPosponer=Date.now()+30*60*1000;   // vuelve a avisar en 30 min
+}
+async function revisarVersion(forzar){
+  const now=Date.now();
+  if(!navigator.onLine||!$('#updModal').hidden) return;
+  if(!forzar&&now-verUltimaRev<60000) return; verUltimaRev=now;
+  try{
+    const r=await fetch('./version.json?t='+now,{cache:'no-store'}); if(!r.ok) return;
+    const v=await r.json(); if(!v||!v.version) return;
+    if(v.version!==APP_VERSION){ if(now>verPosponer) verAbrir(v,'nueva'); return; }
+    let seen=null; try{seen=localStorage.getItem(VER_SEEN);}catch(e){}
+    if(seen!==APP_VERSION){
+      try{localStorage.setItem(VER_SEEN,APP_VERSION);}catch(e){}
+      if(seen!==null||getKey()) verAbrir(v,'novedades');   // usuarios existentes ven las novedades una vez
+    }
+  }catch(e){}
+}
+async function verAplicar(){
+  const b=$('#updAhora'); b.disabled=true; b.textContent='Actualizando…';
+  try{
+    const reg=await navigator.serviceWorker.getRegistration();
+    if(reg){
+      await reg.update();
+      const w=reg.installing||reg.waiting;
+      if(w&&w.state!=='activated') await new Promise(res=>{const t=setTimeout(res,5000); w.addEventListener('statechange',()=>{if(w.state==='activated'){clearTimeout(t);res();}});});
+    }
+  }catch(e){}
+  try{ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); }catch(e){}
+  location.reload();
+}
+function initActualizaciones(){
+  $('#updMas').onclick=verCerrar; $('#updOverlay').onclick=verCerrar; $('#updAhora').onclick=verAplicar;
+  setTimeout(()=>revisarVersion(true),4000);
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden) revisarVersion(false); });
+  addEventListener('online',()=>revisarVersion(true));
+  setInterval(()=>revisarVersion(false),10*60*1000);
+}
 function initHome(){
   initAna();
   $('#homeGenOrden').onclick=()=>{genOrden=genOrden==='nuevo'?'antiguo':'nuevo';try{localStorage.setItem(GORD,genOrden);}catch(e){} renderHome();};
@@ -3343,7 +3408,7 @@ function initMenu(){
   $('#menuOverlay').onclick=()=>setMenuOpen(false);
   window.closeMenu=()=>setMenuOpen(false);
 }
-renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); initHome(); initRechModal(); initCalc(); initPersonas(); initBusqueda(); initInformes(); initInformesNuevos(); initInformeSemanal(); initRecepcion(); initNavGroups(); initTabsFade(); initTabsDrag(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg(); refreshSegBadge();
+renderForm(); $('#fecha').value=today(); $('#v_fecha').value=today(); initHome(); initRechModal(); initCalc(); initPersonas(); initBusqueda(); initInformes(); initInformesNuevos(); initInformeSemanal(); initActualizaciones(); initRecepcion(); initNavGroups(); initTabsFade(); initTabsDrag(); switchForm('home'); initCfgUI(); initLogin(); initOffline(); initMenu(); initSeguimiento(); refreshCfg(); refreshSegBadge();
 </script>
 </body>
 </html>
