@@ -42,7 +42,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .seg button,.chip{font:inherit;color:var(--txt);background:#08203f;border:1px solid var(--line);border-radius:10px;min-height:48px;padding:0 16px;cursor:pointer;flex:1 1 110px}
 .seg button.on{background:var(--pri);border-color:var(--pri);font-weight:600;color:var(--pri-ink)}
 .seg.res button.on[data-v="Aprobado"]{background:var(--ok);border-color:var(--ok);color:#03210f}
-.seg.res button.on[data-v="Rechazado"]{background:var(--bad);border-color:var(--bad);color:#2b0505}
+.seg.res button.on[data-v="Rechazado"],.seg.res button.on[data-v="Avance rechazado"]{background:var(--bad);border-color:var(--bad);color:#2b0505}
 .seg.res button.on[data-v="Avance aprobado"]{background:var(--adv);border-color:var(--adv);color:#2b1f00}
 .seg.res button{min-height:56px;font-size:1.05rem}
 .seg[data-k="criticidad"] button.on[data-v="Alta"]{background:var(--bad);border-color:var(--bad);color:#2b0505}
@@ -840,7 +840,7 @@ const DEFAULT_COND = [
   { campo:'area', vacio:'ocultar',
     mapa:{ 'PREMAT':['etapa'], 'Armado':['armador'], 'Soldadura':['soldador'] } },
   { campo:'resultado', vacio:'mostrar',
-    mapa:{ 'Aprobado':[], 'Rechazado':['reparado','areaNC','defectos'], 'Avance aprobado':['reparado','areaNC','defectos'] } }
+    mapa:{ 'Aprobado':[], 'Rechazado':['reparado','areaNC','defectos'], 'Avance aprobado':['reparado','areaNC','defectos'], 'Avance rechazado':['reparado','areaNC','defectos'] } }
 ];
 // Campos que una regla puede mostrar/ocultar (deben existir como div#fld-<clave> en el HTML)
 const GOVERNABLE = [['etapa','Etapa'],['armador','Armador'],['soldador','Soldador'],
@@ -907,6 +907,9 @@ function fillSelect(id, list, ph){
 }
 function val(id){const v=$('#'+id).value; return v===OTHER?$('#'+id+'_o').value.trim():v.trim();}
 
+const RES_AVANCE_RECH='Avance rechazado';
+function esRech_(v){const r=String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();return r==='rechazado'||r==='avance rechazado';}
+function resultadosInspeccion(){const l=(CFG.resultados||[]).slice();if(!l.includes(RES_AVANCE_RECH)){const i=l.indexOf('Avance aprobado');l.splice(i>=0?i+1:l.length,0,RES_AVANCE_RECH);}return l;}
 function seg(k,list,labels){
   const box=$('.seg[data-k="'+k+'"]'); if(S[k]&&!list.includes(S[k]))S[k]='';
   box.innerHTML=list.map(x=>'<button type="button" data-v="'+esc(x)+'">'+esc((labels&&labels[x])||x)+'</button>').join('');
@@ -965,7 +968,7 @@ function validateInsp(p){
   marcaMsg.textContent = marcaBlocked ? 'Esta marca está detenida: libérala en "Seguimiento" antes de registrarla.' : 'Escribe la marca.';
   chk(!!p.marca && !marcaBlocked,'#marca');
   chk(Number(p.cantidad)>0,'#cantidad'); chk(!!p.area,'.seg[data-k="area"]'); chk(!!p.resultado,'.seg[data-k="resultado"]');
-  if(norm_(p.resultado)==='rechazado') chk(!!p.criticidad,'.seg[data-k="criticidad"]');
+  if(esRech_(p.resultado)) chk(!!p.criticidad,'.seg[data-k="criticidad"]');
   if(bad.length){bad[0].scrollIntoView({behavior:'smooth',block:'center'}); toast('Revisa los campos marcados',true);} return !bad.length;
 }
 
@@ -1278,7 +1281,7 @@ function applyCond(){
   // Criticidad del error: aparece SOLO cuando el resultado es Rechazado (no con Avance aprobado).
   const critEl=document.getElementById('fld-criticidad');
   if(critEl){
-    const esRech = norm_(S.resultado)==='rechazado';
+    const esRech = esRech_(S.resultado);
     critEl.hidden = !esRech;
     if(!esRech && S.criticidad){ S.criticidad=''; critEl.querySelectorAll('.seg button').forEach(b=>b.classList.remove('on')); critEl.classList.remove('invalid'); }
   }
@@ -1286,7 +1289,7 @@ function applyCond(){
 function renderForm(){
   fillSelect('proyecto',CFG.proyectos,'Selecciona…');
   fillSelect('etapa',CFG.etapas,'Sin etapa'); fillSelect('areaNC',CFG.areasNC,'Sin definir');
-  seg('area',CFG.areas); seg('resultado',CFG.resultados); seg('reparado',CFG.reparado); seg('criticidad',['Alta','Baja']);
+  seg('area',CFG.areas); seg('resultado',resultadosInspeccion()); seg('reparado',CFG.reparado); seg('criticidad',['Alta','Baja']);
   multi('armador',CFG.armadores); multi('soldador',CFG.soldadores); defectos(); sync(); applyCond();
   fillSelect('v_proyecto',CFG.proyectos,'Selecciona…'); seg('v_resultado',CFG.resultados,{'Aprobado':'Liberada','Rechazado':'Rechazada','Avance aprobado':'Avance liberado'}); seg('v_reparado',CFG.reparado);
   defectosVigas(); syncVigas(); applyCondVigas();
@@ -2615,7 +2618,7 @@ function loadCachedBq(){ try{ const o=JSON.parse(localStorage.getItem(BQKEY)); r
 function bqPrep(){ (bqData.items||[]).forEach((it,x)=>{ it._x=x; it._i=norm_(it.inspector); it._p=norm_(it.proyecto); it._m=norm_(it.marca); it._c=norm_(it.correlativos); it._a=norm_(it.area); it._e=norm_([it.etapa,it.armador,it.soldador].join(' ')); it._r=norm_(it.resultado); }); }
 function bqRowClass(resultado){
   const r=norm_(resultado);
-  return r==='rechazado'?'bad':r==='avance aprobado'?'adv':r==='aprobado'?'ok':'';
+  return (r==='rechazado'||r==='avance rechazado')?'bad':r==='avance aprobado'?'adv':r==='aprobado'?'ok':'';
 }
 function bqRowHtml(it,idx){
   const cls=bqRowClass(it.resultado);
@@ -2862,7 +2865,7 @@ function renderStopChips(){
     : '<span class="count">No hay marcas detenidas.</span>';
 }
 function segRowHtml(it){
-  const bad = norm_(it.resultado)==='rechazado';
+  const bad = esRech_(it.resultado);
   return '<div class="row'+(bad?' bad':'')+'">'+
     '<div><b>'+esc(it.marca)+'</b> · '+esc(it.resultado)+'<br>'+
     '<small>'+esc(it.proyecto)+' — '+esc(it.fecha)+' — Cant: '+esc(it.cantidad)+(it.correlativos?' — Corr: '+esc(it.correlativos):'')+' — '+esc(it.area)+'</small>'+
@@ -2878,8 +2881,8 @@ function segBlock(title,arr,barColor){
 function renderSegList(){
   const q = norm_((($('#segSearch')||{}).value)||'');
   const filtered = segItems.filter(it=>!q || norm_(it.marca).includes(q) || norm_(it.proyecto).includes(q));
-  const rech = filtered.filter(it=>norm_(it.resultado)==='rechazado');
-  const avance = filtered.filter(it=>norm_(it.resultado)!=='rechazado');
+  const rech = filtered.filter(it=>esRech_(it.resultado));
+  const avance = filtered.filter(it=>!esRech_(it.resultado));
   $('#segCount').textContent = filtered.length + (filtered.length===1?' marca pendiente':' marcas pendientes');
   $('#segList').innerHTML = filtered.length
     ? segBlock('Rechazados',rech,'var(--bad)') + segBlock('Avance aprobado',avance,'var(--adv)')
