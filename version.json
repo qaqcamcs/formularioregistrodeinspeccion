@@ -1,0 +1,17 @@
+{
+  "version": "2026.11.13-1",
+  "fecha": "13-11-2026",
+  "cambios": [
+    "Nuevo informe semanal por inspector en Informes: se descarga como Word (.docx) directo al dispositivo, sin guardar nada en Drive.",
+    "Portada: «Todos los proyectos» ahora se ordena del más nuevo al más antiguo (con botón para invertir el orden) y muestra la fecha de última revisión.",
+    "Nuevo análisis por proyecto y fase en la portada: fechas, gráficos de torta interactivos, revisiones por área, KPI y tabla de errores.",
+    "Las estadísticas de proyectos se guardan en el dispositivo: abren al instante y se actualizan en segundo plano.",
+    "Registro de inspección: nuevo botón «Avance rechazado» (pide criticidad, reparado, área NC y defectos como Rechazado).",
+    "Registro de inspección: al elegir criticidad Alta o Baja aparece su explicación.",
+    "Registro de inspección: la etapa de PREMAT permite seleccionar varias opciones.",
+    "Vigas T0: teclado completo en las medidas (letras y guiones) y resultados con los nombres «Liberada» y «Rechazada».",
+    "Amperaje y voltaje: WPS, instrumento, marca/modelo, serie y calibración quedan fijos; solo se edita la fecha.",
+    "Calculadora de filete: el filete de 6 mm llega hasta 20 mm de espesor (3/4 pulg. aproximado a 20 mm).",
+    "Nuevo aviso de actualización: cuando haya una versión nueva aparecerá esta ventana con la lista de cambios."
+  ]
+}
