@@ -646,11 +646,11 @@ input[type="date"],input[type="time"]{color-scheme:dark}
   <div class="grid" style="margin-top:12px">
     <div class="field full"><label class="req" for="rmsProyecto">Proyecto</label><select id="rmsProyecto"></select><span class="msg">Elige el proyecto.</span></div>
     <div class="field"><label for="rmsFecha">Fecha</label><input type="date" id="rmsFecha"></div>
-    <div class="field"><label for="rmsWPS">WPS de referencia</label><input id="rmsWPS" autocomplete="off"></div>
-    <div class="field"><label for="rmsInstr">Instrumento de medición</label><input id="rmsInstr" autocomplete="off"></div>
-    <div class="field"><label for="rmsMarca">Marca / Modelo</label><input id="rmsMarca" autocomplete="off"></div>
-    <div class="field"><label for="rmsSerieInstr">N° Serie instrumento</label><input id="rmsSerieInstr" autocomplete="off"></div>
-    <div class="field"><label for="rmsCalib">Calibración vigente (R-CAL-01)</label><input id="rmsCalib" autocomplete="off" placeholder="Ej: vigente hasta 12/2026"></div>
+    <div class="field"><label for="rmsWPS">WPS de referencia</label><input id="rmsWPS" readonly tabindex="-1"></div>
+    <div class="field"><label for="rmsInstr">Instrumento de medición</label><input id="rmsInstr" readonly tabindex="-1"></div>
+    <div class="field"><label for="rmsMarca">Marca / Modelo</label><input id="rmsMarca" readonly tabindex="-1"></div>
+    <div class="field"><label for="rmsSerieInstr">N° Serie instrumento</label><input id="rmsSerieInstr" readonly tabindex="-1"></div>
+    <div class="field"><label for="rmsCalib">Calibración vigente (R-CAL-01)</label><input id="rmsCalib" readonly tabindex="-1"></div>
     <div class="field full"><label for="rmsSupervisor">Supervisor de Área (Vº Bº)</label><input id="rmsSupervisor" autocomplete="off"></div>
   </div>
   <div class="secT">Parámetros por máquina (en carga)</div>
@@ -2145,7 +2145,8 @@ async function generarPintura(){
 /* ----- Registro de Medición de Amperaje / Voltaje (R-MS-01 Rev. 0) ----- */
 // Máquinas de soldar (identificación, N° de serie) tomadas de la tabla "Medición de parámetros por máquina".
 const RMS_MAQUINAS_BASE=[['6','P117030144'],['7','P1170109115'],['8','P1150202654'],['9','P1120101692'],['10','P1150302777'],['11','P1150306423'],['12','P1151008107'],['13','P1170204377'],['14','P1100600003']];
-const RMS_INSTR_KEY='qaqc_rms_instr_v1';
+// Datos fijos del registro R-MS-01 (no editables en la app; para cambiarlos, editar aquí)
+const RMS_FIJOS={wps:'AMCS-FCAW-003_B',instr:'Pinza amperimétrica',marca:'MS2102',serie:'MBJI063453',calib:'24/07/2026'};
 let RMS_MAQ=[];
 function rmsListaBase(){ RMS_MAQ=RMS_MAQUINAS_BASE.map(m=>({id:m[0],serie:m[1],vM:'',vL:'',aM:'',aL:'',estado:'',obs:''})); }
 function rmsTag(m){
@@ -2165,9 +2166,8 @@ function renderRmsMaquinas(){
 function openAmperaje(){
   $('#rmsFirmante').textContent=(SESSION&&SESSION.nombre)||'(sin sesión)';
   fillPlainSelect('rmsProyecto',CFG.proyectos,'Selecciona…');
-  $('#rmsFecha').value=today(); $('#rmsWPS').value=''; $('#rmsSupervisor').value=''; $('#rmsNuevaId').value=''; $('#rmsNuevaSerie').value='';
-  let g={}; try{ g=JSON.parse(localStorage.getItem(RMS_INSTR_KEY)||'{}'); }catch(e){}
-  $('#rmsInstr').value=g.instr||'Pinza amperimétrica'; $('#rmsMarca').value=g.marca||''; $('#rmsSerieInstr').value=g.serie||''; $('#rmsCalib').value=g.calib||'';
+  $('#rmsFecha').value=today(); $('#rmsSupervisor').value=''; $('#rmsNuevaId').value=''; $('#rmsNuevaSerie').value='';
+  $('#rmsWPS').value=RMS_FIJOS.wps; $('#rmsInstr').value=RMS_FIJOS.instr; $('#rmsMarca').value=RMS_FIJOS.marca; $('#rmsSerieInstr').value=RMS_FIJOS.serie; $('#rmsCalib').value=RMS_FIJOS.calib;
   $('#rmsModal').querySelectorAll('.field.invalid').forEach(f=>f.classList.remove('invalid'));
   rmsListaBase(); renderRmsMaquinas();
   $('#rmsOverlay').hidden=false; $('#rmsModal').hidden=false;
@@ -2198,7 +2198,6 @@ async function generarAmperaje(){
     PK.row(c,[{w:w2,text:'Firma:'},{w:w2,text:'Firma:'}],11);
     PK.row(c,[{w:w2,text:'Fecha: '+fDate(fecha)},{w:w2,text:'Fecha:'}],6.5);
     PK.stamp(c,PK.stampRMS);
-    try{ localStorage.setItem(RMS_INSTR_KEY,JSON.stringify({instr:$('#rmsInstr').value.trim(),marca:$('#rmsMarca').value.trim(),serie:$('#rmsSerieInstr').value.trim(),calib:$('#rmsCalib').value.trim()})); }catch(e){}
     c.doc.save(nombreArchivoPdf('R-MS-01',proyecto,fecha));
     toast('Registro R-MS-01 generado y descargado');
     closeAmperaje();
