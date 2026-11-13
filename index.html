@@ -1433,8 +1433,8 @@ async function refreshCfg(){
 const FILETE_TABLA = [
   {max:6,  mm:3, inch:'1/8"',  rango:'Espesor T ≤ 1/4 pulg. (≤ 6 mm)'},
   {max:12, mm:5, inch:'3/16"', rango:'1/4 < T ≤ 1/2 pulg. (6 a 12 mm)'},
-  {max:19, mm:6, inch:'1/4"',  rango:'1/2 < T ≤ 3/4 pulg. (12 a 19 mm)'},
-  {max:Infinity, mm:8, inch:'5/16"', rango:'T > 3/4 pulg. (> 19 mm)'}
+  {max:20, mm:6, inch:'1/4"',  rango:'1/2 < T ≤ 3/4 pulg. (12 a 20 mm)'},
+  {max:Infinity, mm:8, inch:'5/16"', rango:'T > 3/4 pulg. (> 20 mm)'}
 ];
 function calcFileteMin(t){ for(const row of FILETE_TABLA){ if(t<=row.max) return row; } return FILETE_TABLA[FILETE_TABLA.length-1]; }
 function renderCalcTabla(t){
