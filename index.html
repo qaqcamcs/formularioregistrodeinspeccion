@@ -461,7 +461,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
 
   <section class="card"><h2>Proceso</h2><div class="grid">
     <div class="field full"><span class="lbl req">Área</span><div class="seg" data-k="area"></div><span class="msg">Elige el área.</span></div>
-    <div class="field" id="fld-etapa"><label for="etapa">Etapa</label><select id="etapa" data-other></select><input class="other" id="etapa_o" placeholder="Escribe la etapa"></div>
+    <div class="field full" id="fld-etapa"><span class="lbl">Etapa</span><div class="chips" id="etapa"></div></div>
     <div class="field" hidden><label for="responsable">Responsable</label><input id="responsable" autocomplete="off" placeholder="Opcional"></div>
     <div class="field full" id="fld-armador"><span class="lbl">Armador</span><div class="chips" id="armador"></div></div>
     <div class="field full" id="fld-soldador"><span class="lbl">Soldador</span><div class="chips" id="soldador"></div></div>
@@ -894,7 +894,7 @@ function timeAgo(ms){
 try { const c = JSON.parse(localStorage.getItem(CKEY) || 'null'); if (c && c.cfg) { CFG = normCfg(c.cfg); COND = normCond(c.cond); cfgRev = String(c.rev || ''); } } catch (e) {}
 function cacheCfg(){ try { localStorage.setItem(CKEY, JSON.stringify({ cfg: CFG, cond: COND, rev: cfgRev })); } catch (e) {} }
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
-const S = {area:'',resultado:'',reparado:'',criticidad:'',armador:new Set(),soldador:new Set(),defectos:new Set()};
+const S = {area:'',resultado:'',reparado:'',criticidad:'',etapa:new Set(),armador:new Set(),soldador:new Set(),defectos:new Set()};
 const OTHER='__otro__';
 
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -936,8 +936,8 @@ function multi(id,list){
   }
 }
 function sync(){
-  $$('#armador .chip,#soldador .chip,#dgroups .chip').forEach(c=>{
-    const set=c.closest('#armador')?S.armador:c.closest('#soldador')?S.soldador:S.defectos; c.classList.toggle('on',set.has(c.dataset.n));});
+  $$('#etapa .chip,#armador .chip,#soldador .chip,#dgroups .chip').forEach(c=>{
+    const set=c.closest('#etapa')?S.etapa:c.closest('#armador')?S.armador:c.closest('#soldador')?S.soldador:S.defectos; c.classList.toggle('on',set.has(c.dataset.n));});
   const sel=$('#sel'); sel.innerHTML=''; S.defectos.forEach(n=>{const b=chip(sel,S.defectos,n,true); b.textContent=n+' ✕';});
   $('#dcount').textContent=S.defectos.size?S.defectos.size+' seleccionado(s)':'Ningún defecto seleccionado';
 }
@@ -956,7 +956,7 @@ function today(){const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOf
 function toast(m,err){const t=$('#toast'); t.textContent=m; t.className='show'+(err?' err':''); clearTimeout(t._t); t._t=setTimeout(()=>t.className='',err?6000:3500);}
 
 function payloadInsp(){return {fecha:$('#fecha').value,inspector:(SESSION&&SESSION.nombre)||'',proyecto:val('proyecto'),marca:$('#marca').value.trim(),
-  cantidad:$('#cantidad').value,correlativos:$('#correlativos').value.trim(),area:S.area,etapa:val('etapa'),armador:[...S.armador],
+  cantidad:$('#cantidad').value,correlativos:$('#correlativos').value.trim(),area:S.area,etapa:[...S.etapa],armador:[...S.armador],
   soldador:[...S.soldador],responsable:$('#responsable').value.trim(),resultado:S.resultado,reparado:S.reparado,criticidad:S.criticidad,areaNC:val('areaNC'),
   defectos:[...S.defectos],detalle:$('#detalle').value.trim()};}
 
@@ -977,8 +977,8 @@ function resetInsp(keep){
   S.resultado=S.reparado=S.criticidad=''; S.defectos.clear(); $('#areaNC').value=''; $('#areaNC_o').style.display='none';
   $$('.seg[data-k="resultado"] button,.seg[data-k="reparado"] button,.seg[data-k="criticidad"] button').forEach(b=>b.classList.remove('on'));
   applyCond();
-  if(!keep){$('#fecha').value=today(); ['proyecto','etapa'].forEach(i=>{$('#'+i).value='';$('#'+i+'_o').style.display='none';});
-    $('#responsable').value=''; S.area=''; S.armador.clear(); S.soldador.clear(); $$('.seg[data-k="area"] button').forEach(b=>b.classList.remove('on'));}
+  if(!keep){$('#fecha').value=today(); ['proyecto'].forEach(i=>{$('#'+i).value='';$('#'+i+'_o').style.display='none';});
+    $('#responsable').value=''; S.area=''; S.etapa.clear(); S.armador.clear(); S.soldador.clear(); $$('.seg[data-k="area"] button').forEach(b=>b.classList.remove('on'));}
   sync(); $$('.invalid').forEach(x=>x.classList.remove('invalid')); window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -1253,7 +1253,7 @@ function getDisparadorValor(campo){
   return S[campo] || '';
 }
 function clearGoverned(key){
-  if(key==='etapa'){ $('#etapa').value=''; const o=$('#etapa_o'); if(o){o.value=''; o.style.display='none';} }
+  if(key==='etapa'){ if(S.etapa.size){S.etapa.clear(); sync();} }
   else if(key==='areaNC'){ $('#areaNC').value=''; const o=$('#areaNC_o'); if(o){o.value=''; o.style.display='none';} }
   else if(key==='armador'){ if(S.armador.size){S.armador.clear(); sync();} }
   else if(key==='soldador'){ if(S.soldador.size){S.soldador.clear(); sync();} }
@@ -1288,7 +1288,7 @@ function applyCond(){
 }
 function renderForm(){
   fillSelect('proyecto',CFG.proyectos,'Selecciona…');
-  fillSelect('etapa',CFG.etapas,'Sin etapa'); fillSelect('areaNC',CFG.areasNC,'Sin definir');
+  multi('etapa',CFG.etapas); fillSelect('areaNC',CFG.areasNC,'Sin definir');
   seg('area',CFG.areas); seg('resultado',resultadosInspeccion()); seg('reparado',CFG.reparado); seg('criticidad',['Alta','Baja']);
   multi('armador',CFG.armadores); multi('soldador',CFG.soldadores); defectos(); sync(); applyCond();
   fillSelect('v_proyecto',CFG.proyectos,'Selecciona…'); seg('v_resultado',CFG.resultados,{'Aprobado':'Liberada','Rechazado':'Rechazada','Avance aprobado':'Avance liberado'}); seg('v_reparado',CFG.reparado);
