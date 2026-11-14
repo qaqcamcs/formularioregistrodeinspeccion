@@ -739,6 +739,9 @@ input[type="date"],input[type="time"]{color-scheme:dark}
     <div class="field"><label for="rmsNuevaSerie">N° Serie</label><input id="rmsNuevaSerie" autocomplete="off"></div>
   </div>
   <div class="add"><button type="button" id="rmsAddMaq">+ Agregar máquina</button></div>
+  <div class="secT">Fotos de las mediciones (hoja 2)</div>
+  <div class="field full"><label for="rmsFotos">Adjunta las fotos tomadas de las mediciones (opcional, puedes agregar varias veces)</label><input id="rmsFotos" type="file" accept="image/*" multiple><div class="count" id="rmsFotosCount"></div></div>
+  <div class="add"><button type="button" class="mini" id="rmsFotosQuitar" hidden>Quitar todas las fotos</button></div>
   <div class="add" style="margin-top:14px"><button type="button" id="rmsCancelar">Cancelar</button><button type="button" id="rmsGenerar">Generar documento</button></div>
 </div>
 <div id="infoOverlay" hidden></div>
@@ -1869,7 +1872,7 @@ function initAna(){
 }
 
 /* ===== Aviso de nueva versión (compara con version.json y muestra los cambios) ===== */
-const APP_VERSION='2026.11.13-1';
+const APP_VERSION='2026.11.13-2';
 const VER_SEEN='qaqc_ver_visto';
 let verModo='', verUltimaRev=0, verPosponer=0;
 function verAbrir(v,modo){
@@ -1956,22 +1959,24 @@ function closeInformeModal(){ $('#infoOverlay').hidden=true; $('#infoModal').hid
 // traen esa metadata para mostrarse derechas; jsPDF no siempre la respeta si se le pasa la
 // imagen cruda, lo que se veía como fotos rotadas). Devuelve {dataUrl, width, height} listos
 // para jsPDF, ya sin ninguna rotación pendiente.
-async function fileToCanvasImg(file){
+async function fileToCanvasImg(file,maxPx){
   try{
     const bitmap=await createImageBitmap(file,{imageOrientation:'from-image'});
+    const sc=maxPx?Math.min(1,maxPx/Math.max(bitmap.width,bitmap.height)):1;
     const canvas=document.createElement('canvas');
-    canvas.width=bitmap.width; canvas.height=bitmap.height;
-    canvas.getContext('2d').drawImage(bitmap,0,0);
-    return {dataUrl:canvas.toDataURL('image/jpeg',0.85), width:bitmap.width, height:bitmap.height};
+    canvas.width=Math.round(bitmap.width*sc); canvas.height=Math.round(bitmap.height*sc);
+    canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
+    return {dataUrl:canvas.toDataURL('image/jpeg',0.85), width:canvas.width, height:canvas.height};
   }catch(e){
     // Respaldo para navegadores muy viejos sin createImageBitmap (no corrige EXIF, pero no rompe el PDF).
     const img=await new Promise((resolve,reject)=>{
       const el=new Image(); el.onload=()=>resolve(el); el.onerror=reject; el.src=URL.createObjectURL(file);
     });
+    const sc=maxPx?Math.min(1,maxPx/Math.max(img.naturalWidth,img.naturalHeight)):1;
     const canvas=document.createElement('canvas');
-    canvas.width=img.naturalWidth; canvas.height=img.naturalHeight;
-    canvas.getContext('2d').drawImage(img,0,0);
-    return {dataUrl:canvas.toDataURL('image/jpeg',0.85), width:img.naturalWidth, height:img.naturalHeight};
+    canvas.width=Math.round(img.naturalWidth*sc); canvas.height=Math.round(img.naturalHeight*sc);
+    canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+    return {dataUrl:canvas.toDataURL('image/jpeg',0.85), width:canvas.width, height:canvas.height};
   }
 }
 // Dibuja un bloque con etiqueta en negrita y texto envuelto dentro de un recuadro; devuelve el y siguiente.
@@ -2292,8 +2297,9 @@ const PK={
     let h=minH||6;
     cells.forEach(k=>{
       PK.font(c.doc,k);
-      k._lines=(k.text===undefined||k.text===null||k.text==='')?[]:c.doc.splitTextToSize(String(k.text),k.w-2*PK.PAD);
-      h=Math.max(h,k._lines.length*PK.lh(k.fs||8.5)+2*PK.PAD);
+      const pd=(k.pad!==undefined)?k.pad:PK.PAD;
+      k._lines=(k.text===undefined||k.text===null||k.text==='')?[]:c.doc.splitTextToSize(String(k.text),k.w-2*pd);
+      h=Math.max(h,k._lines.length*PK.lh(k.fs||8.5)+2*pd);
     });
     return h;
   },
@@ -2306,8 +2312,9 @@ const PK={
       if(L.length){
         const fs=k.fs||8.5, lh=PK.lh(fs), block=L.length*lh, col=k.color||PK.TXT;
         PK.font(d,k); d.setTextColor(col[0],col[1],col[2]);
-        const top=(k.mid?c.y+(h-block)/2:c.y+PK.PAD)+fs*0.3528*0.85;
-        L.forEach((ln,i)=>{ if(k.align==='center') d.text(ln,x+k.w/2,top+i*lh,{align:'center'}); else d.text(ln,x+PK.PAD,top+i*lh); });
+        const pd=(k.pad!==undefined)?k.pad:PK.PAD;
+        const top=(k.mid?c.y+(h-block)/2:c.y+pd)+fs*0.3528*0.85;
+        L.forEach((ln,i)=>{ if(k.align==='center') d.text(ln,x+k.w/2,top+i*lh,{align:'center'}); else d.text(ln,x+pd,top+i*lh); });
       }
       x+=k.w;
     });
@@ -2329,7 +2336,7 @@ const PK={
     };
     head();
     o.rows.forEach(r=>{
-      const cells=o.cols.map((col,i)=>({w:col.w,text:r[i],fs:o.fs||8,align:col.align||'left',mid:col.mid,color:o.colorFn?o.colorFn(r,i):null}));
+      const cells=o.cols.map((col,i)=>({w:col.w,text:r[i],fs:o.fs||8,align:col.align||'left',mid:col.mid||o.mid,pad:o.pad,color:o.colorFn?o.colorFn(r,i):null}));
       const h=PK.measure(c,cells,o.minH||6.5);
       if(c.y+h>c.bottom){ PK.newPage(c); head(); }
       PK.drawRow(c,cells,h);
@@ -2411,6 +2418,23 @@ const PK={
       });
     });
     c.y+=h;
+  },
+  // Fotos para hojas horizontales (R-MS-01): 3 columnas x 2 filas = 6 por hoja, escaladas sin deformarse
+  fotosRMS(c,imgs,info){
+    const d=c.doc, gap=8, cols=3, capH=5, boxW=(c.W-gap*(cols-1))/cols; let base=0, boxH=0;
+    const nueva=cont=>{
+      PK.newPage(c); PK.bar(c,'REGISTRO FOTOGRÁFICO DE LAS MEDICIONES'+(cont?' (cont.)':''),PK.NAVY); c.y+=1;
+      d.setFont(undefined,'normal'); d.setFontSize(8); d.setTextColor(60,65,75); d.text(info,c.M,c.y+3.6); d.setTextColor(30,30,30);
+      c.y+=7; base=c.y; boxH=Math.floor((c.bottom-base-2*(capH+4))/2);
+    };
+    imgs.forEach((img,i)=>{
+      if(i%6===0) nueva(i>0);
+      const k=i%6, col=k%cols, rw=Math.floor(k/cols), x=c.M+col*(boxW+gap), y=base+rw*(boxH+capH+4);
+      const ratio=Math.min(boxW/img.width,boxH/img.height), w=img.width*ratio, hh=img.height*ratio;
+      d.setDrawColor(PK.LINE[0],PK.LINE[1],PK.LINE[2]); d.setLineWidth(.2); d.rect(x,y,boxW,boxH);
+      d.addImage(img.dataUrl,'JPEG',x+(boxW-w)/2,y+(boxH-hh)/2,w,hh);
+      d.setFont(undefined,'normal'); d.setFontSize(7.5); d.setTextColor(90,95,105); d.text('Foto N° '+(i+1),x+boxW/2,y+boxH+4.5,{align:'center'}); d.setTextColor(30,30,30);
+    });
   },
   // Cuadrícula de fotos: 6 por página (2 columnas x 3 filas), cada una escalada sin deformarse
   fotos(c,imgs,titulo){
@@ -2508,7 +2532,7 @@ async function generarPintura(){
 const RMS_MAQUINAS_BASE=[['6','P117030144'],['7','P1170109115'],['8','P1150202654'],['9','P1120101692'],['10','P1150302777'],['11','P1150306423'],['12','P1151008107'],['13','P1170204377'],['14','P1100600003']];
 // Datos fijos del registro R-MS-01 (no editables en la app; para cambiarlos, editar aquí)
 const RMS_FIJOS={wps:'AMCS-FCAW-003_B',instr:'Pinza amperimétrica',marca:'MS2102',serie:'MBJI063453',calib:'24/07/2026'};
-let RMS_MAQ=[];
+let RMS_MAQ=[], rmsFotosFiles=[];
 function rmsListaBase(){ RMS_MAQ=RMS_MAQUINAS_BASE.map(m=>({id:m[0],serie:m[1],vM:'',vL:'',aM:'',aL:'',estado:'',obs:''})); }
 function rmsTag(m){
   if(m.estado==='No conforme') return {cls:'nc',txt:'No conforme'};
@@ -2530,8 +2554,13 @@ function openAmperaje(){
   $('#rmsFecha').value=today(); $('#rmsSupervisor').value=''; $('#rmsNuevaId').value=''; $('#rmsNuevaSerie').value='';
   $('#rmsWPS').value=RMS_FIJOS.wps; $('#rmsInstr').value=RMS_FIJOS.instr; $('#rmsMarca').value=RMS_FIJOS.marca; $('#rmsSerieInstr').value=RMS_FIJOS.serie; $('#rmsCalib').value=RMS_FIJOS.calib;
   $('#rmsModal').querySelectorAll('.field.invalid').forEach(f=>f.classList.remove('invalid'));
-  rmsListaBase(); renderRmsMaquinas();
+  rmsListaBase(); renderRmsMaquinas(); rmsFotosFiles=[]; rmsFotosInfo();
   $('#rmsOverlay').hidden=false; $('#rmsModal').hidden=false;
+}
+function rmsFotosInfo(){
+  const n=rmsFotosFiles.length;
+  $('#rmsFotosCount').textContent=n?(n+(n===1?' foto lista':' fotos listas')+' para la hoja 2 (en el orden en que las elegiste)'):'Sin fotos: el documento queda en una sola hoja.';
+  $('#rmsFotosQuitar').hidden=!n;
 }
 function closeAmperaje(){ $('#rmsOverlay').hidden=true; $('#rmsModal').hidden=true; }
 async function generarAmperaje(){
@@ -2540,24 +2569,48 @@ async function generarAmperaje(){
   const btn=$('#rmsGenerar'); btn.disabled=true; btn.textContent='Generando…';
   try{
     const proyecto=$('#rmsProyecto').value, fecha=$('#rmsFecha').value, insp=(SESSION&&SESSION.nombre)||'', sup=$('#rmsSupervisor').value.trim();
+    // Se intenta con el alto normal y, si no cabe (muchas máquinas), se comprimen las filas hasta que entre en UNA hoja
+    const armar=k=>{
     const c=PK.start('l'); c.header=PK.headerRMS; c.y=c.header(c);
     PK.infoRows(c,[['Proyecto:',proyecto,'Fecha:',fDate(fecha)],['Instrumento de medición:',$('#rmsInstr').value.trim(),'Marca / Modelo:',$('#rmsMarca').value.trim()],
       ['N° Serie instrumento:',$('#rmsSerieInstr').value.trim(),'Calibración vigente (R-CAL-01):',$('#rmsCalib').value.trim()],['WPS de referencia:',$('#rmsWPS').value.trim(),'Inspector CC:',insp]]);
     c.y+=4;
-    PK.bar(c,'MEDICIÓN DE PARÁMETROS POR MÁQUINA (EN CARGA)',PK.TEAL);
     const filas=RMS_MAQ.map((m,i)=>[String(i+1),m.id,m.serie,m.vM,m.vL,m.aM,m.aL,m.estado,m.obs]);
     for(let i=filas.length;i<10;i++) filas.push([String(i+1),'','','','','','','','']);
+    const NOTAS=[
+      'Medición en condiciones reales de operación (máquina en carga). Instrumento: pinza amperimétrica calibrada (R-CAL-01).',
+      'Criterio: lecturas dentro del rango del WPS aplicable; diferencia con lo mostrado dentro de la tolerancia de las EETT/ficha (referencial ±10%, a confirmar con Jefatura).',
+      'Código anterior: R-AV-001. Frecuencia mensual y al poner en servicio una máquina nueva o reparada. Fuera de tolerancia --> R-NC-001.'
+    ];
+    // Todo el registro cabe en UNA hoja: el alto de las filas se ajusta al espacio disponible
+    const dd=c.doc; dd.setFont(undefined,'italic'); dd.setFontSize(7.5);
+    const notasH=NOTAS.reduce((s,t)=>s+dd.splitTextToSize(t,c.W).length*PK.lh(7.5)+2,0);
+    const SIG=[6,5.5,10,5.5], sigH=SIG.reduce((s,x)=>s+x,0);
+    PK.bar(c,'MEDICIÓN DE PARÁMETROS POR MÁQUINA (EN CARGA)',PK.TEAL);
+    const disp=c.bottom-c.y-11-notasH-3-3-sigH-1.5;
+    const rowH=Math.max(3.2,Math.min(6.5,disp/filas.length)*k);
+    const fsT=rowH<4.2?6.5:(rowH<5?7.5:8);
+    const pad=Math.max(.3,Math.min(PK.PAD,(rowH-PK.lh(fsT))/2));
     PK.table(c,{cols:[{w:9,label:'N°',align:'center'},{w:40,label:'Identificación máquina',align:'center'},{w:32,label:'N° Serie',align:'center'},{w:28,label:'Rango V mostrado',align:'center'},{w:38,label:'Lectura V instrumento (mín–máx)',align:'center'},{w:28,label:'Rango A mostrado',align:'center'},{w:38,label:'Lectura A instrumento (mín–máx)',align:'center'},{w:24,label:'Estado',align:'center'},{w:36,label:'Observación'}].map(k=>Object.assign(k,{})),
-      rows:filas,fill:PK.NAVY2,fs:8,minH:6.5,headFs:7.5,colorFn:(r,i)=>(i===7&&r[7]==='No conforme')?[190,30,30]:null});
+      rows:filas,fill:PK.NAVY2,fs:fsT,minH:rowH,pad:pad,mid:true,headFs:7.5,colorFn:(r,i)=>(i===7&&r[7]==='No conforme')?[190,30,30]:null});
     c.y+=3;
-    PK.para(c,'Medición en condiciones reales de operación (máquina en carga). Instrumento: pinza amperimétrica calibrada (R-CAL-01).',{italic:true,fs:7.5,color:[110,115,125]});
-    PK.para(c,'Criterio: lecturas dentro del rango del WPS aplicable; diferencia con lo mostrado dentro de la tolerancia de las EETT/ficha (referencial ±10%, a confirmar con Jefatura).',{italic:true,fs:7.5,color:[110,115,125]});
-    c.y+=4; PK.ensure(c,34);
-    const w2=c.W/2, H=t=>({w:w2,text:t,bold:true,align:'center',mid:true,fill:PK.NAVY2,color:[255,255,255],fs:8.5});
-    PK.row(c,[H('ELABORÓ  -  Control de Calidad'),H('Vº Bº  -  Supervisor de Área')],6.5);
-    PK.row(c,[{w:w2,text:'Nombre: '+insp},{w:w2,text:'Nombre: '+sup}],6.5);
-    PK.row(c,[{w:w2,text:'Firma:'},{w:w2,text:'Firma:'}],11);
-    PK.row(c,[{w:w2,text:'Fecha: '+fDate(fecha)},{w:w2,text:'Fecha:'}],6.5);
+    NOTAS.forEach(t=>PK.para(c,t,{italic:true,fs:7.5,color:[110,115,125]}));
+    c.y+=3; PK.ensure(c,sigH+1);
+    const w2=c.W/2, H=t=>({w:w2,text:t,bold:true,align:'center',mid:true,fill:PK.NAVY2,color:[255,255,255],fs:8.5,pad:.9}), C=t=>({w:w2,text:t,pad:.9});
+    PK.row(c,[H('ELABORÓ  -  Control de Calidad'),H('Vº Bº  -  Supervisor de Área')],SIG[0]);
+    PK.row(c,[C('Nombre: '+insp),C('Nombre: '+sup)],SIG[1]);
+    PK.row(c,[C('Firma:'),C('Firma:')],SIG[2]);
+    PK.row(c,[C('Fecha: '+fDate(fecha)),C('Fecha:')],SIG[3]);
+      return c;
+    };
+    let c=null;
+    for(const k of [1,.92,.84,.76,.68,.6]){ c=armar(k); if(c.doc.internal.getNumberOfPages()===1) break; }
+    // Hoja 2 (opcional): fotos tomadas de las mediciones
+    if(rmsFotosFiles.length){
+      btn.textContent='Procesando fotos…';
+      const imgs=await Promise.all(rmsFotosFiles.map(f=>fileToCanvasImg(f,1600)));
+      PK.fotosRMS(c,imgs,'Proyecto: '+proyecto+'   |   Fecha: '+fDate(fecha)+'   |   Inspector CC: '+insp);
+    }
     PK.stamp(c,PK.stampRMS);
     c.doc.save(nombreArchivoPdf('R-MS-01',proyecto,fecha));
     toast('Registro R-MS-01 generado y descargado');
@@ -2581,6 +2634,8 @@ function initInformesNuevos(){
   $('#rmsMaquinas').addEventListener('input',upd); $('#rmsMaquinas').addEventListener('change',upd);
   $('#rmsMaquinas').addEventListener('click',e=>{ const b=e.target.closest('[data-del]'); if(b){ RMS_MAQ.splice(+b.dataset.del,1); renderRmsMaquinas(); } });
   $('#rmsAddMaq').onclick=()=>{ const id=$('#rmsNuevaId').value.trim(); if(!id){ toast('Escribe la identificación de la máquina',true); return; } RMS_MAQ.push({id:id,serie:$('#rmsNuevaSerie').value.trim(),vM:'',vL:'',aM:'',aL:'',estado:'',obs:''}); $('#rmsNuevaId').value=''; $('#rmsNuevaSerie').value=''; renderRmsMaquinas(); };
+  $('#rmsFotos').onchange=()=>{ rmsFotosFiles=rmsFotosFiles.concat([...$('#rmsFotos').files]); $('#rmsFotos').value=''; rmsFotosInfo(); };
+  $('#rmsFotosQuitar').onclick=()=>{ rmsFotosFiles=[]; rmsFotosInfo(); };
   $('#rmsGenerar').onclick=generarAmperaje;
 }
 
