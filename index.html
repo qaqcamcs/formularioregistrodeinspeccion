@@ -377,6 +377,36 @@ input[type="date"],input[type="time"]{color-scheme:dark}
 .loginCard p{color:var(--mut);margin:0 0 16px;font-size:.9rem}
 .loginErr{display:none;color:var(--bad);font-size:.88rem;margin:4px 0 10px}
 #inspectorBox{min-height:48px;padding:10px 12px;background:#08203f;border:1px solid var(--line);border-radius:10px;display:flex;align-items:center;color:var(--txt)}
+/* ===== Versión web (pantallas anchas): aprovechar todo el ancho. En celulares no cambia nada ===== */
+@media(min-width:1024px){
+  :root{--gut:max(clamp(24px,3.5vw,72px),calc((100vw - 2400px)/2))}
+  header{padding-left:var(--gut);padding-right:var(--gut)}
+  .menuBtn{right:var(--gut)}
+  main{max-width:none;padding:20px var(--gut)}
+  .tabsWrap{max-width:none;margin:12px calc(var(--gut) - 12px) 0}
+  .subTabs{max-width:none;margin:8px 0 0;padding:2px var(--gut)}
+  .bar{padding-left:var(--gut);padding-right:var(--gut)}
+  .bar .in{max-width:none}
+  .areaGrid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+  #informesList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+  #informesList .projRow{margin-top:0}
+}
+@media(min-width:1200px){
+  /* Pantallas con varias tarjetas: se reparten en dos columnas */
+  #homeScreen:not([hidden]),#personasScreen:not([hidden]),#segScreen:not([hidden]),#calcScreen:not([hidden]){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+  #homeScreen>.card,#personasScreen>.card,#segScreen>.card,#calcScreen>.card{margin-bottom:0}
+  #homeScreen>.card:first-child,#homeScreen>#anaCard,#homeScreen>.card:last-child{grid-column:1/-1}
+  /* Listas de proyectos en columnas */
+  #homeGeneral,#homeActivos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  #homeGeneral .projRow,#homeActivos .projRow{margin-top:0}
+  /* Formularios: las tarjetas se reparten en dos columnas */
+  .fcols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+  .anaDonuts{gap:90px}
+}
+@media(min-width:1700px){
+  #homeGeneral,#homeActivos{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #informesList{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -525,6 +555,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
 </section>
 
 <form id="f" novalidate>
+<div class="fcols"><div class="fcol">
   <section class="card"><h2>Datos generales</h2><div class="grid">
     <div class="field"><label class="req" for="fecha">Fecha de inspección</label><input type="date" id="fecha"><span class="msg">Indica la fecha.</span></div>
     <div class="field"><label class="req">Inspector</label><div id="inspectorBox">—</div><span class="msg">Debes iniciar sesión.</span></div>
@@ -545,6 +576,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
     <div class="field full" id="fld-soldador"><span class="lbl">Soldador</span><div class="chips" id="soldador"></div></div>
   </div></section>
 
+</div><div class="fcol">
   <section class="card"><h2>Resultado</h2><div class="grid">
     <div class="field full"><span class="lbl req">Resultado</span><div class="seg res" data-k="resultado"></div><span class="msg">Elige el resultado.</span></div>
     <div class="field full" id="fld-criticidad" hidden><span class="lbl req">Criticidad del error</span><div class="seg" data-k="criticidad"></div><div class="critInfo" id="critInfo" hidden></div><span class="msg">Elige la criticidad.</span></div>
@@ -558,6 +590,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
     </div>
     <div class="field full"><label for="detalle">Detalle de defectos</label><textarea id="detalle"></textarea></div>
   </div></section>
+</div></div>
 </form>
 
 <section id="segScreen" hidden>
@@ -783,6 +816,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
 </section>
 
 <form id="fVigas" novalidate hidden>
+<div class="fcols"><div class="fcol">
   <section class="card"><h2>Datos generales</h2><div class="grid">
     <div class="field"><label class="req" for="v_fecha">Fecha de inspección</label><input type="date" id="v_fecha"><span class="msg">Indica la fecha.</span></div>
     <div class="field full"><label class="req" for="v_proyecto">Proyecto (fase)</label><select id="v_proyecto" data-other></select><input class="other" id="v_proyecto_o" placeholder="Escribe el proyecto"><span class="msg">Elige o escribe el proyecto.</span></div>
@@ -802,6 +836,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
     <div class="field"><label for="e2_cruzada">Cruzada c1-c2</label><input type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" id="e2_cruzada"></div>
   </div></section>
 
+</div><div class="fcol">
   <section class="card"><h2>Medidas generales</h2><div class="grid">
     <div class="field"><label for="v_largo">Largo total de la viga (mm)</label><input type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" id="v_largo"></div>
     <div class="field"><label for="v_espAla">Espesor ala bf-tf</label><input type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" id="v_espAla"></div>
@@ -820,8 +855,10 @@ input[type="date"],input[type="time"]{color-scheme:dark}
       <div class="add"><input id="v_dother" placeholder="Otro defecto"><button type="button" id="v_dadd">Agregar</button></div>
     </div>
   </div></section>
+</div></div>
 </form>
 <section id="recepcionScreen" hidden>
+<div class="fcols"><div class="fcol">
   <section class="card"><h2>Datos generales de la guía</h2>
     <div class="count">Estos datos son los mismos para todos los materiales de esta guía — se llenan una sola vez.</div>
     <div class="grid" style="margin-top:12px">
@@ -860,6 +897,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
     <label class="keep"><input type="checkbox" id="rc_keepLast" checked>Mantener el último Tipo, Descripción, Cantidad, Espesor, Calidad del acero y Peso al agregar</label>
     <div class="add"><button type="button" id="rc_agregarMaterial">+ Agregar material a la lista</button></div>
   </section>
+</div><div class="fcol">
   <section class="card">
     <h2>Materiales de esta guía (<span id="rc_matCount">0</span>)</h2>
     <div id="rc_matList"><div class="count">Todavía no agregas ningún material.</div></div>
@@ -874,6 +912,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
     <div class="count" id="rc_macroResult" style="margin-top:8px;white-space:pre-line"></div>
     <div id="rc_borradores" style="margin-top:10px"></div>
   </section>
+</div></div>
 </section>
 <div id="rcDraftOverlay" hidden></div>
 <div class="card" id="rcDraftModal" hidden>
@@ -1872,7 +1911,7 @@ function initAna(){
 }
 
 /* ===== Aviso de nueva versión (compara con version.json y muestra los cambios) ===== */
-const APP_VERSION='2026.11.13-3';
+const APP_VERSION='2026.11.19-1';
 const VER_SEEN='qaqc_ver_visto';
 let verModo='', verUltimaRev=0, verPosponer=0;
 function verAbrir(v,modo){
