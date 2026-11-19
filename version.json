@@ -1,7 +1,7 @@
 {
-  "version": "2026.11.13-3",
-  "fecha": "18-11-2026",
+  "version": "2026.11.19-1",
+  "fecha": "19-11-2026",
   "cambios": [
-    "Corrección importante: las fotos adjuntas en los informes (inspección en terreno, acopio y demás) volvieron a verse completas; en la versión anterior las fotos desde la 2ª salían negras o pixeladas."
+    "Versión web: la aplicación ahora aprovecha todo el ancho de la pantalla en computadores, con las tarjetas repartidas en columnas (portada, registros, vigas y recepción). En celulares no cambia."
   ]
 }
