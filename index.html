@@ -1872,7 +1872,7 @@ function initAna(){
 }
 
 /* ===== Aviso de nueva versión (compara con version.json y muestra los cambios) ===== */
-const APP_VERSION='2026.11.13-2';
+const APP_VERSION='2026.11.13-3';
 const VER_SEEN='qaqc_ver_visto';
 let verModo='', verUltimaRev=0, verPosponer=0;
 function verAbrir(v,modo){
@@ -1959,25 +1959,38 @@ function closeInformeModal(){ $('#infoOverlay').hidden=true; $('#infoModal').hid
 // traen esa metadata para mostrarse derechas; jsPDF no siempre la respeta si se le pasa la
 // imagen cruda, lo que se veía como fotos rotadas). Devuelve {dataUrl, width, height} listos
 // para jsPDF, ya sin ninguna rotación pendiente.
+// Convierte una foto a JPEG para el PDF. IMPORTANTE: el 2º parámetro es el lado máximo en px y solo se acepta si es un
+// número razonable; así, llamadas como .map(fileToCanvasImg) (que pasan el índice) ya no reducen las fotos a 1-2 píxeles.
 async function fileToCanvasImg(file,maxPx){
+  const lim=(typeof maxPx==='number'&&maxPx>=300)?maxPx:2000;
+  const salida=(src,w,h)=>{
+    const sc=Math.min(1,lim/Math.max(w,h));
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.max(1,Math.round(w*sc)); canvas.height=Math.max(1,Math.round(h*sc));
+    canvas.getContext('2d').drawImage(src,0,0,canvas.width,canvas.height);
+    const r={dataUrl:canvas.toDataURL('image/jpeg',0.85), width:canvas.width, height:canvas.height};
+    canvas.width=canvas.height=0;   // libera memoria (importante en celulares con varias fotos)
+    return r;
+  };
   try{
     const bitmap=await createImageBitmap(file,{imageOrientation:'from-image'});
-    const sc=maxPx?Math.min(1,maxPx/Math.max(bitmap.width,bitmap.height)):1;
-    const canvas=document.createElement('canvas');
-    canvas.width=Math.round(bitmap.width*sc); canvas.height=Math.round(bitmap.height*sc);
-    canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
-    return {dataUrl:canvas.toDataURL('image/jpeg',0.85), width:canvas.width, height:canvas.height};
+    const r=salida(bitmap,bitmap.width,bitmap.height);
+    if(bitmap.close) bitmap.close();
+    return r;
   }catch(e){
     // Respaldo para navegadores muy viejos sin createImageBitmap (no corrige EXIF, pero no rompe el PDF).
-    const img=await new Promise((resolve,reject)=>{
-      const el=new Image(); el.onload=()=>resolve(el); el.onerror=reject; el.src=URL.createObjectURL(file);
-    });
-    const sc=maxPx?Math.min(1,maxPx/Math.max(img.naturalWidth,img.naturalHeight)):1;
-    const canvas=document.createElement('canvas');
-    canvas.width=Math.round(img.naturalWidth*sc); canvas.height=Math.round(img.naturalHeight*sc);
-    canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
-    return {dataUrl:canvas.toDataURL('image/jpeg',0.85), width:canvas.width, height:canvas.height};
+    const url=URL.createObjectURL(file);
+    try{
+      const img=await new Promise((resolve,reject)=>{ const el=new Image(); el.onload=()=>resolve(el); el.onerror=reject; el.src=url; });
+      return salida(img,img.naturalWidth,img.naturalHeight);
+    } finally { URL.revokeObjectURL(url); }
   }
+}
+// Carga varias fotos de a una (evita agotar la memoria del celular con fotos grandes)
+async function cargarFotos(files,maxPx){
+  const out=[];
+  for(const f of files){ out.push(await fileToCanvasImg(f,maxPx)); await new Promise(r=>setTimeout(r,0)); }
+  return out;
 }
 // Dibuja un bloque con etiqueta en negrita y texto envuelto dentro de un recuadro; devuelve el y siguiente.
 function pdfBox(doc,label,text,x,y,w,h){
@@ -2046,7 +2059,7 @@ async function generarInforme(){
     y+=3;
 
     const SIGN_Y=253; // posición fija del bloque de firmas, cerca del pie de página
-    const acopioImgs = infFotosAcopioFiles.length ? await Promise.all(infFotosAcopioFiles.slice(0,2).map(fileToCanvasImg)) : [];
+    const acopioImgs = infFotosAcopioFiles.length ? await cargarFotos(infFotosAcopioFiles.slice(0,2)) : [];
     const ACOPIO_H = acopioImgs.length ? 66 : 0; // bloque reservado para hasta 2 fotos de acopio
     const descH=SIGN_Y-3-(ACOPIO_H?ACOPIO_H+4:0)-y; // la Descripción ocupa todo lo que quede libre hasta ahí
     y=pdfBox(doc,'Descripción:',$('#infDescripcion').value,15,y,180,descH);
@@ -2086,7 +2099,7 @@ async function generarInforme(){
     // Páginas siguientes: evidencia fotográfica (6 fotos por página, 2 columnas x 3 filas)
     const FOTOS_POR_PAGINA=6;
     if(infFotosFiles.length){
-      const imgs=await Promise.all(infFotosFiles.map(fileToCanvasImg));
+      const imgs=await cargarFotos(infFotosFiles);
       let pagFoto=1;
       doc.addPage();
       let yy0=pdfHeader(doc,(1+pagFoto)+' DE '+totalPag)+8;
@@ -2498,7 +2511,7 @@ async function generarPintura(){
     const num=String(rn.numero).padStart(3,'0');
     btn.textContent='Generando…';
     const fecha=$('#pinFecha').value, insp=(SESSION&&SESSION.nombre)||'', sup=$('#pinSupervisor').value.trim();
-    const imgs=PIN_FOTOS.length?await Promise.all(PIN_FOTOS.map(fileToCanvasImg)):[];
+    const imgs=PIN_FOTOS.length?await cargarFotos(PIN_FOTOS):[];
     const c=PK.start('p'); c.header=PK.headerPintura; c.y=c.header(c);
     PK.bar(c,'1. IDENTIFICACIÓN DE LA REVISIÓN',PK.NAVY);
     const L=t=>({w:38,text:t,bold:true,fill:PK.LABEL,mid:true,fs:8}), V=t=>({w:52,text:t,mid:true});
@@ -2608,7 +2621,7 @@ async function generarAmperaje(){
     // Hoja 2 (opcional): fotos tomadas de las mediciones
     if(rmsFotosFiles.length){
       btn.textContent='Procesando fotos…';
-      const imgs=await Promise.all(rmsFotosFiles.map(f=>fileToCanvasImg(f,1600)));
+      const imgs=await cargarFotos(rmsFotosFiles,1600);
       PK.fotosRMS(c,imgs,'Proyecto: '+proyecto+'   |   Fecha: '+fDate(fecha)+'   |   Inspector CC: '+insp);
     }
     PK.stamp(c,PK.stampRMS);
