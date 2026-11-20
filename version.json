@@ -1,7 +1,7 @@
 {
-  "version": "2026.11.19-1",
+  "version": "2026.11.19-2",
   "fecha": "19-11-2026",
   "cambios": [
-    "Versión web: la aplicación ahora aprovecha todo el ancho de la pantalla en computadores, con las tarjetas repartidas en columnas (portada, registros, vigas y recepción). En celulares no cambia."
+    "Versión web: los gráficos de torta de la portada (resumen semanal y análisis por proyecto) ahora se ven más grandes en computador."
   ]
 }
