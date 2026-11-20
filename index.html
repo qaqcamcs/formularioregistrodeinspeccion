@@ -403,6 +403,35 @@ input[type="date"],input[type="time"]{color-scheme:dark}
   .fcols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
   .anaDonuts{gap:90px}
 }
+/* Gráficos de torta más grandes en computador */
+@media(min-width:1024px){
+  .anaDonutBox{width:250px;height:250px}
+  .anaDC{max-width:380px}
+  .anaCenter{padding:0 56px}
+  .anaCenter b{font-size:2.3rem}
+  .anaCenter span{font-size:.82rem}
+  .anaDC .cap{font-size:.95rem;margin-bottom:12px}
+  .aleg{font-size:.92rem}
+  .donutBox{width:210px;height:210px}
+  .donutHole{inset:32px}
+  .donutCard{max-width:340px}
+  .donutCard .cap{font-size:.95rem}
+  .donutCenter .n{font-size:2.2rem}
+  .donutCenter .l{font-size:.8rem}
+  .legend2{font-size:.95rem;gap:7px}
+  .chartsRow{gap:90px}
+}
+@media(min-width:1500px){
+  .donutCard{max-width:430px}
+  .anaDonutBox{width:310px;height:310px}
+  .anaDC{max-width:440px}
+  .anaCenter{padding:0 70px}
+  .anaCenter b{font-size:2.9rem}
+  .anaCenter span{font-size:.95rem}
+  .donutBox{width:250px;height:250px}
+  .donutHole{inset:38px}
+  .donutCenter .n{font-size:2.6rem}
+}
 @media(min-width:1700px){
   #homeGeneral,#homeActivos{grid-template-columns:repeat(3,minmax(0,1fr))}
   #informesList{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -1911,7 +1940,7 @@ function initAna(){
 }
 
 /* ===== Aviso de nueva versión (compara con version.json y muestra los cambios) ===== */
-const APP_VERSION='2026.11.19-1';
+const APP_VERSION='2026.11.19-2';
 const VER_SEEN='qaqc_ver_visto';
 let verModo='', verUltimaRev=0, verPosponer=0;
 function verAbrir(v,modo){
