@@ -1940,7 +1940,7 @@ function initAna(){
 }
 
 /* ===== Aviso de nueva versión (compara con version.json y muestra los cambios) ===== */
-const APP_VERSION='2026.11.19-2';
+const APP_VERSION='2026.11.19-3';
 const VER_SEEN='qaqc_ver_visto';
 let verModo='', verUltimaRev=0, verPosponer=0;
 function verAbrir(v,modo){
@@ -2747,7 +2747,7 @@ function isDias(a,b){const x=a.split('-').map(Number),y=b.split('-').map(Number)
 function isSumaDias(iso,n){const p=iso.split('-').map(Number);const d=new Date(Date.UTC(p[0],p[1]-1,p[2]+n));return d.toISOString().slice(0,10);}
 function isTop(dic,k){return Object.keys(dic).sort((a,b)=>dic[b]-dic[a]||isEs(a,b)).slice(0,k);}
 
-/* ---- Recopilación: fila = [fecha,inspector,proyecto,marca,cantidad,area,etapa,armador,soldador,resultado,reparado,defecto,detalle,criticidad] ---- */
+/* ---- Recopilación: fila = [fecha,inspector,proyecto,marca,cantidad,area,etapa,armador,soldador,resultado,reparado,defecto,detalle,criticidad,correlativos] ---- */
 function isRecopilar(rows,ini){
   const fin=isSumaDias(ini,6);
   const res={inicio:ini,fin:fin,registros:0,total:isAc(),inspectores:{},areas:{},proyectos:{},defectos:{},
@@ -2768,6 +2768,7 @@ function isRecopilar(rows,ini){
     const reparado=isNorm(f[10])==='si';
     const defecto=String(f[11]||'').trim(), detalle=String(f[12]||'').trim();
     const crit=isCrit(f[13]);
+    const correl=String(f[14]||'').replace(/\s+/g,' ').trim();
     const resp=cat==='ARMADO'?armador:cat==='SOLDADURA'?soldador:cat==='PREMAT'?etapa:'—';
 
     res.registros++; isSum(res.total,cant,clase);
@@ -2788,7 +2789,7 @@ function isRecopilar(rows,ini){
       if(cat==='PREMAT'){const e=res.premat[etapa]=res.premat[etapa]||{ap:0,reSi:0,reNo:0,avSi:0,avNo:0}; isEst(e,clase,reparado,cant);}
     }
     if(clase==='re'){
-      ins.rechazos.push({fecha:fecha,marca:marca,proyecto:proyNombre,area:area,responsable:resp,defecto:defecto,detalle:detalle,criticidad:crit,reparado:reparado?'SI':'NO',cant:cant});
+      ins.rechazos.push({fecha:fecha,marca:marca,correl:correl,proyecto:proyNombre,area:area,responsable:resp,defecto:defecto,detalle:detalle,criticidad:crit,reparado:reparado?'SI':'NO',cant:cant});
       if(defecto&&defecto!=='-'&&defecto!=='.'){res.defectos[defecto]=(res.defectos[defecto]||0)+cant; ins.defectos[defecto]=(ins.defectos[defecto]||0)+cant;}
       const dN=isNorm(defecto);
       if(dN!=='ninguno'&&dN!=='ok'){
@@ -2923,13 +2924,13 @@ function isCuerpo(res,emision,elabora){
   c+=sec('Piezas rechazadas por inspector',true);
   c+=xNota('Responsable: armador (Armado), soldador (Soldadura) o etapa (PREMAT). Ordenadas desde la fecha más antigua a la más reciente.');
   insps.forEach(nm=>{
-    const lista=res.inspectores[nm].rechazos.slice().sort((a,b)=>isEs(a.fecha,b.fecha)||isEs(a.marca,b.marca));
+    const lista=res.inspectores[nm].rechazos.slice().sort((a,b)=>isEs(a.fecha,b.fecha)||isEs(a.marca,b.marca)||String(a.correl).localeCompare(String(b.correl),'es',{numeric:true}));
     const piezas=lista.reduce((s,r)=>s+r.cant,0);
     c+=xSub('Inspector: '+nm+'   |   Rechazos: '+lista.length+'   |   Piezas rechazadas: '+piezas,false);
     if(!lista.length){c+=xTxt('Sin piezas rechazadas en el periodo.');return;}
-    c+=xTablaDatos(['Fecha','Marca','Proyecto','Área','Responsable','Defecto','Detalle','Criticidad','Reparado','Cant.'],[1100,1500,2600,1100,1700,1900,2000,900,1000,600],
-      lista.map(r=>[isFec(r.fecha),r.marca,r.proyecto,r.area.toUpperCase(),r.responsable,r.defecto||'—',r.detalle||'—',r.criticidad==='Sin criticidad'?'—':r.criticidad,r.reparado,r.cant]),
-      ['center','left','left','center','left','left','left','center','center','center'],false,15)+xVacio;
+    c+=xTablaDatos(['Fecha','Marca','Correlativos','Proyecto','Área','Responsable','Defecto','Detalle','Criticidad','Reparado','Cant.'],[1100,1300,1200,2000,1100,1500,1900,1800,900,1000,600],
+      lista.map(r=>[isFec(r.fecha),r.marca,r.correl||'—',r.proyecto,r.area.toUpperCase(),r.responsable,r.defecto||'—',r.detalle||'—',r.criticidad==='Sin criticidad'?'—':r.criticidad,r.reparado,r.cant]),
+      ['center','left','center','left','center','left','left','left','center','center','center'],false,15)+xVacio;
   });
 
   // 8. Errores más comunes por criticidad
