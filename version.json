@@ -1,7 +1,7 @@
 {
-  "version": "2026.11.19-2",
-  "fecha": "19-11-2026",
+  "version": "2026.11.19-3",
+  "fecha": "20-11-2026",
   "cambios": [
-    "Versión web: los gráficos de torta de la portada (resumen semanal y análisis por proyecto) ahora se ven más grandes en computador."
+    "Informe semanal por inspector (Word): la tabla de piezas rechazadas ahora incluye la columna «Correlativos», para distinguir piezas con la misma marca."
   ]
 }
