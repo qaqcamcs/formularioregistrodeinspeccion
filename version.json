@@ -1,7 +1,8 @@
 {
-  "version": "2026.11.19-3",
-  "fecha": "20-11-2026",
+  "version": "2026.11.23-1",
+  "fecha": "23-11-2026",
   "cambios": [
-    "Informe semanal por inspector (Word): la tabla de piezas rechazadas ahora incluye la columna «Correlativos», para distinguir piezas con la misma marca."
+    "Rechazos completos: cuando el resultado es Rechazado o Avance rechazado, ahora son obligatorios la criticidad, reparado, área de NC, defectos, detalle y responsables (en Vigas T0: reparado y defectos).",
+    "Aviso de duplicados: si el elemento ya existe en la planilla (mismo proyecto, marca, área y correlativos), la app avisa y permite ingresar de todas formas, reemplazar el registro existente o cancelar."
   ]
 }
