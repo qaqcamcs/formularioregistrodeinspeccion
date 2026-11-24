@@ -37,6 +37,12 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .other{margin-top:8px;display:none}
 .field.invalid input,.field.invalid select,.field.invalid .seg{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad)}
 .field.invalid .msg{display:block}
+.field.invalid textarea{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad)}
+.field.invalid .chips{outline:1px solid var(--bad);outline-offset:3px;border-radius:10px}
+#dupOverlay{z-index:42}#dupModal{z-index:43}
+.dupRow{border:1px solid var(--line);background:#0a2244;border-radius:10px;padding:10px 12px;margin-top:8px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.dupRow b{display:block}.dupRow small{color:var(--mut)}
+#rechReq{margin-top:6px;color:#ffb27a}
 .msg{display:none;color:var(--bad);font-size:.82rem;margin-top:4px}
 .seg{display:flex;gap:8px;flex-wrap:wrap;border-radius:10px}
 .seg button,.chip{font:inherit;color:var(--txt);background:#08203f;border:1px solid var(--line);border-radius:10px;min-height:48px;padding:0 16px;cursor:pointer;flex:1 1 110px}
@@ -532,6 +538,14 @@ input[type="date"],input[type="time"]{color-scheme:dark}
   <div class="add" style="margin-top:12px"><button type="button" id="rechToggle"></button></div>
 </div>
 <div class="anaTip" id="anaTip" hidden></div>
+<div id="dupOverlay" class="bigOverlay" hidden></div>
+<div class="card bigModal" id="dupModal" hidden>
+  <div class="cfgHead"><h2>⚠️ Este elemento ya está registrado</h2></div>
+  <div class="count" id="dupSub"></div>
+  <div id="dupList"></div>
+  <div class="count" style="margin-top:10px">«Reemplazar» sobrescribe esa fila con los datos que estás ingresando ahora. «Ingresar de todas formas» agrega una fila nueva y deja la anterior.</div>
+  <div class="add" style="margin-top:14px"><button type="button" id="dupCancel">Cancelar</button><button type="button" id="dupInsert">Ingresar de todas formas</button></div>
+</div>
 <div id="updOverlay" class="bigOverlay" hidden></div>
 <div class="card bigModal" id="updModal" hidden>
   <div class="cfgHead"><h2 id="updTitulo"></h2></div>
@@ -607,7 +621,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
 
 </div><div class="fcol">
   <section class="card"><h2>Resultado</h2><div class="grid">
-    <div class="field full"><span class="lbl req">Resultado</span><div class="seg res" data-k="resultado"></div><span class="msg">Elige el resultado.</span></div>
+    <div class="field full"><span class="lbl req">Resultado</span><div class="seg res" data-k="resultado"></div><span class="msg">Elige el resultado.</span><div class="count" id="rechReq" hidden>Un rechazo exige completar todos los campos marcados con *: criticidad, reparado, área de NC, defectos, detalle y responsables.</div></div>
     <div class="field full" id="fld-criticidad" hidden><span class="lbl req">Criticidad del error</span><div class="seg" data-k="criticidad"></div><div class="critInfo" id="critInfo" hidden></div><span class="msg">Elige la criticidad.</span></div>
     <div class="field" id="fld-reparado"><span class="lbl">Reparado o terminado</span><div class="seg" data-k="reparado" data-toggle="1"></div></div>
     <div class="field" id="fld-areaNC"><label for="areaNC">Área donde se detecta NC</label><select id="areaNC" data-other></select><input class="other" id="areaNC_o" placeholder="Escribe el área"></div>
@@ -1117,7 +1131,20 @@ function validateInsp(p){
   marcaMsg.textContent = marcaBlocked ? 'Esta marca está detenida: libérala en "Seguimiento" antes de registrarla.' : 'Escribe la marca.';
   chk(!!p.marca && !marcaBlocked,'#marca');
   chk(Number(p.cantidad)>0,'#cantidad'); chk(!!p.area,'.seg[data-k="area"]'); chk(!!p.resultado,'.seg[data-k="resultado"]');
-  if(esRech_(p.resultado)) chk(!!p.criticidad,'.seg[data-k="criticidad"]');
+  if(esRech_(p.resultado)){
+    // Un rechazo debe quedar completo: todo lo que esté visible para el rechazo es obligatorio
+    const vis=id=>{const e=document.getElementById('fld-'+id); return !!e&&!e.hidden;};
+    const req=(ok,el,msg)=>{ chk(ok,el); const f=(typeof el==='string'?$(el):el).closest('.field'); let m=f.querySelector('.msg'); if(!m){m=document.createElement('span');m.className='msg';f.appendChild(m);} m.textContent=msg; };
+    req(!!p.criticidad,'.seg[data-k="criticidad"]','Elige la criticidad.');
+    if(vis('reparado')) req(!!p.reparado,'.seg[data-k="reparado"]','Indica si fue reparado (Sí o No).');
+    if(vis('areaNC')) req(!!p.areaNC,'#areaNC','Indica el área donde se detecta la NC.');
+    if(vis('defectos')) req(p.defectos.length>0,'#fld-defectos','Selecciona al menos un defecto.');
+    req(!!p.detalle,'#detalle','Escribe el detalle de los defectos.');
+    if(vis('etapa')) req(p.etapa.length>0,'#etapa','Selecciona la etapa.');
+    if(vis('armador')) req(p.armador.length>0,'#armador','Selecciona el armador responsable.');
+    if(vis('soldador')) req(p.soldador.length>0,'#soldador','Selecciona el soldador responsable.');
+  }
+  bad.sort((a,b)=>(a.compareDocumentPosition(b)&Node.DOCUMENT_POSITION_FOLLOWING)?-1:1);
   if(bad.length){bad[0].scrollIntoView({behavior:'smooth',block:'center'}); toast('Revisa los campos marcados',true);} return !bad.length;
 }
 
@@ -1151,6 +1178,7 @@ function syncVigas(){
 function applyCondVigas(){
   const mostrar = S.v_resultado ? (S.v_resultado!=='Aprobado') : true; // igual que en inspección: sin elegir, se muestran
   $('#fld-v-reparado').hidden = !mostrar; $('#fld-v-defectos').hidden = !mostrar;
+  ['#fld-v-reparado .lbl','#fld-v-defectos .lbl'].forEach(s=>{const e=document.querySelector(s); if(e) e.classList.toggle('req',S.v_resultado==='Rechazado');});
   if(!mostrar){
     if(S.v_reparado){S.v_reparado=''; $$('.seg[data-k="v_reparado"] button').forEach(b=>b.classList.remove('on'));}
     if(S.v_defectos.size){S.v_defectos.clear(); syncVigas();}
@@ -1167,6 +1195,12 @@ function validateVigas(p){
   const bad=[]; const chk=(ok,el)=>{const f=(typeof el==='string'?$(el):el).closest('.field'); f.classList.toggle('invalid',!ok); if(!ok)bad.push(f);};
   chk(!!p.fecha,'#v_fecha'); chk(!!p.inspector,'#inspectorBox'); chk(!!p.proyecto,'#v_proyecto'); chk(!!p.marca,'#v_marca');
   chk(!!p.resultado,'.seg[data-k="v_resultado"]');
+  if(p.resultado==='Rechazado'){
+    const req=(ok,el,msg)=>{ chk(ok,el); const f=(typeof el==='string'?$(el):el).closest('.field'); let m=f.querySelector('.msg'); if(!m){m=document.createElement('span');m.className='msg';f.appendChild(m);} m.textContent=msg; };
+    req(!!p.reparado,'.seg[data-k="v_reparado"]','Indica si fue reparada (Sí o No).');
+    req(p.defectos.length>0,'#fld-v-defectos','Selecciona al menos un defecto.');
+  }
+  bad.sort((a,b)=>(a.compareDocumentPosition(b)&Node.DOCUMENT_POSITION_FOLLOWING)?-1:1);
   if(bad.length){bad[0].scrollIntoView({behavior:'smooth',block:'center'}); toast('Revisa los campos marcados',true);} return !bad.length;
 }
 function resetVigas(keep){
@@ -1235,7 +1269,7 @@ function renderPend(){
     const r=document.createElement('div'); r.className='row'+(it.fatal?' bad':'');
     const d=document.createElement('div'),t=document.createElement('strong'),s=document.createElement('small');
     t.textContent=(it.p.marca||'—')+' · '+it.p.resultado+(it.action==='saveVigas'?' · Vigas':'');
-    s.textContent=it.p.fecha+' · '+it.p.proyecto+(it.err?' · '+it.err:'');
+    s.textContent=it.p.fecha+' · '+it.p.proyecto+(it.p.reemplazarFila?' · Reemplaza la fila '+it.p.reemplazarFila:'')+(it.err?' · '+it.err:'');
     d.append(t,s);
     const b=document.createElement('button'); b.type='button'; b.textContent='Descartar';
     b.onclick=()=>{if(confirm('¿Descartar este registro? No se enviará a la hoja.')){Q=Q.filter(x=>x.uid!==it.uid);qSave();renderPend();}};
@@ -1258,7 +1292,7 @@ async function syncNow(manual){
       headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({key:getKey(),uid:it.uid,action:it.action,p:it.p})});
     let r; try{r=await res.json();}catch(_){throw new Error('Respuesta inválida: la implementación debe permitir acceso a "Cualquier persona"');}
     clearTimeout(guard); syncing=false;
-    if(r&&r.ok){Q=Q.filter(x=>x.uid!==it.uid);qSave();toast(r.dup?'Registro ya estaba en la hoja':'Registro sincronizado en la fila '+r.row);renderPend();syncNow();}
+    if(r&&r.ok){Q=Q.filter(x=>x.uid!==it.uid);qSave();toast(r.dup?'Registro ya estaba en la hoja':r.reemplazo?'Registro reemplazado en la fila '+r.row:r.fallback?'No se encontró la fila original: se ingresó como registro nuevo (fila '+r.row+')':'Registro sincronizado en la fila '+r.row);renderPend();syncNow();}
     else if(r&&r.auth){authFail=true;it.err='Clave de acceso incorrecta';qSave();renderPend();
       $('#keyCard').hidden=false;$('#keyIn').value='';toast('Clave de acceso incorrecta o faltante',true);}
     else if(r&&r.fatal){it.fatal=true;it.err=r.error||'Rechazado por el servidor';qSave();renderPend();toast('Un registro no se pudo enviar: '+it.err,true);syncNow();}
@@ -1295,8 +1329,61 @@ function initOffline(){
   if(!persist)toast('Este navegador no permite guardar sin conexión: los pendientes se perderán si cierras la pestaña.',true);
 }
 
-$('#save').onclick=()=>{
+/* ===== Duplicados: avisa si el elemento ya existe y permite ingresar igual o reemplazar ===== */
+const dupClave=(esV,p)=>[p.proyecto,p.marca,esV?p.correlativo:p.area,esV?'':p.correlativos].map(x=>norm_(String(x||''))).join('|');
+function dupDialog(p,coinc,pend){
+  return new Promise(res=>{
+    const esV=ACTIVE_FORM==='vigas';
+    $('#dupSub').textContent=p.proyecto+' · Marca '+p.marca+(esV?(p.correlativo?' · Correlativo '+p.correlativo:''):' · '+p.area+(p.correlativos?' · Correlativos '+p.correlativos:''));
+    const L=$('#dupList'); L.innerHTML='';
+    const done=v=>{ $('#dupOverlay').hidden=true; $('#dupModal').hidden=true; res(v); };
+    const fila=(titulo,detalle,txtBtn,onBtn)=>{
+      const r=document.createElement('div'); r.className='dupRow';
+      const d=document.createElement('div'), b=document.createElement('b'), s=document.createElement('small');
+      b.textContent=titulo; s.textContent=detalle; d.append(b,s);
+      const bt=document.createElement('button'); bt.type='button'; bt.className='mini'; bt.textContent=txtBtn; bt.onclick=onBtn;
+      r.append(d,bt); L.appendChild(r);
+    };
+    coinc.forEach(m=>fila('En la planilla · fila '+m.fila+' · '+(m.fecha||'—')+' · '+(m.resultado||'sin resultado'),
+      [m.inspector&&('Inspector: '+m.inspector),m.responsable&&('Responsable: '+m.responsable),m.reparado&&('Reparado: '+m.reparado),m.cantidad!==''&&m.cantidad!==undefined&&('Cant.: '+m.cantidad)].filter(Boolean).join(' · ')||' ',
+      'Reemplazar este registro',()=>done({accion:'reemplazar',fila:m.fila})));
+    pend.forEach(it=>fila('Pendiente de enviar en este dispositivo · '+(it.p.fecha||'—')+' · '+(it.p.resultado||''),'Aún no llega a la planilla','Reemplazar el pendiente',()=>done({accion:'insertar',quitarUid:it.uid})));
+    $('#dupInsert').onclick=()=>done({accion:'insertar'});
+    $('#dupCancel').onclick=()=>done({accion:'cancelar'});
+    $('#dupOverlay').onclick=()=>done({accion:'cancelar'});
+    $('#dupOverlay').hidden=false; $('#dupModal').hidden=false;
+  });
+}
+async function verificarDuplicado(p){
+  const esV=ACTIVE_FORM==='vigas', k=dupClave(esV,p);
+  const pend=Q.filter(it=>!it.fatal&&((it.action==='saveVigas')===esV)&&dupClave(esV,it.p)===k);
+  let coinc=[], fallo=false;
+  if(navigator.onLine&&apiOK()){
+    try{
+      const r=await Promise.race([api('buscarDuplicado',{tipo:esV?'vigas':'insp',proyecto:p.proyecto,marca:p.marca,area:p.area||'',correlativos:p.correlativos||'',correlativo:p.correlativo||''}),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),10000))]);
+      if(r&&r.ok) coinc=r.coincidencias||[]; else fallo=true;
+    }catch(e){ fallo=true; }
+  }else if(!esV){
+    // Sin conexión: se revisa contra la última descarga de «Búsqueda de elementos» guardada en el dispositivo
+    const o=loadCachedBq(), items=(o&&o.data&&o.data.items)||[];
+    coinc=items.filter(it=>dupClave(false,{proyecto:it.proyecto,marca:it.marca,area:it.area,correlativos:it.correlativos})===k).slice(-5).reverse()
+      .map(it=>({fila:it.row,fecha:it.fecha,resultado:it.resultado,inspector:it.inspector,responsable:it.armador||it.soldador||it.etapa||'',reparado:it.reparado,cantidad:it.cantidad}));
+  }
+  if(!pend.length&&!coinc.length){ if(fallo) toast('No se pudo comprobar si el elemento ya existe; se guardó igual.',true); return {accion:'insertar'}; }
+  return dupDialog(p,coinc,pend);
+}
+
+$('#save').onclick=async()=>{
   const p=payload(); if(!validate(p))return;
+  const btn=$('#save'); if(btn.disabled) return;
+  const txt0=btn.textContent; btn.disabled=true; btn.textContent='Verificando…';
+  let dec={accion:'insertar'};
+  try{ dec=await verificarDuplicado(p); }catch(e){ dec={accion:'insertar'}; }
+  finally{ btn.disabled=false; btn.textContent=txt0; }
+  if(dec.accion==='cancelar') return;
+  if(dec.accion==='reemplazar'&&dec.fila) p.reemplazarFila=dec.fila;
+  if(dec.quitarUid){ Q=Q.filter(x=>x.uid!==dec.quitarUid); }
   Q.push({uid:newUid(),p:p,action:(ACTIVE_FORM==='vigas'?'saveVigas':'saveInspeccion'),t:Date.now(),tries:0,err:''}); qSave();
   showBigCheck();
   toast(navigator.onLine?'Registro guardado. Enviando a la hoja…':'Sin conexión: registro guardado en este dispositivo. Se enviará al volver internet.');
@@ -1433,6 +1520,9 @@ function applyCond(){
     const esRech = esRech_(S.resultado);
     critEl.hidden = !esRech;
     if(!esRech && S.criticidad){ S.criticidad=''; critEl.querySelectorAll('.seg button').forEach(b=>b.classList.remove('on')); critEl.classList.remove('invalid'); }
+    // Marca como obligatorios (*) los campos del rechazo
+    const rq=document.getElementById('rechReq'); if(rq) rq.hidden=!esRech;
+    ['#fld-reparado .lbl','#fld-areaNC label','#fld-defectos .lbl','#fld-etapa .lbl','#fld-armador .lbl','#fld-soldador .lbl','label[for="detalle"]'].forEach(s=>{const e=document.querySelector(s); if(e) e.classList.toggle('req',esRech);});
     // Explicación de la criticidad elegida (Rechazado y Avance rechazado)
     const info=document.getElementById('critInfo');
     if(info){
@@ -1940,7 +2030,7 @@ function initAna(){
 }
 
 /* ===== Aviso de nueva versión (compara con version.json y muestra los cambios) ===== */
-const APP_VERSION='2026.11.19-3';
+const APP_VERSION='2026.11.23-1';
 const VER_SEEN='qaqc_ver_visto';
 let verModo='', verUltimaRev=0, verPosponer=0;
 function verAbrir(v,modo){
