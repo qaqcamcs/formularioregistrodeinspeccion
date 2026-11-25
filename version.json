@@ -1,8 +1,7 @@
 {
-  "version": "2026.11.23-1",
-  "fecha": "23-11-2026",
+  "version": "2026.11.24-1",
+  "fecha": "24-11-2026",
   "cambios": [
-    "Rechazos completos: cuando el resultado es Rechazado o Avance rechazado, ahora son obligatorios la criticidad, reparado, área de NC, defectos, detalle y responsables (en Vigas T0: reparado y defectos).",
-    "Aviso de duplicados: si el elemento ya existe en la planilla (mismo proyecto, marca, área y correlativos), la app avisa y permite ingresar de todas formas, reemplazar el registro existente o cancelar."
+    "Portada con período a elegir: ahora puedes ver Resumen, Resultados por área, Actividad, Rechazos y Proyectos activos de un mes (enero, febrero…), de 14 o 30 días, o entre dos fechas. Por defecto siguen siendo los últimos 7 días."
   ]
 }
