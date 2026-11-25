@@ -1,7 +1,7 @@
 {
-  "version": "2026.11.24-1",
+  "version": "2026.11.24-2",
   "fecha": "24-11-2026",
   "cambios": [
-    "Portada con período a elegir: ahora puedes ver Resumen, Resultados por área, Actividad, Rechazos y Proyectos activos de un mes (enero, febrero…), de 14 o 30 días, o entre dos fechas. Por defecto siguen siendo los últimos 7 días."
+    "Gráfico de actividad: ahora se ve completo al elegir un mes u otro período largo. Cada día muestra su número y la inicial del día de la semana, se adapta al ancho de la pantalla y al pasar el mouse o tocar una barra aparece el detalle."
   ]
 }
