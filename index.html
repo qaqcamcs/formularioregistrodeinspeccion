@@ -81,6 +81,15 @@ details .chips{padding:0 12px 12px}
 #toast.show{transform:translate(-50%,0)}#toast.err{background:var(--bad);color:#fff}
 #toast:empty{display:none}
 #updOverlay{z-index:40}#updModal{z-index:41}
+.periodBar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end;margin:10px 0 2px}
+.periodBar .field{margin:0;flex:0 1 230px;min-width:150px}
+.periodBar .perMes{display:flex;gap:8px}
+.periodBar .perMes select:first-child{flex:1.6}.periodBar .perMes select:last-child{flex:1}
+.diasChart.many{gap:2px;overflow-x:auto}
+.diasChart.many .diaCol{min-width:7px}
+.diasChart.many .diaCol .stack{max-width:none;border-radius:3px 3px 1px 1px}
+.diasChart.many .diaCol .l{font-size:.55rem;white-space:nowrap}
+.diasChart.many .diaCol .v{font-size:.55rem}
 #updAhora{background:var(--pri);border-color:var(--pri);color:var(--pri-ink);font-weight:700}
 .updList{margin:12px 0 0;padding-left:20px;max-height:46vh;overflow-y:auto;line-height:1.45;font-size:.92rem}
 .updList li{margin-bottom:7px}
@@ -558,6 +567,21 @@ input[type="date"],input[type="time"]{color-scheme:dark}
 <section id="homeScreen">
   <section class="card">
     <div class="cardHead"><h2>Resumen</h2><button type="button" class="mini" id="homeRefresh">🔄 Actualizar</button></div>
+    <div class="periodBar" id="periodBar">
+      <div class="field"><label for="perSel">Período a mostrar</label>
+        <select id="perSel">
+          <option value="7d">Últimos 7 días</option>
+          <option value="14d">Últimos 14 días</option>
+          <option value="30d">Últimos 30 días</option>
+          <option value="mes">Este mes</option>
+          <option value="mesAnt">Mes anterior</option>
+          <option value="mesEsp">Elegir un mes…</option>
+          <option value="rango">Rango de fechas…</option>
+        </select></div>
+      <div class="field" id="perMesBox" style="display:none"><label for="perMes">Mes y año</label><div class="perMes"><select id="perMes"></select><select id="perAnio"></select></div></div>
+      <div class="field" id="perDesdeBox" style="display:none"><label for="perDesde">Desde</label><input type="date" id="perDesde"></div>
+      <div class="field" id="perHastaBox" style="display:none"><label for="perHasta">Hasta</label><input type="date" id="perHasta"></div>
+    </div>
     <div class="count" id="homeRango"></div>
     <div class="kpiGrid" id="homeKpis"></div>
     <div id="homeCharts"></div>
@@ -571,21 +595,21 @@ input[type="date"],input[type="time"]{color-scheme:dark}
     <div id="anaBody"></div>
   </section>
   <section class="card">
-    <h2>Resultados por área (últimos 7 días)</h2>
+    <h2 id="tAreas">Resultados por área (últimos 7 días)</h2>
     <div class="areaGrid" id="homeAreas"></div>
   </section>
   <section class="card">
-    <h2>Actividad día por día</h2>
+    <h2 id="tDias">Actividad día por día</h2>
     <div class="count"><span style="color:var(--ok)">■</span> aprobados &nbsp; <span style="color:var(--adv)">■</span> avance aprobado &nbsp; <span style="color:var(--bad)">■</span> rechazados</div>
     <div class="diasChart" id="homeDias"></div>
   </section>
   <section class="card">
-    <h2>Rechazos de la semana</h2>
+    <h2 id="tRech">Rechazos de la semana</h2>
     <div class="critChips" id="homeCrit"></div>
     <div id="homeDefectos"></div>
   </section>
   <section class="card">
-    <h2>Proyectos activos (últimos 7 días)</h2>
+    <h2 id="tAct">Proyectos activos (últimos 7 días)</h2>
     <div class="count" id="homeActCount"></div>
     <div id="homeActivos"></div>
   </section>
@@ -1662,9 +1686,9 @@ function projectDonutSegments(activos){
 }
 function renderHomeCharts(d){
   const r=d.resumenSemana;
-  if(!r.total){ $('#homeCharts').innerHTML='<div class="count" style="margin-top:14px">Todavía no hay datos esta semana para graficar.</div>'; return; }
+  if(!r.total){ $('#homeCharts').innerHTML='<div class="count" style="margin-top:14px">'+(perEsDef()?'Todavía no hay datos esta semana para graficar.':'No hay datos en este período para graficar.')+'</div>'; return; }
   const resSegs=[{label:'Aprobado',value:r.aprobados,color:'var(--ok)'},{label:'Rechazado',value:r.rechazados,color:'var(--bad)'},{label:'Avance aprobado',value:r.avanceAprobado,color:'var(--adv)'}];
-  let html='<div class="chartsRow">'+donutHtml('Resultado de la semana',resSegs,r.total,'registros');
+  let html='<div class="chartsRow">'+donutHtml(perEsDef()?'Resultado de la semana':'Resultado del período',resSegs,r.total,'registros');
   if(d.proyectosActivos.length) html+=donutHtml('Participación por proyecto',projectDonutSegments(d.proyectosActivos),d.proyectosActivos.length,'proyectos');
   html+='</div>';
   $('#homeCharts').innerHTML=html;
@@ -1705,10 +1729,12 @@ function renderHomeExtras(d){
   }).join('');
   // Actividad día por día (barras apiladas)
   const dias=d.diasSemana||[], maxT=Math.max(1,...dias.map(x=>x.total));
-  $('#homeDias').innerHTML=dias.map(x=>{
+  const muchos=dias.length>14, paso=muchos?Math.ceil(dias.length/10):1;   // con muchas barras solo se rotulan algunas
+  $('#homeDias').className='diasChart'+(muchos?' many':'');
+  $('#homeDias').innerHTML=dias.map((x,i)=>{
     const h=x.total?Math.max(5,Math.round(x.total/maxT*104)):0;
     const seg=(n,col)=>x.total&&n?'<i style="background:'+col+';height:'+(n/x.total*100)+'%"></i>':'';
-    return '<div class="diaCol"><div class="v">'+x.total+'</div><div class="stack" data-h="'+h+'px">'+seg(x.aprobados,'var(--ok)')+seg(x.avanceAprobado,'var(--adv)')+seg(x.rechazados,'var(--bad)')+'</div><div class="l">'+esc(x.etiqueta)+'</div></div>';
+    return '<div class="diaCol" title="'+esc(x.etiqueta)+': '+x.total+(x.total===1?' registro':' registros')+'"><div class="v">'+(dias.length>24?'':x.total)+'</div><div class="stack" data-h="'+h+'px">'+seg(x.aprobados,'var(--ok)')+seg(x.avanceAprobado,'var(--adv)')+seg(x.rechazados,'var(--bad)')+'</div><div class="l">'+(i%paso===0?esc(x.etiqueta):'')+'</div></div>';
   }).join('');
   // Criticidad y defectos de los rechazos
   const cr=d.criticidadSemana||{alta:0,baja:0,sinDato:0};
@@ -1734,19 +1760,100 @@ function genOrdenar(arr){
   const s=arr.slice().sort((a,b)=>(a.ultima||'').localeCompare(b.ultima||'')||String(a.proyecto).localeCompare(String(b.proyecto),'es'));
   return genOrden==='nuevo'?s.reverse():s;
 }
-function renderHome(){
-  const d=homeData; if(!d)return;
-  $('#homeRango').textContent = 'Del '+d.rango.desde+' al '+d.rango.hasta+' · Actualizado '+timeAgo(homeSavedAt);
-  const r=d.resumenSemana;
+/* ===== Período de la portada (por defecto: últimos 7 días) ===== */
+const MESES_ES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+let homePer={modo:'7d',desde:'',hasta:''}, homeAlt=null, homeAltSaved=0, homeAltLoading=false;
+const homeAltCache={};
+const perEsDef=()=>homePer.modo==='7d';
+const perKey=()=>homePer.desde+'|'+homePer.hasta;
+const perIso=d=>{const p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());};
+function perTexto(){ return perEsDef()?'últimos 7 días':anaFec(homePer.desde)+' al '+anaFec(homePer.hasta); }
+function perMostrarCajas(){
+  const v=$('#perSel').value;
+  $('#perMesBox').style.display=v==='mesEsp'?'':'none';
+  $('#perDesdeBox').style.display=$('#perHastaBox').style.display=v==='rango'?'':'none';
+}
+// Devuelve {desde,hasta}, null (= por defecto, 7 días) o undefined (rango incompleto)
+function perCalcular(){
+  const v=$('#perSel').value, hoy=new Date(); hoy.setHours(0,0,0,0);
+  if(v==='7d') return null;
+  if(v==='14d'||v==='30d'){ const d=new Date(hoy); d.setDate(d.getDate()-((v==='14d'?14:30)-1)); return {desde:perIso(d),hasta:perIso(hoy)}; }
+  if(v==='mes'||v==='mesAnt'||v==='mesEsp'){
+    let y,m;
+    if(v==='mes'){ y=hoy.getFullYear(); m=hoy.getMonth(); }
+    else if(v==='mesAnt'){ const d=new Date(hoy.getFullYear(),hoy.getMonth()-1,1); y=d.getFullYear(); m=d.getMonth(); }
+    else { y=+$('#perAnio').value; m=+$('#perMes').value; }
+    return {desde:perIso(new Date(y,m,1)),hasta:perIso(new Date(y,m+1,0))};
+  }
+  let a=$('#perDesde').value, b=$('#perHasta').value;
+  if(!a||!b) return undefined;
+  if(a>b){ const t=a; a=b; b=t; }
+  return {desde:a,hasta:b};
+}
+function perAplicar(){
+  perMostrarCajas();
+  const r=perCalcular(), v=$('#perSel').value;
+  if(r===undefined) return;                              // rango de fechas incompleto: espera a que se elijan ambas
+  if(r===null){ homePer={modo:'7d',desde:'',hasta:''}; homeAlt=null; renderHome(); return; }
+  homePer={modo:v,desde:r.desde,hasta:r.hasta};
+  loadHomePeriodo(false);
+}
+async function loadHomePeriodo(force){
+  if(perEsDef()) return;
+  const key=perKey(), c=homeAltCache[key];
+  if(c){ homeAlt=c.data; homeAltSaved=c.savedAt; renderHome(); if(!force&&Date.now()-c.savedAt<120000) return; }
+  else { homeAlt=null; renderHome(); }                   // muestra «Cargando…» mientras llega
+  if(!navigator.onLine){ if(!c) $('#homeRango').textContent='Sin conexión: conéctate para ver este período.'; return; }
+  try{
+    const r=await api('getDashboard',{desde:homePer.desde,hasta:homePer.hasta,sinGeneral:true});
+    if(key!==perKey()) return;                           // se cambió de período mientras cargaba
+    if(r&&r.ok&&!(r.rango&&r.rango.desdeIso===homePer.desde&&r.rango.hastaIso===homePer.hasta)){
+      // El servidor es de una versión anterior y ignoró el período: no se muestran datos que no corresponden
+      if(!c){ $('#homeRango').textContent='El servidor todavía no admite elegir el período. Implementa la nueva versión de Code.gs en Apps Script.'; $('#homeKpis').innerHTML=''; $('#homeAreas').innerHTML=''; $('#homeActivos').innerHTML=''; $('#homeDefectos').innerHTML=''; }
+      return;
+    }
+    if(r&&r.ok){
+      if(Object.keys(homeAltCache).length>12) delete homeAltCache[Object.keys(homeAltCache)[0]];
+      homeAltCache[key]={data:r,savedAt:Date.now()}; homeAlt=r; homeAltSaved=Date.now(); renderHome();
+    }else if(!c) $('#homeRango').textContent='No se pudo cargar el período: '+(r&&r.error||'error desconocido');
+  }catch(e){ if(!c) $('#homeRango').textContent='No se pudo cargar el período (sin conexión o error de red).'; }
+}
+function initPeriodo(){
+  const now=new Date();
+  $('#perMes').innerHTML=MESES_ES.map((m,i)=>'<option value="'+i+'">'+m+'</option>').join('');
+  let ys=''; for(let y=now.getFullYear();y>=now.getFullYear()-5;y--) ys+='<option value="'+y+'">'+y+'</option>';
+  $('#perAnio').innerHTML=ys; $('#perMes').value=String(now.getMonth()); $('#perAnio').value=String(now.getFullYear());
+  ['perSel','perMes','perAnio','perDesde','perHasta'].forEach(id=>{ $('#'+id).onchange=perAplicar; });
+  perMostrarCajas();
+}
+function homeTitulos(d){
+  const def=perEsDef(), per=perTexto(), agr=(d&&d.rango&&d.rango.agrupacion)||'dia';
+  $('#tAreas').textContent='Resultados por área ('+per+')';
+  $('#tRech').textContent=def?'Rechazos de la semana':'Rechazos del período';
+  $('#tAct').textContent='Proyectos activos ('+per+')';
+  $('#tDias').textContent=agr==='semana'?'Actividad por semana':agr==='mes'?'Actividad por mes':'Actividad día por día';
+}
+function renderHomePeriodo(d){
+  const def=perEsDef(), r=d.resumenSemana;
+  $('#homeRango').textContent = 'Del '+d.rango.desde+' al '+d.rango.hasta+(def?'':' ('+d.rango.dias+(d.rango.dias===1?' día)':' días)'))+' · Actualizado '+timeAgo(def?homeSavedAt:homeAltSaved);
   $('#homeKpis').innerHTML =
-    '<div class="kpiCard"><div class="num" data-count="'+r.total+'">'+r.total+'</div><div class="lbl3">Registros (7 días)</div></div>'+
+    '<div class="kpiCard"><div class="num" data-count="'+r.total+'">'+r.total+'</div><div class="lbl3">'+(def?'Registros (7 días)':'Registros del período')+'</div></div>'+
     '<div class="kpiCard"><div class="num" data-count="'+r.pctAprobacion+'" data-suf="%" style="color:'+pctColor(r.pctAprobacion)+'">'+r.pctAprobacion+'%</div><div class="lbl3">% de aprobación</div></div>'+
     '<div class="kpiCard" id="kpiRechazados" style="cursor:pointer"><div class="num" data-count="'+r.rechazados+'" style="color:var(--bad)">'+r.rechazados+'</div><div class="lbl3">Rechazados ↗</div></div>'+
     '<div class="kpiCard"><div class="num" data-count="'+r.avanceAprobado+'" style="color:var(--adv)">'+r.avanceAprobado+'</div><div class="lbl3">Avance aprobado</div></div>';
   renderHomeCharts(d);
   renderHomeExtras(d);
-  $('#homeActCount').textContent = d.proyectosActivos.length + (d.proyectosActivos.length===1?' proyecto con movimiento esta semana':' proyectos con movimiento esta semana');
-  $('#homeActivos').innerHTML = d.proyectosActivos.length ? d.proyectosActivos.map(projRowHtml).join('') : '<div class="count">Ningún proyecto tiene registros en los últimos 7 días.</div>';
+  const n=d.proyectosActivos.length, cuando=def?'esta semana':'en el período';
+  $('#homeActCount').textContent = n + (n===1?' proyecto con movimiento ':' proyectos con movimiento ')+cuando;
+  $('#homeActivos').innerHTML = n ? d.proyectosActivos.map(projRowHtml).join('') : '<div class="count">Ningún proyecto tiene registros '+(def?'en los últimos 7 días.':'en este período.')+'</div>';
+}
+function homePeriodoCargando(){
+  $('#homeRango').textContent='Cargando '+perTexto()+'…';
+  $('#homeKpis').innerHTML=skeletonKpis(); $('#homeCharts').innerHTML='';
+  $('#homeAreas').innerHTML=skeletonRows(2); $('#homeDias').innerHTML=''; $('#homeCrit').innerHTML=''; $('#homeDefectos').innerHTML=skeletonRows(2);
+  $('#homeActCount').textContent=''; $('#homeActivos').innerHTML=skeletonRows(2);
+}
+function renderHomeGeneral(d){
   $('#homeGenCount').textContent = d.proyectosGeneral.length + (d.proyectosGeneral.length===1?' proyecto en la hoja':' proyectos en la hoja');
   const ordenados = genOrdenar(d.proyectosGeneral);
   $('#homeGenOrden').textContent = genOrden==='nuevo' ? '↓ Más nuevos primero' : '↑ Más antiguos primero';
@@ -1756,11 +1863,20 @@ function renderHome(){
     $('#homeGenMoreWrap').hidden=false;
     $('#homeGenMore').textContent = homeGenExpanded ? 'Ver menos' : 'Ver todos ('+d.proyectosGeneral.length+')';
   } else { $('#homeGenMoreWrap').hidden=true; }
+}
+function renderHome(){
+  const base=homeData, def=perEsDef();
+  if(def&&!base) return;
+  const d=def?base:(homeAlt?Object.assign({},homeAlt,{proyectosGeneral:base?base.proyectosGeneral:[]}):null);
+  homeTitulos(d);
+  if(d) renderHomePeriodo(d); else homePeriodoCargando();
+  if(base) renderHomeGeneral(base);
   anaRender();
   animarHome();
 }
 async function loadHome(force){
   loadAnalisis(force);
+  if(force&&!perEsDef()) loadHomePeriodo(true);
   if(homeLoaded && !force){ renderHome(); return; }
   if(!homeData){
     const cached=loadCachedHome();
@@ -2030,7 +2146,7 @@ function initAna(){
 }
 
 /* ===== Aviso de nueva versión (compara con version.json y muestra los cambios) ===== */
-const APP_VERSION='2026.11.23-1';
+const APP_VERSION='2026.11.24-1';
 const VER_SEEN='qaqc_ver_visto';
 let verModo='', verUltimaRev=0, verPosponer=0;
 function verAbrir(v,modo){
@@ -2084,6 +2200,7 @@ function initActualizaciones(){
 }
 function initHome(){
   initAna();
+  initPeriodo();
   $('#homeGenOrden').onclick=()=>{genOrden=genOrden==='nuevo'?'antiguo':'nuevo';try{localStorage.setItem(GORD,genOrden);}catch(e){} renderHome();};
   $('#homeRefresh').onclick=()=>loadHome(true);
   $('#homeGenMore').onclick=()=>{homeGenExpanded=!homeGenExpanded;renderHome();};
@@ -3411,15 +3528,21 @@ function rechRowHtml(it){
     (it.detalle?'<br><small>'+esc(it.detalle)+'</small>':'')+
     '</div></div>';
 }
+function rechEnPeriodo(it){
+  if(perEsDef()) return !!it.reciente;
+  const p=String(it.fecha||'').split('/'); if(p.length!==3) return false;
+  const iso=p[2]+'-'+p[1]+'-'+p[0];
+  return iso>=homePer.desde&&iso<=homePer.hasta;
+}
 function renderRechList(){
   const q=norm_((($('#rechSearch')||{}).value)||'');
-  const base=(rechItems||[]).filter(it=>rechFull||it.reciente);
+  const base=(rechItems||[]).filter(it=>rechFull||rechEnPeriodo(it));
   const list=base.filter(it=>!q||norm_(it.marca).includes(q)||norm_(it.proyecto).includes(q));
-  $('#rechTitle').textContent = rechFull ? 'Rechazados · histórico completo' : 'Rechazados · últimos 7 días';
+  $('#rechTitle').textContent = rechFull ? 'Rechazados · histórico completo' : 'Rechazados · '+perTexto();
   $('#rechCount').textContent = list.length + (list.length===1?' rechazado encontrado':' rechazados encontrados');
   $('#rechList').innerHTML = list.length ? '<div class="pend">'+list.map(rechRowHtml).join('')+'</div>' : '<div class="count">No hay rechazados que coincidan.</div>';
   const totalFull=(rechItems||[]).length;
-  $('#rechToggle').textContent = rechFull ? 'Ver solo últimos 7 días' : 'Ver histórico completo ('+totalFull+')';
+  $('#rechToggle').textContent = rechFull ? 'Ver solo '+perTexto() : 'Ver histórico completo ('+totalFull+')';
 }
 function closeRechModal(){ $('#rechOverlay').hidden=true; $('#rechModal').hidden=true; }
 async function openRechModal(){
