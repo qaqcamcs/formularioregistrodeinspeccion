@@ -85,11 +85,19 @@ details .chips{padding:0 12px 12px}
 .periodBar .field{margin:0;flex:0 1 230px;min-width:150px}
 .periodBar .perMes{display:flex;gap:8px}
 .periodBar .perMes select:first-child{flex:1.6}.periodBar .perMes select:last-child{flex:1}
-.diasChart.many{gap:2px;overflow-x:auto}
-.diasChart.many .diaCol{min-width:7px}
+.diaCol{cursor:pointer}
+.diaCol:hover .stack{filter:brightness(1.25)}
+.diasChart.many{gap:2px;height:190px}
 .diasChart.many .diaCol .stack{max-width:none;border-radius:3px 3px 1px 1px}
-.diasChart.many .diaCol .l{font-size:.55rem;white-space:nowrap}
-.diasChart.many .diaCol .v{font-size:.55rem}
+.diasChart.many .diaCol .v{font-size:.58rem;margin-bottom:2px}
+.diasChart.noV .diaCol .v{visibility:hidden}
+.diasChart.many .diaCol .l{display:flex;flex-direction:column;align-items:center;font-size:.6rem;line-height:1.1;margin-top:4px;min-height:24px;white-space:nowrap}
+.diasChart.many .diaCol .lb{font-size:.5rem;color:#6f819f}
+.diasChart.many .diaCol .lb.fin{color:#ffb27a}
+.diasChart.many .diaCol.off .l span{visibility:hidden}
+.diasChart.m-semana.many .diaCol:first-child .l,.diasChart.m-mes.many .diaCol:first-child .l{align-self:flex-start;align-items:flex-start}
+.diasChart.m-semana.many .diaCol:last-child .l,.diasChart.m-mes.many .diaCol:last-child .l{align-self:flex-end;align-items:flex-end}
+#homeDiasNota{margin-top:6px}
 #updAhora{background:var(--pri);border-color:var(--pri);color:var(--pri-ink);font-weight:700}
 .updList{margin:12px 0 0;padding-left:20px;max-height:46vh;overflow-y:auto;line-height:1.45;font-size:.92rem}
 .updList li{margin-bottom:7px}
@@ -602,6 +610,7 @@ input[type="date"],input[type="time"]{color-scheme:dark}
     <h2 id="tDias">Actividad día por día</h2>
     <div class="count"><span style="color:var(--ok)">■</span> aprobados &nbsp; <span style="color:var(--adv)">■</span> avance aprobado &nbsp; <span style="color:var(--bad)">■</span> rechazados</div>
     <div class="diasChart" id="homeDias"></div>
+    <div class="count" id="homeDiasNota"></div>
   </section>
   <section class="card">
     <h2 id="tRech">Rechazos de la semana</h2>
@@ -1727,15 +1736,28 @@ function renderHomeExtras(d){
       stackBarHtml(a.total,a.aprobados,a.avanceAprobado,a.rechazados)+
       (a.total?'<div class="areaStats"><span style="color:var(--ok)"><b>'+a.aprobados+'</b> aprobadas</span><span style="color:var(--bad)"><b>'+a.rechazados+'</b> rechazadas</span><span style="color:var(--adv)"><b>'+a.avanceAprobado+'</b> avance</span><span style="color:'+c+'"><b>'+a.pctAprobacion+'%</b> aprob.</span></div>':'<small>Sin registros esta semana</small>')+'</div>';
   }).join('');
-  // Actividad día por día (barras apiladas)
+  // Actividad (barras apiladas). Hasta 9 barras: etiqueta completa. Más barras: etiqueta corta que se adapta al ancho disponible.
   const dias=d.diasSemana||[], maxT=Math.max(1,...dias.map(x=>x.total));
-  const muchos=dias.length>14, paso=muchos?Math.ceil(dias.length/10):1;   // con muchas barras solo se rotulan algunas
-  $('#homeDias').className='diasChart'+(muchos?' many':'');
+  homeDiasModo=(d.rango&&d.rango.agrupacion)||'dia'; homeDiasData=dias;
+  const muchos=dias.length>9, LET={Dom:'D',Lun:'L',Mar:'M','Mié':'X',Jue:'J',Vie:'V','Sáb':'S'};
+  const corta=x=>{
+    const e=String(x.etiqueta||'');
+    if(homeDiasModo==='dia'){ const m=e.match(/^(\S+)\s+(\d{2})\/(\d{2})$/); return m?{a:m[2],b:LET[m[1]]||'',fin:m[1]==='Sáb'||m[1]==='Dom'}:{a:e,b:'',fin:false}; }
+    if(homeDiasModo==='semana') return {a:e.replace('Sem ',''),b:'',fin:false};
+    const p=e.split(' '); return {a:p[0],b:(p[1]||'').slice(2),fin:false};
+  };
+  $('#homeDias').className='diasChart m-'+homeDiasModo+(muchos?' many':'');
   $('#homeDias').innerHTML=dias.map((x,i)=>{
-    const h=x.total?Math.max(5,Math.round(x.total/maxT*104)):0;
+    const h=x.total?Math.max(5,Math.round(x.total/maxT*(muchos?136:104))):0;
     const seg=(n,col)=>x.total&&n?'<i style="background:'+col+';height:'+(n/x.total*100)+'%"></i>':'';
-    return '<div class="diaCol" title="'+esc(x.etiqueta)+': '+x.total+(x.total===1?' registro':' registros')+'"><div class="v">'+(dias.length>24?'':x.total)+'</div><div class="stack" data-h="'+h+'px">'+seg(x.aprobados,'var(--ok)')+seg(x.avanceAprobado,'var(--adv)')+seg(x.rechazados,'var(--bad)')+'</div><div class="l">'+(i%paso===0?esc(x.etiqueta):'')+'</div></div>';
+    const c=muchos?corta(x):null;
+    const lab=muchos?'<span class="la">'+esc(c.a)+'</span>'+(c.b?'<span class="lb'+(c.fin?' fin':'')+'">'+esc(c.b)+'</span>':''):esc(x.etiqueta);
+    return '<div class="diaCol" data-i="'+i+'"><div class="v">'+x.total+'</div><div class="stack" data-h="'+h+'px">'+seg(x.aprobados,'var(--ok)')+seg(x.avanceAprobado,'var(--adv)')+seg(x.rechazados,'var(--bad)')+'</div><div class="l">'+lab+'</div></div>';
   }).join('');
+  $('#homeDiasNota').textContent = homeDiasModo==='semana' ? 'Cada barra es una semana (de lunes a domingo). Pasa el mouse o toca una barra para ver el detalle.'
+    : homeDiasModo==='mes' ? 'Cada barra es un mes. Pasa el mouse o toca una barra para ver el detalle.'
+    : (muchos ? 'Cada barra es un día. Pasa el mouse o toca una barra para ver el detalle.' : '');
+  ajustarDias();
   // Criticidad y defectos de los rechazos
   const cr=d.criticidadSemana||{alta:0,baja:0,sinDato:0};
   $('#homeCrit').innerHTML=
@@ -1754,6 +1776,36 @@ function renderHomeExtras(d){
     const defs=d.topDefectos||[], max=Math.max(1,...defs.map(x=>x.cantidad));
     $('#homeDefectos').innerHTML='<div class="count" style="margin-top:8px">Defectos más frecuentes en los rechazos</div>'+filas(defs,max,'');
   }
+}
+let homeDiasModo='dia', homeDiasData=[];
+// Decide cuántas etiquetas caben según el ancho real del gráfico (se recalcula al cambiar el tamaño)
+function ajustarDias(){
+  const box=document.getElementById('homeDias'); if(!box||!box.classList.contains('many')) return;
+  const cols=box.querySelectorAll('.diaCol'), w=box.clientWidth; if(!cols.length||!w) return;
+  const gap=2, colW=(w-gap*(cols.length-1))/cols.length;
+  const labW=homeDiasModo==='semana'?38:homeDiasModo==='mes'?30:16;
+  const paso=Math.max(1,Math.ceil(labW/(colW+gap)));
+  cols.forEach((c,i)=>c.classList.toggle('off',i%paso!==0));
+  box.classList.toggle('noV',colW<18);
+}
+function diaTip(ev,i){
+  const tip=document.getElementById('anaTip'), x=homeDiasData[i];
+  if(!tip) return;
+  if(!x){ tip.hidden=true; return; }
+  tip.innerHTML='<b>'+esc(x.etiqueta)+'</b><br>'+x.total+(x.total===1?' registro':' registros')+'<br><span style="color:var(--ok)">'+x.aprobados+' aprobados</span> · <span style="color:var(--adv)">'+x.avanceAprobado+' avance</span> · <span style="color:var(--bad)">'+x.rechazados+' rechazados</span>';
+  tip.hidden=false;
+  const w=tip.offsetWidth, hh=tip.offsetHeight;
+  tip.style.left=Math.max(6,Math.min(innerWidth-w-6,ev.clientX-w/2))+'px';
+  tip.style.top=Math.max(6,ev.clientY-hh-14)+'px';
+}
+function initDiasChart(){
+  const box=document.getElementById('homeDias'); let t=null;
+  box.addEventListener('pointerover',e=>{ const c=e.target.closest('.diaCol'); if(c&&e.pointerType==='mouse') diaTip(e,+c.dataset.i); });
+  box.addEventListener('pointermove',e=>{ const c=e.target.closest('.diaCol'); if(c&&e.pointerType==='mouse') diaTip(e,+c.dataset.i); });
+  box.addEventListener('pointerout',e=>{ if(e.pointerType==='mouse') diaTip(e,-1); });
+  box.addEventListener('click',e=>{ const c=e.target.closest('.diaCol'); if(!c) return; diaTip(e,+c.dataset.i); clearTimeout(t); t=setTimeout(()=>diaTip(e,-1),3500); });
+  document.addEventListener('click',e=>{ if(!e.target.closest('#homeDias')) diaTip(e,-1); });
+  if(window.ResizeObserver) new ResizeObserver(ajustarDias).observe(box); else addEventListener('resize',ajustarDias);
 }
 function genOrdenar(arr){
   if(!arr.some(p=>p.ultima)) return arr;            // datos guardados antes de esta versión: sin fecha, se deja el orden original
@@ -2146,7 +2198,7 @@ function initAna(){
 }
 
 /* ===== Aviso de nueva versión (compara con version.json y muestra los cambios) ===== */
-const APP_VERSION='2026.11.24-1';
+const APP_VERSION='2026.11.24-2';
 const VER_SEEN='qaqc_ver_visto';
 let verModo='', verUltimaRev=0, verPosponer=0;
 function verAbrir(v,modo){
@@ -2201,6 +2253,7 @@ function initActualizaciones(){
 function initHome(){
   initAna();
   initPeriodo();
+  initDiasChart();
   $('#homeGenOrden').onclick=()=>{genOrden=genOrden==='nuevo'?'antiguo':'nuevo';try{localStorage.setItem(GORD,genOrden);}catch(e){} renderHome();};
   $('#homeRefresh').onclick=()=>loadHome(true);
   $('#homeGenMore').onclick=()=>{homeGenExpanded=!homeGenExpanded;renderHome();};
